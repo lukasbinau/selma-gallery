@@ -21,11 +21,11 @@ const LAYOUT = {
 };
 
 // Plaques: a real slab on the wall, with the HTML text laid on its face in 3D
-const PLAQUE_W = 0.8; // metres
-const PLAQUE_PX = 240; // CSS width of the plaque's face
+const PLAQUE_W = 1.05; // metres
+const PLAQUE_PX = 315; // CSS width of the plaque's face
 const PLAQUE_SCALE = PLAQUE_W / PLAQUE_PX;
 const PLAQUE_GAP = 0.13; // between frame bottom and plaque top
-const PLAQUE_DEPTH = 0.014;
+const PLAQUE_DEPTH = 0.034; // a solid wooden block that stands off the wall
 
 // Springs: the "look" spring is stiffer than the "body" spring, so the camera
 // turns toward the next painting first and its body catches up — a walk.
@@ -41,7 +41,7 @@ const THEMES = {
     floor: '#16130f',
     floorOpacity: 0.86,
     skirting: '#0f0e0d',
-    plaqueGlow: 0.3,
+    plaqueGlow: 0.22,
     hemi: 0.35,
     spot: 38,
     exposure: 1.05,
@@ -52,7 +52,7 @@ const THEMES = {
     floor: '#b9b1a4',
     floorOpacity: 0.8,
     skirting: '#d3ccc0',
-    plaqueGlow: 0.05,
+    plaqueGlow: 0,
     hemi: 1.35,
     spot: 16,
     exposure: 0.95,
@@ -95,13 +95,61 @@ const mats = {
   canvasEdge: new THREE.MeshStandardMaterial({ color: '#d9d2c4', roughness: 0.9 }),
   shadowGap: new THREE.MeshStandardMaterial({ color: '#0b0a09', roughness: 1 }),
   skirting: new THREE.MeshStandardMaterial({ roughness: 0.6 }),
-  plaque: new THREE.MeshStandardMaterial({
-    color: '#f3eee5',
-    roughness: 0.5,
-    emissive: '#f3eee5',
-    emissiveIntensity: 0.1,
-  }),
+  plaque: null, // walnut, created below once we can draw its grain
 };
+
+// Procedural walnut grain, drawn once into a canvas
+function woodTexture() {
+  const W = 1024;
+  const H = 384;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const g = c.getContext('2d');
+  const base = g.createLinearGradient(0, 0, 0, H);
+  base.addColorStop(0, '#6a4329');
+  base.addColorStop(0.5, '#5b3821');
+  base.addColorStop(1, '#4e2f1b');
+  g.fillStyle = base;
+  g.fillRect(0, 0, W, H);
+
+  // Long, gently wavy grain lines
+  for (let i = 0; i < 170; i++) {
+    const y0 = Math.random() * H;
+    const amp = 2 + Math.random() * 7;
+    const freq = 0.002 + Math.random() * 0.006;
+    const phase = Math.random() * Math.PI * 2;
+    const dark = Math.random() < 0.7;
+    g.strokeStyle = dark
+      ? `rgba(34, 18, 8, ${0.06 + Math.random() * 0.22})`
+      : `rgba(170, 118, 72, ${0.05 + Math.random() * 0.12})`;
+    g.lineWidth = 0.6 + Math.random() * 2.4;
+    g.beginPath();
+    for (let x = 0; x <= W; x += 8) {
+      const y = y0 + Math.sin(x * freq + phase) * amp + Math.sin(x * 0.013 + phase * 2) * 1.2;
+      x === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+    }
+    g.stroke();
+  }
+  // Fine pores
+  for (let i = 0; i < 9000; i++) {
+    g.fillStyle = `rgba(25, 12, 5, ${Math.random() * 0.18})`;
+    g.fillRect(Math.random() * W, Math.random() * H, 1 + Math.random() * 3, 1);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+const wood = woodTexture();
+mats.plaque = new THREE.MeshStandardMaterial({
+  map: wood,
+  roughness: 0.55,
+  metalness: 0,
+  emissive: '#ffffff',
+  emissiveMap: wood, // a faint self-glow keeps the grain visible in the evening room
+  emissiveIntensity: 0.1,
+});
 
 function applyTheme() {
   const t = THEMES[settings.theme] ?? THEMES.evening;
@@ -292,7 +340,7 @@ async function buildPlaques() {
     const y = EYE - f.height / 2 - PLAQUE_GAP - f.plaqueH / 2;
 
     const slab = new THREE.Mesh(
-      new RoundedBoxGeometry(PLAQUE_W, f.plaqueH, PLAQUE_DEPTH, 4, 0.005),
+      new RoundedBoxGeometry(PLAQUE_W, f.plaqueH, PLAQUE_DEPTH, 5, 0.009),
       mats.plaque,
     );
     slab.position.set(f.x, y, PLAQUE_DEPTH / 2 + 0.002);

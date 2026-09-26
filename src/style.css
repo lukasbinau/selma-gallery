@@ -99,14 +99,31 @@ input:focus-visible {
 .topbar > * {
   pointer-events: auto;
 }
+.brand {
+  display: grid;
+  justify-items: start;
+  text-align: left;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.brand:focus-visible {
+  outline-offset: 6px;
+}
 .brand__name {
+  display: block;
+  white-space: nowrap;
+  transition: opacity 0.2s;
   font-family: 'Instrument Serif', serif;
   font-weight: 400;
   font-size: 30px;
   line-height: 1.05;
   letter-spacing: 0.005em;
 }
+.brand:hover .brand__name {
+  opacity: 0.75;
+}
 .brand__sub {
+  display: block;
   margin-top: 6px;
   font-size: 11px;
   letter-spacing: 0.14em;
@@ -344,39 +361,59 @@ input:focus-visible {
   z-index: 1;
 }
 .plaque {
-  width: 240px;
-  padding: 15px 17px 12px;
-  color: var(--paper-ink);
+  /* Brass letters mounted on a walnut block (the wood itself is drawn in WebGL) */
+  --brass: #e2c687;
+  --brass-dim: rgba(226, 198, 135, 0.72);
+  --brass-line: rgba(226, 198, 135, 0.3);
+  --raise: 0 1px 0 rgba(0, 0, 0, 0.55), 0 -0.5px 0 rgba(255, 240, 200, 0.18);
+  width: 315px;
+  padding: 16px 22px 13px;
+  color: var(--brass);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   visibility: visible;
+  /* four brass screws */
+  --screw: radial-gradient(circle, #f6e4b0 0 1.2px, #9c7836 1.9px, rgba(0, 0, 0, 0.45) 2.4px, transparent 2.9px);
+  background:
+    var(--screw) 5px 5px / 10px 10px no-repeat,
+    var(--screw) calc(100% - 5px) 5px / 10px 10px no-repeat,
+    var(--screw) 5px calc(100% - 5px) / 10px 10px no-repeat,
+    var(--screw) calc(100% - 5px) calc(100% - 5px) / 10px 10px no-repeat;
 }
 .plaque__title {
   font-family: 'Instrument Serif', serif;
   font-weight: 400;
-  font-size: 19px;
+  font-size: 21px;
   line-height: 1.1;
-  letter-spacing: 0.005em;
+  letter-spacing: 0.01em;
+  /* polished brass */
+  background: linear-gradient(180deg, #fbeec4 0%, #e3c27a 42%, #a97f38 58%, #ecd394 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
 }
 .plaque__meta {
   margin-top: 4px;
-  font-size: 9.5px;
+  font-size: 10.5px;
   line-height: 1.5;
-  letter-spacing: 0.02em;
-  color: var(--paper-dim);
+  letter-spacing: 0.04em;
+  color: var(--brass-dim);
+  text-shadow: var(--raise);
 }
 .plaque__desc {
-  margin-top: 8px;
+  margin-top: 7px;
   font-family: 'Instrument Serif', serif;
   font-style: italic;
-  font-size: 13px;
-  line-height: 1.32;
-  color: #2e2924;
+  font-size: 14.5px;
+  line-height: 1.3;
+  color: var(--brass);
+  text-shadow: var(--raise);
 }
 .plaque__foot {
-  margin-top: 10px;
+  margin-top: 9px;
   padding-top: 8px;
-  border-top: 0.5px solid var(--paper-line);
+  border-top: 1px solid var(--brass-line);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -385,8 +422,9 @@ input:focus-visible {
 .plaque__price {
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
+  text-shadow: var(--raise);
 }
 .plaque__sold {
   display: inline-flex;
@@ -394,9 +432,9 @@ input:focus-visible {
   gap: 5px;
   font-size: 9px;
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--paper-dim);
+  color: var(--brass-dim);
 }
 .plaque__sold::before {
   content: '';
@@ -404,13 +442,31 @@ input:focus-visible {
   height: 7px;
   border-radius: 50%;
   background: var(--red-dot);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
 }
 .plaque .btn {
   pointer-events: auto;
   height: 22px;
-  padding: 0 10px;
+  padding: 0 11px;
   font-size: 9.5px;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #2b1a0b;
+  background: linear-gradient(180deg, #f4dfa6, #c69d4f);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.5),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.6);
+}
+.plaque .btn:hover {
+  background: linear-gradient(180deg, #fbe9b8, #d4ab5c);
+}
+.plaque .btn--added {
+  color: var(--brass);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--brass-line);
+}
+.plaque .btn--added:hover {
+  background: rgba(226, 198, 135, 0.1);
 }
 
 /* ------------------------------------------------------------------ Buttons */
@@ -642,20 +698,11 @@ input:focus-visible {
   top: 14px;
   right: 14px;
 }
-.modal__card--about p {
-  font-size: 15px;
-  line-height: 1.6;
-  margin-top: 12px;
-}
 .eyebrow {
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--paper-dim);
-}
-.about-name {
-  margin-top: 6px;
-  font-size: 34px !important;
 }
 .facts {
   margin-top: 22px;
@@ -949,8 +996,7 @@ input:focus-visible {
     --gutter: 16px;
   }
   .brand__name {
-    font-size: 22px;
-    max-width: 14ch;
+    font-size: clamp(17px, 5.6vw, 22px);
   }
   .brand__sub {
     font-size: 10px;
@@ -998,4 +1044,101 @@ input:focus-visible {
 
 .nowrap {
   white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ About */
+.about.modal__card {
+  width: min(920px, 100%);
+  padding: 0;
+  display: grid;
+  grid-template-columns: 5fr 6fr;
+  overflow: hidden;
+}
+.about > .close-btn {
+  z-index: 1;
+  background: var(--paper);
+}
+.about__photo {
+  position: relative;
+  background: #1b1814;
+  min-height: 100%;
+}
+.about__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.about__photo figcaption {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+.about__text {
+  scrollbar-width: thin;
+  padding: 40px 40px 34px;
+  max-height: min(86vh, 760px);
+  overflow-y: auto;
+}
+.about__name {
+  margin-top: 8px;
+  font-size: 38px !important;
+}
+.about__lead {
+  margin-top: 14px;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 21px;
+  line-height: 1.35;
+}
+.about__text > p:not(.eyebrow):not(.about__lead) {
+  margin-top: 14px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: #3b352e;
+}
+.about__cta {
+  margin-top: 24px;
+  height: 46px;
+  padding: 0 24px;
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .about.modal__card {
+    grid-template-columns: 1fr;
+    max-height: 94vh;
+    overflow-y: auto;
+  }
+  .about__photo {
+    height: 38vh;
+    min-height: 0;
+  }
+  .about__photo img {
+    object-position: center 30%;
+  }
+  .about__text {
+    padding: 26px 22px max(28px, env(safe-area-inset-bottom));
+    max-height: none;
+    overflow: visible;
+  }
+  .about__name {
+    font-size: 32px !important;
+  }
+  .about__cta {
+    width: 100%;
+  }
 }
