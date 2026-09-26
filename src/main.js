@@ -37,24 +37,24 @@ const FRAMING = { k: 120, c: 2 * Math.sqrt(120) };
 // Colour scheme picked by Selma: ultramarine blue and lavender
 const THEMES = {
   evening: {
-    // an ultramarine room: deep blue walls, the spots pull out their colour
-    bg: '#0a0d2c',
-    wall: '#26308a',
+    // a dusty, painterly ultramarine room (after the reference Selma sent)
+    bg: '#0a0f2e',
+    wall: '#2d4299',
     floor: '#0b0e2e',
     floorOpacity: 0.86,
     skirting: '#0d1034',
-    plaqueGlow: 0.22,
+    plaqueGlow: 0.12,
     hemi: 0.3,
     spot: 40,
     exposure: 1.05,
   },
   daylight: {
-    // a lavender room
-    bg: '#dcd3f0',
-    wall: '#d6cbef',
-    floor: '#a99cc9',
+    // a bright room with lavender-white walls, so the lavender plaques stand out
+    bg: '#e3def0',
+    wall: '#eeeaf6',
+    floor: '#b6accf',
     floorOpacity: 0.8,
-    skirting: '#c3b6e4',
+    skirting: '#cfc6e8',
     plaqueGlow: 0,
     hemi: 1.3,
     spot: 16,
@@ -98,12 +98,34 @@ const mats = {
   canvasEdge: new THREE.MeshStandardMaterial({ color: '#d9d2c4', roughness: 0.9 }),
   shadowGap: new THREE.MeshStandardMaterial({ color: '#0b0a09', roughness: 1 }),
   skirting: new THREE.MeshStandardMaterial({ roughness: 0.6 }),
-  plaque: null, // walnut, created below once we can draw its grain
+  plaque: null, // lacquered wood, created below once we can draw its grain
 };
 
-// Procedural dark walnut, computed per pixel once at load. Grain follows
-// long, slowly drifting growth lines, with soft colour bands and fine pores.
-function woodTexture() {
+// Small value-noise helpers for the procedural textures below
+const hash = (n) => {
+  const s = Math.sin(n * 127.1) * 43758.5453;
+  return s - Math.floor(s);
+};
+const smooth = (t) => t * t * (3 - 2 * t);
+const noise1 = (x) => {
+  const i = Math.floor(x);
+  return hash(i) + (hash(i + 1) - hash(i)) * smooth(x - i);
+};
+const noise2 = (x, y) => {
+  const i = Math.floor(x);
+  const j = Math.floor(y);
+  const u = smooth(x - i);
+  const v = smooth(y - j);
+  const h = (a, b) => hash(a * 57 + b * 131);
+  const top = h(i, j) + (h(i + 1, j) - h(i, j)) * u;
+  const bot = h(i, j + 1) + (h(i + 1, j + 1) - h(i, j + 1)) * u;
+  return top + (bot - top) * v;
+};
+
+// Procedural wood, computed per pixel once at load. Grain follows long, slowly
+// drifting growth lines, with soft colour bands and fine pores. `grain` sets how
+// strongly it shows (lower = painted over).
+function woodTexture(light, dark, grain = 1) {
   // 1024 px is plenty: the plaque is only a few hundred pixels wide on screen
   const W = 1024;
   const H = 256;
@@ -114,28 +136,6 @@ function woodTexture() {
   const img = g.createImageData(W, H);
   const d = img.data;
 
-  const hash = (n) => {
-    const s = Math.sin(n * 127.1) * 43758.5453;
-    return s - Math.floor(s);
-  };
-  const smooth = (t) => t * t * (3 - 2 * t);
-  const noise1 = (x) => {
-    const i = Math.floor(x);
-    return hash(i) + (hash(i + 1) - hash(i)) * smooth(x - i);
-  };
-  const noise2 = (x, y) => {
-    const i = Math.floor(x);
-    const j = Math.floor(y);
-    const u = smooth(x - i);
-    const v = smooth(y - j);
-    const h = (a, b) => hash(a * 57 + b * 131);
-    const top = h(i, j) + (h(i + 1, j) - h(i, j)) * u;
-    const bot = h(i, j + 1) + (h(i + 1, j + 1) - h(i, j + 1)) * u;
-    return top + (bot - top) * v;
-  };
-
-  const light = [66, 42, 27]; // warm walnut highlight
-  const dark = [24, 14, 9]; // deep brown-black
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       // Growth lines drift gently across the board
@@ -145,7 +145,7 @@ function woodTexture() {
       const line = Math.pow(1 - Math.min(ring, 1 - ring) * 2, 7); // thin dark lines
       const band = noise1((y + warp) * 0.04) * 0.55 + noise2(x * 0.0018, y * 0.04) * 0.45;
       const pore = hash(Math.floor(x / 3) * 7.3 + y * 311.7) < 0.035 ? 0.35 : 0;
-      let k = 0.25 + band * 0.55 - line * 0.35 - pore * 0.4;
+      let k = 0.5 + ((band - 0.5) * 0.55 - line * 0.35 - pore * 0.4) * grain + 0.1 * (1 - grain);
       k = Math.max(0, Math.min(1, k));
       const i = (y * W + x) * 4;
       d[i] = dark[0] + (light[0] - dark[0]) * k;
@@ -161,8 +161,8 @@ function woodTexture() {
   t.anisotropy = renderer.capabilities.getMaxAnisotropy();
   return t;
 }
-const wood = woodTexture();
-// Oiled walnut under a thin satin lacquer
+// Lavender-lacquered wood (Selma's wish): the grain just shows through the paint
+const wood = woodTexture([222, 212, 246], [176, 160, 222], 0.55);
 mats.plaque = new THREE.MeshPhysicalMaterial({
   map: wood,
   roughness: 0.5,
@@ -172,6 +172,46 @@ mats.plaque = new THREE.MeshPhysicalMaterial({
   emissiveMap: wood, // a faint self-glow keeps the grain readable in the evening room
   emissiveIntensity: 0.1,
 });
+
+// Hand-painted wall: soft mottling and faint brush drag, like the blue grounds
+// in the paintings Selma likes. Greyscale, so it tints with each theme's wall colour.
+function wallTexture() {
+  const S = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d');
+  const img = g.createImageData(S, S);
+  const d = img.data;
+  // Value noise whose lattice wraps every px × py cells, so the tile repeats seamlessly
+  const periodic = (x, y, px, py) => {
+    const i = Math.floor(x);
+    const j = Math.floor(y);
+    const u = smooth(x - i);
+    const v = smooth(y - j);
+    const h = (a, b) => hash((((a % px) + px) % px) * 57 + (((b % py) + py) % py) * 131);
+    const top = h(i, j) + (h(i + 1, j) - h(i, j)) * u;
+    const bot = h(i, j + 1) + (h(i + 1, j + 1) - h(i, j + 1)) * u;
+    return top + (bot - top) * v;
+  };
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const u = x / S;
+      const v = y / S;
+      const mottle = periodic(u * 4, v * 4, 4, 4) * 0.6 + periodic(u * 9, v * 9, 9, 9) * 0.4;
+      const brush = periodic(u * 3, v * 70, 3, 70); // long horizontal drag marks
+      const k = 0.89 + mottle * 0.09 + brush * 0.018;
+      const i = (y * S + x) * 4;
+      d[i] = d[i + 1] = d[i + 2] = Math.min(255, k * 255);
+      d[i + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+mats.wall.map = wallTexture();
 
 function applyTheme() {
   const t = THEMES[settings.theme] ?? THEMES.evening;
@@ -305,6 +345,7 @@ async function buildGallery() {
   const mid = (first + last) / 2;
 
   const wall = new THREE.Mesh(new THREE.PlaneGeometry(span, 9), mats.wall);
+  mats.wall.map.repeat.set(span / 2.5, 9 / 2.5); // one painted tile ≈ 2.5 m
   wall.position.set(mid, 4.5, 0);
   wall.receiveShadow = true;
   scene.add(wall);

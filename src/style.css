@@ -21,7 +21,7 @@
   --paper-dim: #67628c;
   --paper-line: rgba(22, 26, 74, 0.12);
   --accent: var(--ultramarine);
-  --red-dot: #c8322b;
+  --red-dot: #d93a22; /* Selma's vermilion */
 
   --ease-snap: cubic-bezier(0.2, 0.9, 0.25, 1);
   --radius: 14px;
@@ -29,7 +29,7 @@
 }
 
 :root[data-theme='daylight'] {
-  --bg: #dcd3f0;
+  --bg: #e3def0;
   --ink: #161a4a;
   --ink-dim: rgba(22, 26, 74, 0.6);
   --glass: rgba(255, 255, 255, 0.45);
@@ -184,8 +184,8 @@ input:focus-visible {
   height: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background: var(--lavender);
-  color: var(--paper-ink);
+  background: var(--red-dot);
+  color: #fff;
   font-size: 10px;
   font-weight: 600;
   line-height: 18px;
@@ -369,15 +369,15 @@ input:focus-visible {
   z-index: 1;
 }
 .plaque {
-  /* Satin brass letters pinned to a dark walnut block (the wood is drawn in WebGL).
-     The tight shadow reads as letters standing a millimetre off the wood. */
-  --brass: #d6bb86;
-  --brass-soft: rgba(214, 187, 134, 0.7);
-  --brass-line: rgba(214, 187, 134, 0.28);
-  --standoff: 0 0.6px 0.8px rgba(0, 0, 0, 0.75);
+  /* Dark ultramarine letters mounted on a lavender-lacquered wooden block (the
+     wood is drawn in WebGL). The soft shadow reads as letters standing off it. */
+  --letter: #1b2466;
+  --letter-soft: rgba(27, 36, 102, 0.68);
+  --letter-line: rgba(27, 36, 102, 0.22);
+  --standoff: 0 0.7px 0.9px rgba(40, 28, 96, 0.35);
   width: 315px;
   padding: 18px 24px 15px;
-  color: var(--brass);
+  color: var(--letter);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   visibility: visible;
@@ -388,12 +388,8 @@ input:focus-visible {
   font-size: 21px;
   line-height: 1.1;
   letter-spacing: 0.01em;
-  /* brushed brass: a soft top-to-bottom sheen, not a mirror */
-  background: linear-gradient(180deg, #ead7ab 0%, #d3b57d 55%, #bf9f66 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0.6px 0.6px rgba(0, 0, 0, 0.8));
+  color: var(--letter);
+  text-shadow: var(--standoff);
 }
 .plaque__meta {
   margin-top: 5px;
@@ -402,7 +398,7 @@ input:focus-visible {
   line-height: 1.6;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--brass-soft);
+  color: var(--letter-soft);
   text-shadow: var(--standoff);
 }
 .plaque__desc {
@@ -411,13 +407,13 @@ input:focus-visible {
   font-style: italic;
   font-size: 14.5px;
   line-height: 1.3;
-  color: var(--brass);
+  color: var(--letter);
   text-shadow: var(--standoff);
 }
 .plaque__foot {
   margin-top: 11px;
   padding-top: 9px;
-  border-top: 0.5px solid var(--brass-line);
+  border-top: 0.5px solid var(--letter-line);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -438,7 +434,7 @@ input:focus-visible {
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--brass-soft);
+  color: var(--letter-soft);
   text-shadow: var(--standoff);
 }
 .plaque__sold::before {
@@ -446,8 +442,8 @@ input:focus-visible {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #b8322a;
-  box-shadow: 0 0.6px 0.8px rgba(0, 0, 0, 0.7);
+  background: var(--red-dot);
+  box-shadow: 0 0.6px 0.8px rgba(40, 28, 96, 0.35);
 }
 .plaque .btn {
   pointer-events: auto;
@@ -458,22 +454,22 @@ input:focus-visible {
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--brass);
+  color: var(--letter);
   background: transparent;
-  box-shadow: inset 0 0 0 0.75px var(--brass-soft);
+  box-shadow: inset 0 0 0 0.75px var(--letter-soft);
   text-shadow: var(--standoff);
 }
 .plaque .btn:hover {
-  background: rgba(214, 187, 134, 0.12);
+  background: rgba(27, 36, 102, 0.08);
 }
 .plaque .btn--added {
-  color: #1d130b;
+  color: #fff;
   text-shadow: none;
-  background: var(--brass);
+  background: var(--ultramarine);
   box-shadow: none;
 }
 .plaque .btn--added:hover {
-  background: #e2c995;
+  background: var(--ultramarine-deep);
 }
 
 /* ------------------------------------------------------------------ Buttons */
