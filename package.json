@@ -1,0 +1,19 @@
+{
+  "name": "selma-gallery",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "images": "node scripts/prepare-images.mjs"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.4",
+    "vite": "^8.3.1"
+  }
+}
