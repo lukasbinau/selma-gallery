@@ -98,56 +98,74 @@ const mats = {
   plaque: null, // walnut, created below once we can draw its grain
 };
 
-// Procedural walnut grain, drawn once into a canvas
+// Procedural dark walnut, computed per pixel once at load. Grain follows
+// long, slowly drifting growth lines, with soft colour bands and fine pores.
 function woodTexture() {
-  const W = 1024;
-  const H = 384;
+  const W = 2048;
+  const H = 512;
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
   const g = c.getContext('2d');
-  const base = g.createLinearGradient(0, 0, 0, H);
-  base.addColorStop(0, '#6a4329');
-  base.addColorStop(0.5, '#5b3821');
-  base.addColorStop(1, '#4e2f1b');
-  g.fillStyle = base;
-  g.fillRect(0, 0, W, H);
+  const img = g.createImageData(W, H);
+  const d = img.data;
 
-  // Long, gently wavy grain lines
-  for (let i = 0; i < 170; i++) {
-    const y0 = Math.random() * H;
-    const amp = 2 + Math.random() * 7;
-    const freq = 0.002 + Math.random() * 0.006;
-    const phase = Math.random() * Math.PI * 2;
-    const dark = Math.random() < 0.7;
-    g.strokeStyle = dark
-      ? `rgba(34, 18, 8, ${0.06 + Math.random() * 0.22})`
-      : `rgba(170, 118, 72, ${0.05 + Math.random() * 0.12})`;
-    g.lineWidth = 0.6 + Math.random() * 2.4;
-    g.beginPath();
-    for (let x = 0; x <= W; x += 8) {
-      const y = y0 + Math.sin(x * freq + phase) * amp + Math.sin(x * 0.013 + phase * 2) * 1.2;
-      x === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+  const hash = (n) => {
+    const s = Math.sin(n * 127.1) * 43758.5453;
+    return s - Math.floor(s);
+  };
+  const smooth = (t) => t * t * (3 - 2 * t);
+  const noise1 = (x) => {
+    const i = Math.floor(x);
+    return hash(i) + (hash(i + 1) - hash(i)) * smooth(x - i);
+  };
+  const noise2 = (x, y) => {
+    const i = Math.floor(x);
+    const j = Math.floor(y);
+    const u = smooth(x - i);
+    const v = smooth(y - j);
+    const h = (a, b) => hash(a * 57 + b * 131);
+    const top = h(i, j) + (h(i + 1, j) - h(i, j)) * u;
+    const bot = h(i, j + 1) + (h(i + 1, j + 1) - h(i, j + 1)) * u;
+    return top + (bot - top) * v;
+  };
+
+  const light = [66, 42, 27]; // warm walnut highlight
+  const dark = [24, 14, 9]; // deep brown-black
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      // Growth lines drift gently across the board
+      const warp = noise2(x * 0.0016, y * 0.004) * 9 + noise1(x * 0.0007) * 6;
+      const t = (y + warp) * 0.055;
+      const ring = t - Math.floor(t);
+      const line = Math.pow(1 - Math.min(ring, 1 - ring) * 2, 7); // thin dark lines
+      const band = noise1((y + warp) * 0.02) * 0.55 + noise2(x * 0.0009, y * 0.02) * 0.45;
+      const pore = hash(Math.floor(x / 5) * 7.3 + y * 311.7) < 0.035 ? 0.35 : 0;
+      let k = 0.25 + band * 0.55 - line * 0.35 - pore * 0.4;
+      k = Math.max(0, Math.min(1, k));
+      const i = (y * W + x) * 4;
+      d[i] = dark[0] + (light[0] - dark[0]) * k;
+      d[i + 1] = dark[1] + (light[1] - dark[1]) * k;
+      d[i + 2] = dark[2] + (light[2] - dark[2]) * k;
+      d[i + 3] = 255;
     }
-    g.stroke();
   }
-  // Fine pores
-  for (let i = 0; i < 9000; i++) {
-    g.fillStyle = `rgba(25, 12, 5, ${Math.random() * 0.18})`;
-    g.fillRect(Math.random() * W, Math.random() * H, 1 + Math.random() * 3, 1);
-  }
+  g.putImageData(img, 0, 0);
+
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = renderer.capabilities.getMaxAnisotropy();
   return t;
 }
 const wood = woodTexture();
-mats.plaque = new THREE.MeshStandardMaterial({
+// Oiled walnut under a thin satin lacquer
+mats.plaque = new THREE.MeshPhysicalMaterial({
   map: wood,
-  roughness: 0.55,
-  metalness: 0,
+  roughness: 0.5,
+  clearcoat: 0.55,
+  clearcoatRoughness: 0.28,
   emissive: '#ffffff',
-  emissiveMap: wood, // a faint self-glow keeps the grain visible in the evening room
+  emissiveMap: wood, // a faint self-glow keeps the grain readable in the evening room
   emissiveIntensity: 0.1,
 });
 

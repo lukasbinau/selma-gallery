@@ -164,10 +164,19 @@
               <span><strong>Bank transfer</strong><small>Details sent by email</small></span>
             </label>
           </fieldset>
+          <label class="terms-check">
+            <input type="checkbox" name="terms" />
+            <span>
+              I accept the <button type="button" class="inline-link" data-open="legal">terms of sale</button> and
+              have read the <button type="button" class="inline-link" data-open="legal">privacy policy</button>.
+              I have a 14-day right of withdrawal.
+            </span>
+          </label>
+          <p class="form-error review-error" role="alert"></p>
           <p class="demo-banner">This is a demo shop. Placing the order won’t charge you or send anything.</p>
           <div class="btn-row">
             <button class="btn btn--ghost" type="button" data-back>Back</button>
-            <button class="btn btn--primary" type="submit">Place order</button>
+            <button class="btn btn--primary" type="submit">Order with obligation to pay</button>
           </div>
         </form>
 
@@ -191,9 +200,8 @@
         </button>
 
         <figure class="about__photo">
-          <!-- To use a photo of Selma: put it in public/ (e.g. public/selma.jpg), set src="/selma.jpg" and update the caption -->
-          <img src="/art/portrait-orange.jpg" alt="Portrait in Vermilion, oil pastel and gouache by Selma Frausing Binau" />
-          <figcaption>Portrait in Vermilion, 2025</figcaption>
+          <img src="/selma.jpg" alt="Selma lying in the sun on a black sand beach, a book over her face" />
+          <figcaption>Selma, summer 2023</figcaption>
         </figure>
 
         <div class="about__text">
@@ -227,6 +235,79 @@
         </div>
       </div>
     </div>
+
+    <!-- Terms of sale, privacy and cookies -->
+    <div class="modal" id="legal" role="dialog" aria-modal="true" aria-labelledby="legal-title" hidden>
+      <div class="modal__card legal">
+        <button class="close-btn" data-close aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <p class="eyebrow">Legal</p>
+        <h2 id="legal-title">Terms of sale &amp; privacy</h2>
+        <p class="demo-banner">The shop is currently a demo: no orders are processed and no payments are taken.</p>
+
+        <h3>Company information</h3>
+        <dl class="facts facts--tight">
+          <div><dt>Business</dt><dd>Selma Frausing Binau (sole proprietorship)</dd></div>
+          <div><dt>CVR</dt><dd>43918274</dd></div>
+          <div><dt>Address</dt><dd>2700 Brønshøj, Denmark</dd></div>
+          <div><dt>Phone</dt><dd>+45 13 57 24 68</dd></div>
+          <div><dt>Email</dt><dd>kontakt@selmafrausingbinau.dk</dd></div>
+        </dl>
+
+        <h3>Prices and payment</h3>
+        <p>
+          All prices are in Danish kroner (DKK) and include VAT where applicable. You pay by MobilePay or bank transfer
+          once your order has been confirmed. Each painting is an original, one of a kind, and is reserved for you when
+          the order is placed.
+        </p>
+
+        <h3>Delivery</h3>
+        <p>
+          Pick-up from the studio in Brønshøj is free, by appointment. Delivery within Denmark costs 95 kr. The painting
+          is wrapped, insured and normally arrives within 3–7 working days after payment. We currently deliver to
+          Denmark only.
+        </p>
+
+        <h3>Right of withdrawal</h3>
+        <p>
+          You have a 14-day right of withdrawal, counted from the day you receive the painting. To use it, send a clear
+          message by email before the deadline. Return the painting within 14 days after that, in the condition you
+          received it; you pay for the return shipping. We refund the full purchase price, including the original
+          delivery cost, within 14 days of receiving the painting back.
+        </p>
+
+        <h3>Complaints</h3>
+        <p>
+          You have a 2-year right to complain (reklamationsret) under the Danish Sale of Goods Act. Please contact us
+          first. If we cannot find a solution together, you can complain to Nævnenes Hus / Center for Klageløsning via
+          <span class="nowrap">naevneneshus.dk</span>.
+        </p>
+
+        <h3>Privacy</h3>
+        <p>
+          Selma Frausing Binau is the data controller. When you order, we use your name, email and address only to
+          handle and deliver the order, and share your address only with the shipping carrier. Order records are kept
+          for 5 years, as required by the Danish Bookkeeping Act. You have the right to access, correct and delete
+          your data, and to complain to Datatilsynet (datatilsynet.dk).
+        </p>
+
+        <h3>Cookies</h3>
+        <p>
+          This site uses no tracking or marketing cookies. It only stores your cart and display settings in your own
+          browser, which is needed for the shop to work, so no cookie consent is required.
+        </p>
+      </div>
+    </div>
+
+    <footer class="legal-bar">
+      <span>© 2026 Selma Frausing Binau</span>
+      <span>CVR 43918274</span>
+      <span class="legal-bar__wide">2700 Brønshøj</span>
+      <span class="legal-bar__wide">+45 13 57 24 68</span>
+      <span class="legal-bar__wide">kontakt@selmafrausingbinau.dk</span>
+      <button class="legal-bar__link" data-open="legal">Terms &amp; privacy</button>
+    </footer>
 
     <div class="toast" role="status" aria-live="polite"></div>
     <div class="loader"><span class="loader__text">Selma Frausing Binau</span></div>

@@ -295,7 +295,7 @@ input:focus-visible {
 .counter {
   position: fixed;
   left: 50%;
-  bottom: max(26px, env(safe-area-inset-bottom));
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 32px);
   transform: translateX(-50%);
   display: flex;
   align-items: center;
@@ -361,24 +361,18 @@ input:focus-visible {
   z-index: 1;
 }
 .plaque {
-  /* Brass letters mounted on a walnut block (the wood itself is drawn in WebGL) */
-  --brass: #e2c687;
-  --brass-dim: rgba(226, 198, 135, 0.72);
-  --brass-line: rgba(226, 198, 135, 0.3);
-  --raise: 0 1px 0 rgba(0, 0, 0, 0.55), 0 -0.5px 0 rgba(255, 240, 200, 0.18);
+  /* Satin brass letters pinned to a dark walnut block (the wood is drawn in WebGL).
+     The tight shadow reads as letters standing a millimetre off the wood. */
+  --brass: #d6bb86;
+  --brass-soft: rgba(214, 187, 134, 0.7);
+  --brass-line: rgba(214, 187, 134, 0.28);
+  --standoff: 0 0.6px 0.8px rgba(0, 0, 0, 0.75);
   width: 315px;
-  padding: 16px 22px 13px;
+  padding: 18px 24px 15px;
   color: var(--brass);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   visibility: visible;
-  /* four brass screws */
-  --screw: radial-gradient(circle, #f6e4b0 0 1.2px, #9c7836 1.9px, rgba(0, 0, 0, 0.45) 2.4px, transparent 2.9px);
-  background:
-    var(--screw) 5px 5px / 10px 10px no-repeat,
-    var(--screw) calc(100% - 5px) 5px / 10px 10px no-repeat,
-    var(--screw) 5px calc(100% - 5px) / 10px 10px no-repeat,
-    var(--screw) calc(100% - 5px) calc(100% - 5px) / 10px 10px no-repeat;
 }
 .plaque__title {
   font-family: 'Instrument Serif', serif;
@@ -386,34 +380,36 @@ input:focus-visible {
   font-size: 21px;
   line-height: 1.1;
   letter-spacing: 0.01em;
-  /* polished brass */
-  background: linear-gradient(180deg, #fbeec4 0%, #e3c27a 42%, #a97f38 58%, #ecd394 100%);
+  /* brushed brass: a soft top-to-bottom sheen, not a mirror */
+  background: linear-gradient(180deg, #ead7ab 0%, #d3b57d 55%, #bf9f66 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0 0.6px 0.6px rgba(0, 0, 0, 0.8));
 }
 .plaque__meta {
-  margin-top: 4px;
-  font-size: 10.5px;
-  line-height: 1.5;
-  letter-spacing: 0.04em;
-  color: var(--brass-dim);
-  text-shadow: var(--raise);
+  margin-top: 5px;
+  font-size: 8.5px;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brass-soft);
+  text-shadow: var(--standoff);
 }
 .plaque__desc {
-  margin-top: 7px;
+  margin-top: 9px;
   font-family: 'Instrument Serif', serif;
   font-style: italic;
   font-size: 14.5px;
   line-height: 1.3;
   color: var(--brass);
-  text-shadow: var(--raise);
+  text-shadow: var(--standoff);
 }
 .plaque__foot {
-  margin-top: 9px;
-  padding-top: 8px;
-  border-top: 1px solid var(--brass-line);
+  margin-top: 11px;
+  padding-top: 9px;
+  border-top: 0.5px solid var(--brass-line);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -421,52 +417,55 @@ input:focus-visible {
 }
 .plaque__price {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
-  text-shadow: var(--raise);
+  text-shadow: var(--standoff);
 }
 .plaque__sold {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 9px;
+  gap: 6px;
+  font-size: 8.5px;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--brass-dim);
+  color: var(--brass-soft);
+  text-shadow: var(--standoff);
 }
 .plaque__sold::before {
   content: '';
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--red-dot);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  background: #b8322a;
+  box-shadow: 0 0.6px 0.8px rgba(0, 0, 0, 0.7);
 }
 .plaque .btn {
   pointer-events: auto;
-  height: 22px;
-  padding: 0 11px;
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: #2b1a0b;
-  background: linear-gradient(180deg, #f4dfa6, #c69d4f);
-  box-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.5),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.6);
-}
-.plaque .btn:hover {
-  background: linear-gradient(180deg, #fbe9b8, #d4ab5c);
-}
-.plaque .btn--added {
+  height: 20px;
+  padding: 0 10px;
+  border-radius: 2px;
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--brass);
   background: transparent;
-  box-shadow: inset 0 0 0 1px var(--brass-line);
+  box-shadow: inset 0 0 0 0.75px var(--brass-soft);
+  text-shadow: var(--standoff);
+}
+.plaque .btn:hover {
+  background: rgba(214, 187, 134, 0.12);
+}
+.plaque .btn--added {
+  color: #1d130b;
+  text-shadow: none;
+  background: var(--brass);
+  box-shadow: none;
 }
 .plaque .btn--added:hover {
-  background: rgba(226, 198, 135, 0.1);
+  background: #e2c995;
 }
 
 /* ------------------------------------------------------------------ Buttons */
@@ -1013,10 +1012,10 @@ input:focus-visible {
     height: 46px;
     margin-top: 0;
     top: auto;
-    bottom: max(16px, env(safe-area-inset-bottom));
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 28px);
   }
   .counter {
-    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 23px);
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 51px);
     transform: translate(-50%, 50%);
   }
   .hint {
@@ -1140,5 +1139,103 @@ input:focus-visible {
   }
   .about__cta {
     width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------ Legal */
+.legal-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 16px max(10px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--ink-dim);
+  opacity: 0.75;
+  z-index: 2;
+}
+.legal-bar > * + *::before {
+  content: '·';
+  margin: 0 7px;
+  opacity: 0.7;
+}
+.legal-bar__link {
+  font-size: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.legal-bar__link:hover {
+  color: var(--ink);
+}
+
+.legal.modal__card {
+  width: min(640px, 100%);
+  max-height: min(88vh, 820px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 32px 36px 36px;
+}
+.legal h2 {
+  margin-top: 6px;
+}
+.legal .demo-banner {
+  margin-top: 16px;
+}
+.legal h3 {
+  margin-top: 24px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.legal p {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #3b352e;
+}
+.facts--tight {
+  margin-top: 10px;
+  padding-top: 0;
+  border-top: 0;
+  gap: 6px;
+}
+
+.terms-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--paper-dim);
+  cursor: pointer;
+}
+.terms-check input {
+  flex: none;
+  margin-top: 3px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--paper-ink);
+}
+.inline-link {
+  font-size: inherit;
+  color: var(--paper-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .legal-bar__wide {
+    display: none;
+  }
+  .legal.modal__card {
+    padding: 26px 22px max(28px, env(safe-area-inset-bottom));
   }
 }

@@ -16,14 +16,22 @@ const layers = {
   cart: $('#cart'),
   checkout: $('#checkout'),
   about: $('#about'),
+  legal: $('#legal'),
 };
 let current = null;
 let returnFocus = null;
+// The terms can be read from inside checkout; closing them returns to the same step
+let pausedCheckout = false;
 
 export const isOverlayOpen = () => current !== null;
 
 export function open(name) {
   if (current === name) return;
+  if (current === 'checkout' && name === 'legal') {
+    layers.checkout.hidden = true;
+    pausedCheckout = true;
+    current = null;
+  }
   if (current) close({ restoreFocus: false });
   current = name;
   returnFocus = document.activeElement;
@@ -41,6 +49,12 @@ export function close({ restoreFocus = true } = {}) {
   if (!current) return;
   layers[current].hidden = true;
   if (current === 'checkout') resetCheckout();
+  if (current === 'legal' && pausedCheckout) {
+    pausedCheckout = false;
+    current = 'checkout';
+    layers.checkout.hidden = false;
+    return;
+  }
   current = null;
   scrim.hidden = true;
   $('[data-open="settings"]').setAttribute('aria-expanded', 'false');
@@ -205,7 +219,7 @@ function resetCheckout() {
   detailsForm.reset();
   reviewForm.reset();
   $('.ship-fields').hidden = true;
-  $('.form-error').textContent = '';
+  $('.form-error').forEach((el) => (el.textContent = ''));
   $$('input', detailsForm).forEach((i) => i.removeAttribute('aria-invalid'));
   showStep('details');
 }
@@ -258,6 +272,13 @@ $('[data-back]', reviewForm).addEventListener('click', () => showStep('details')
 
 reviewForm.addEventListener('submit', (e) => {
   e.preventDefault();
+  const terms = reviewForm.elements.terms;
+  if (!terms.checked) {
+    $('.review-error').textContent = 'Please accept the terms of sale to place your order.';
+    terms.focus();
+    return;
+  }
+  $('.review-error').textContent = '';
   const items = cart.items();
   const total = cart.subtotal() + order.shipping;
   const number = `SFB-${Math.floor(1000 + Math.random() * 9000)}`;
