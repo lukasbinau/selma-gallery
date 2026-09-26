@@ -16,7 +16,7 @@ const FOV = 38;
 // The camera frames a "block": the painting, plus its plaque when plaques are on.
 // fitH/fitW: max share of screen height/width; centre: where the block's middle sits (0 = top)
 const LAYOUT = {
-  on: { fitH: 0.78, fitW: 0.82, centre: 0.54 },
+  on: { fitH: 0.76, fitW: 0.82, centre: 0.51 },
   off: { fitH: 0.56, fitW: 0.72, centre: 0.5 },
 };
 
@@ -101,8 +101,9 @@ const mats = {
 // Procedural dark walnut, computed per pixel once at load. Grain follows
 // long, slowly drifting growth lines, with soft colour bands and fine pores.
 function woodTexture() {
-  const W = 2048;
-  const H = 512;
+  // 1024 px is plenty: the plaque is only a few hundred pixels wide on screen
+  const W = 1024;
+  const H = 256;
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
@@ -135,12 +136,12 @@ function woodTexture() {
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       // Growth lines drift gently across the board
-      const warp = noise2(x * 0.0016, y * 0.004) * 9 + noise1(x * 0.0007) * 6;
-      const t = (y + warp) * 0.055;
+      const warp = noise2(x * 0.0032, y * 0.008) * 4.5 + noise1(x * 0.0014) * 3;
+      const t = (y + warp) * 0.11;
       const ring = t - Math.floor(t);
       const line = Math.pow(1 - Math.min(ring, 1 - ring) * 2, 7); // thin dark lines
-      const band = noise1((y + warp) * 0.02) * 0.55 + noise2(x * 0.0009, y * 0.02) * 0.45;
-      const pore = hash(Math.floor(x / 5) * 7.3 + y * 311.7) < 0.035 ? 0.35 : 0;
+      const band = noise1((y + warp) * 0.04) * 0.55 + noise2(x * 0.0018, y * 0.04) * 0.45;
+      const pore = hash(Math.floor(x / 3) * 7.3 + y * 311.7) < 0.035 ? 0.35 : 0;
       let k = 0.25 + band * 0.55 - line * 0.35 - pore * 0.4;
       k = Math.max(0, Math.min(1, k));
       const i = (y * W + x) * 4;
