@@ -56,7 +56,7 @@ const composites = tiles.map((t) => {
   x += t.info.width + gap;
   return c;
 });
-await sharp({ create: { width: OG_W, height: OG_H, channels: 3, background: '#1b1814' } })
+await sharp({ create: { width: OG_W, height: OG_H, channels: 3, background: '#0a0d2c' } })
   .composite(composites)
   .jpeg({ quality: 85, mozjpeg: true })
   .toFile('public/og.jpg');

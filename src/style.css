@@ -1,19 +1,26 @@
+/* Colour scheme picked by Selma: ultramarine blue and lavender */
 :root {
-  --bg: #14120f;
-  --ink: #f3eee6;
-  --ink-dim: rgba(243, 238, 230, 0.58);
-  --glass: rgba(255, 255, 255, 0.07);
-  --glass-hover: rgba(255, 255, 255, 0.16);
-  --glass-border: rgba(255, 255, 255, 0.16);
-  --track: rgba(255, 255, 255, 0.18);
+  --ultramarine: #2a35b0;
+  --ultramarine-deep: #1b2380;
+  --lavender: #bfb0ec;
+  --lavender-soft: #e7e1f8;
 
-  /* Panels, plaques and dialogs are "paper" in both room themes */
-  --paper: #f6f3ee;
-  --paper-2: #ece7df;
-  --paper-ink: #1d1a16;
-  --paper-dim: #6f675d;
-  --paper-line: rgba(29, 26, 22, 0.12);
-  --accent: #1d1a16;
+  --bg: #0a0d2c;
+  --ink: #f2effc;
+  --ink-dim: rgba(242, 239, 252, 0.6);
+  --glass: rgba(191, 176, 236, 0.1);
+  --glass-hover: rgba(191, 176, 236, 0.22);
+  --glass-border: rgba(191, 176, 236, 0.24);
+  --track: rgba(191, 176, 236, 0.22);
+  --counter-fill: var(--lavender);
+
+  /* Panels and dialogs are lavender-tinted paper in both room themes */
+  --paper: #f7f5fd;
+  --paper-2: #ebe6f9;
+  --paper-ink: #161a4a;
+  --paper-dim: #67628c;
+  --paper-line: rgba(22, 26, 74, 0.12);
+  --accent: var(--ultramarine);
   --red-dot: #c8322b;
 
   --ease-snap: cubic-bezier(0.2, 0.9, 0.25, 1);
@@ -22,13 +29,14 @@
 }
 
 :root[data-theme='daylight'] {
-  --bg: #dcd6cc;
-  --ink: #1d1a16;
-  --ink-dim: rgba(29, 26, 22, 0.58);
+  --bg: #dcd3f0;
+  --ink: #161a4a;
+  --ink-dim: rgba(22, 26, 74, 0.6);
   --glass: rgba(255, 255, 255, 0.45);
   --glass-hover: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(29, 26, 22, 0.14);
-  --track: rgba(29, 26, 22, 0.18);
+  --glass-border: rgba(22, 26, 74, 0.14);
+  --track: rgba(22, 26, 74, 0.18);
+  --counter-fill: var(--ultramarine);
 }
 
 * {
@@ -176,8 +184,8 @@ input:focus-visible {
   height: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background: var(--red-dot);
-  color: #fff;
+  background: var(--lavender);
+  color: var(--paper-ink);
   font-size: 10px;
   font-weight: 600;
   line-height: 18px;
@@ -244,8 +252,8 @@ input:focus-visible {
     color 0.2s;
 }
 .segmented button[aria-pressed='true'] {
-  background: #fff;
-  color: var(--paper-ink);
+  background: var(--ultramarine);
+  color: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
@@ -321,7 +329,7 @@ input:focus-visible {
 .counter__fill {
   position: absolute;
   inset: 0;
-  background: var(--ink);
+  background: var(--counter-fill);
   transform-origin: left;
   transform: scaleX(0);
   transition: transform 0.45s var(--ease-snap);
@@ -492,7 +500,7 @@ input:focus-visible {
   color: var(--paper);
 }
 .btn--primary:hover {
-  background: #3a342c;
+  background: var(--ultramarine-deep);
 }
 .btn--ghost {
   border: 1px solid var(--paper-line);
@@ -510,7 +518,7 @@ input:focus-visible {
   color: var(--paper-ink);
 }
 .btn--added:hover {
-  background: #e2dcd2;
+  background: #dfd8f5;
 }
 .btn--block {
   width: 100%;
@@ -522,7 +530,7 @@ input:focus-visible {
 .scrim {
   position: fixed;
   inset: 0;
-  background: rgba(10, 9, 8, 0.45);
+  background: rgba(8, 10, 40, 0.5);
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
   z-index: 7;
@@ -1068,7 +1076,7 @@ input:focus-visible {
 }
 .about__photo {
   position: relative;
-  background: #1b1814;
+  background: #0a0d2c;
   min-height: 100%;
 }
 .about__photo img {
@@ -1107,7 +1115,7 @@ input:focus-visible {
   margin-top: 14px;
   font-size: 14.5px;
   line-height: 1.65;
-  color: #3b352e;
+  color: #3a3868;
 }
 .about__cta {
   margin-top: 24px;
@@ -1199,7 +1207,7 @@ input:focus-visible {
   margin-top: 8px;
   font-size: 14px;
   line-height: 1.6;
-  color: #3b352e;
+  color: #3a3868;
 }
 .facts--tight {
   margin-top: 10px;

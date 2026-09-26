@@ -34,26 +34,29 @@ const LOOK = { k: 260, c: 2 * Math.sqrt(260) };
 const DOLLY = { k: 90, c: 2 * Math.sqrt(90) };
 const FRAMING = { k: 120, c: 2 * Math.sqrt(120) };
 
+// Colour scheme picked by Selma: ultramarine blue and lavender
 const THEMES = {
   evening: {
-    bg: '#14120f',
-    wall: '#3a3631',
-    floor: '#16130f',
+    // an ultramarine room: deep blue walls, the spots pull out their colour
+    bg: '#0a0d2c',
+    wall: '#26308a',
+    floor: '#0b0e2e',
     floorOpacity: 0.86,
-    skirting: '#0f0e0d',
+    skirting: '#0d1034',
     plaqueGlow: 0.22,
-    hemi: 0.35,
-    spot: 38,
+    hemi: 0.3,
+    spot: 40,
     exposure: 1.05,
   },
   daylight: {
-    bg: '#dcd6cc',
-    wall: '#e4dfd6',
-    floor: '#b9b1a4',
+    // a lavender room
+    bg: '#dcd3f0',
+    wall: '#d6cbef',
+    floor: '#a99cc9',
     floorOpacity: 0.8,
-    skirting: '#d3ccc0',
+    skirting: '#c3b6e4',
     plaqueGlow: 0,
-    hemi: 1.35,
+    hemi: 1.3,
     spot: 16,
     exposure: 0.95,
   },
@@ -79,7 +82,7 @@ scene.fog = new THREE.Fog(0x000000, 7, 17);
 
 const camera = new THREE.PerspectiveCamera(FOV, innerWidth / innerHeight, 0.1, 60);
 
-const hemi = new THREE.HemisphereLight('#fff4e6', '#1a1510', 0.35);
+const hemi = new THREE.HemisphereLight('#f1edff', '#141845', 0.35);
 scene.add(hemi);
 const spots = [];
 
@@ -284,7 +287,7 @@ async function buildGallery() {
     frames.push(f);
 
     // A museum spot for every painting, wide enough to catch the plaque too
-    const spot = new THREE.SpotLight('#ffe9cf', THEMES.evening.spot, 10, 0.44, 0.7, 1.6);
+    const spot = new THREE.SpotLight('#fff4ec', THEMES.evening.spot, 10, 0.44, 0.7, 1.6);
     spot.position.set(cursor, 4.3, 2.3);
     spot.target.position.set(cursor, EYE - 0.25, 0);
     spot.castShadow = true;
