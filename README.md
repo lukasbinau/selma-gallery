@@ -1,4 +1,4 @@
-# Selma Frausing Benau · Paintings
+# Selma Frausing Binau · Paintings
 
 An online exhibition of Selma's paintings: a 3D gallery room you walk through by swiping, with a plaque under every painting and a pretend shop (no real payments).
 

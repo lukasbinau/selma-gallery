@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 import { paintings } from './paintings.js';
 import { settings } from './store.js';
 import { createPlaques, isOverlayOpen } from './ui.js';
@@ -7,16 +9,23 @@ import { createPlaques, isOverlayOpen } from './ui.js';
 // ---------------------------------------------------------------------------
 // Tunables
 // ---------------------------------------------------------------------------
-const EYE = 1.4; // height of painting centres (m)
+const EYE = 1.75; // height of painting centres (m)
 const ART_AREA = 0.95; // every artwork is normalised to this area (m²)
 const GAP = 1.25; // wall space between neighbouring frames (m)
 const FOV = 38;
-// With plaques on, the painting sits higher and a little smaller to make room
+// The camera frames a "block": the painting, plus its plaque when plaques are on.
+// fitH/fitW: max share of screen height/width; centre: where the block's middle sits (0 = top)
 const LAYOUT = {
-  // fitH/fitW: max share of screen height/width; centre: vertical position (0 = top)
-  on: { fitH: 0.44, fitW: 0.64, centre: 0.38 },
-  off: { fitH: 0.56, fitW: 0.72, centre: 0.48 },
+  on: { fitH: 0.78, fitW: 0.82, centre: 0.54 },
+  off: { fitH: 0.56, fitW: 0.72, centre: 0.5 },
 };
+
+// Plaques: a real slab on the wall, with the HTML text laid on its face in 3D
+const PLAQUE_W = 0.8; // metres
+const PLAQUE_PX = 240; // CSS width of the plaque's face
+const PLAQUE_SCALE = PLAQUE_W / PLAQUE_PX;
+const PLAQUE_GAP = 0.13; // between frame bottom and plaque top
+const PLAQUE_DEPTH = 0.014;
 
 // Springs: the "look" spring is stiffer than the "body" spring, so the camera
 // turns toward the next painting first and its body catches up — a walk.
@@ -32,6 +41,7 @@ const THEMES = {
     floor: '#16130f',
     floorOpacity: 0.86,
     skirting: '#0f0e0d',
+    plaqueGlow: 0.3,
     hemi: 0.35,
     spot: 38,
     exposure: 1.05,
@@ -42,6 +52,7 @@ const THEMES = {
     floor: '#b9b1a4',
     floorOpacity: 0.8,
     skirting: '#d3ccc0',
+    plaqueGlow: 0.05,
     hemi: 1.35,
     spot: 16,
     exposure: 0.95,
@@ -84,6 +95,12 @@ const mats = {
   canvasEdge: new THREE.MeshStandardMaterial({ color: '#d9d2c4', roughness: 0.9 }),
   shadowGap: new THREE.MeshStandardMaterial({ color: '#0b0a09', roughness: 1 }),
   skirting: new THREE.MeshStandardMaterial({ roughness: 0.6 }),
+  plaque: new THREE.MeshStandardMaterial({
+    color: '#f3eee5',
+    roughness: 0.5,
+    emissive: '#f3eee5',
+    emissiveIntensity: 0.1,
+  }),
 };
 
 function applyTheme() {
@@ -96,6 +113,7 @@ function applyTheme() {
   mats.floor.color.set(t.floor);
   mats.floor.opacity = t.floorOpacity;
   mats.skirting.color.set(t.skirting);
+  mats.plaque.emissiveIntensity = t.plaqueGlow;
   hemi.intensity = t.hemi;
   spots.forEach((s) => (s.intensity = t.spot));
   renderer.toneMappingExposure = t.exposure;
@@ -198,10 +216,10 @@ async function buildGallery() {
     scene.add(f.group);
     frames.push(f);
 
-    // A museum spot for every painting
-    const spot = new THREE.SpotLight('#ffe9cf', THEMES.evening.spot, 9, 0.38, 0.75, 1.6);
-    spot.position.set(cursor, 3.9, 2.1);
-    spot.target.position.set(cursor, EYE - 0.05, 0);
+    // A museum spot for every painting, wide enough to catch the plaque too
+    const spot = new THREE.SpotLight('#ffe9cf', THEMES.evening.spot, 10, 0.44, 0.7, 1.6);
+    spot.position.set(cursor, 4.3, 2.3);
+    spot.target.position.set(cursor, EYE - 0.25, 0);
     spot.castShadow = true;
     spot.shadow.mapSize.set(1024, 1024);
     spot.shadow.bias = -0.0004;
@@ -249,7 +267,51 @@ async function buildGallery() {
   skirting.castShadow = false;
   scene.add(skirting);
 
+  await buildPlaques();
   applyTheme();
+  applyPlaqueVisibility();
+}
+
+// ---------------------------------------------------------------------------
+// Plaques: a rounded slab on the wall (lit, casts a shadow) with the HTML text
+// placed on its front face by the CSS3D renderer, so it stays crisp and clickable.
+// ---------------------------------------------------------------------------
+const cssRenderer = new CSS3DRenderer();
+cssRenderer.setSize(innerWidth, innerHeight);
+cssRenderer.domElement.className = 'plaque-layer';
+document.body.append(cssRenderer.domElement);
+const cssScene = new THREE.Scene();
+const plaqueParts = []; // { slab, face }
+
+async function buildPlaques() {
+  await document.fonts.ready; // measure with the real fonts
+  const els = createPlaques(document.querySelector('.plaques'));
+  frames.forEach((f, i) => {
+    const el = els[i];
+    f.plaqueH = el.offsetHeight * PLAQUE_SCALE;
+    const y = EYE - f.height / 2 - PLAQUE_GAP - f.plaqueH / 2;
+
+    const slab = new THREE.Mesh(
+      new RoundedBoxGeometry(PLAQUE_W, f.plaqueH, PLAQUE_DEPTH, 4, 0.005),
+      mats.plaque,
+    );
+    slab.position.set(f.x, y, PLAQUE_DEPTH / 2 + 0.002);
+    slab.castShadow = true;
+    slab.receiveShadow = true;
+    scene.add(slab);
+
+    const face = new CSS3DObject(el);
+    face.position.set(f.x, y, PLAQUE_DEPTH + 0.0025);
+    face.scale.setScalar(PLAQUE_SCALE);
+    el.style.pointerEvents = 'none'; // only its button takes clicks; drags reach the canvas
+    cssScene.add(face);
+    plaqueParts.push({ slab, face });
+  });
+}
+
+function applyPlaqueVisibility() {
+  const show = settings.plaques === 'on';
+  plaqueParts.forEach(({ slab, face }) => (slab.visible = face.visible = show));
   renderer.shadowMap.needsUpdate = true;
 }
 
@@ -262,7 +324,7 @@ const state = {
   body: { x: 0, v: 0 },
   look: { x: 0, v: 0 },
   dist: { x: 4, v: 0 },
-  centre: { x: LAYOUT.on.centre, v: 0 }, // where on screen the painting sits
+  lookY: { x: EYE, v: 0 }, // height the camera aims at
   parallax: new THREE.Vector2(),
   parallaxGoal: new THREE.Vector2(),
 };
@@ -270,24 +332,33 @@ const state = {
 const layout = () => (settings.plaques === 'on' ? LAYOUT.on : LAYOUT.off);
 const tanHalf = () => Math.tan(THREE.MathUtils.degToRad(FOV) / 2);
 
-function fitDistance(f) {
-  const byH = f.height / layout().fitH / (2 * tanHalf());
-  const byW = f.width / layout().fitW / (2 * tanHalf() * camera.aspect);
-  return Math.max(byH, byW);
+// Distance and aim height that frame one painting's block on screen
+function compose(f) {
+  const L = layout();
+  const withPlaque = settings.plaques === 'on' && f.plaqueH;
+  const h = withPlaque ? f.height + PLAQUE_GAP + f.plaqueH : f.height;
+  const w = withPlaque ? Math.max(f.width, PLAQUE_W) : f.width;
+  const dist = Math.max(h / L.fitH / (2 * tanHalf()), w / L.fitW / (2 * tanHalf() * camera.aspect));
+  const blockMid = EYE + f.height / 2 - h / 2;
+  // Aim above/below the block's middle so it lands at L.centre on screen
+  const lookY = blockMid + (L.centre - 0.5) * 2 * tanHalf() * dist;
+  return { dist, lookY };
 }
 
-// Base viewing distance, interpolated between neighbours while moving.
-function distanceAt(x) {
-  if (x <= frames[0].x) return fitDistance(frames[0]);
+// Composition at any x along the wall, interpolated between neighbours
+function composeAt(x) {
+  if (x <= frames[0].x) return compose(frames[0]);
   for (let i = 0; i < frames.length - 1; i++) {
     const a = frames[i];
     const b = frames[i + 1];
     if (x <= b.x) {
       const t = (x - a.x) / (b.x - a.x);
-      return THREE.MathUtils.lerp(fitDistance(a), fitDistance(b), t);
+      const ca = compose(a);
+      const cb = compose(b);
+      return { dist: THREE.MathUtils.lerp(ca.dist, cb.dist, t), lookY: THREE.MathUtils.lerp(ca.lookY, cb.lookY, t) };
     }
   }
-  return fitDistance(frames[frames.length - 1]);
+  return compose(frames[frames.length - 1]);
 }
 
 function spring(s, goal, { k, c }, dt) {
@@ -299,9 +370,10 @@ function spring(s, goal, { k, c }, dt) {
 function snapRig() {
   const x = frames[state.index].x;
   state.target = state.body.x = state.look.x = x;
-  state.body.v = state.look.v = state.dist.v = state.centre.v = 0;
-  state.dist.x = distanceAt(x);
-  state.centre.x = layout().centre;
+  state.body.v = state.look.v = state.dist.v = state.lookY.v = 0;
+  const c = composeAt(x);
+  state.dist.x = c.dist;
+  state.lookY.x = c.lookY;
 }
 
 function updateRig(dt) {
@@ -316,8 +388,9 @@ function updateRig(dt) {
       spring(state.look, state.target, LOOK, h);
       // Step back a little while travelling fast: reads as walking past the wall
       const pullBack = Math.min(Math.abs(state.body.v) * 0.12, 0.9);
-      spring(state.dist, distanceAt(state.body.x) + pullBack, DOLLY, h);
-      spring(state.centre, layout().centre, FRAMING, h);
+      const c = composeAt(state.body.x);
+      spring(state.dist, c.dist + pullBack, DOLLY, h);
+      spring(state.lookY, c.lookY, FRAMING, h);
     }
   }
 
@@ -326,38 +399,9 @@ function updateRig(dt) {
   const px = state.parallax.x * 0.12;
   const py = state.parallax.y * 0.06;
 
-  // Shift the look point down so the painting sits at `centre` on screen
-  const visibleH = 2 * tanHalf() * state.dist.x;
-  const lookY = EYE - (0.5 - state.centre.x) * visibleH;
+  const lookY = state.lookY.x;
   camera.position.set(state.body.x + px, lookY + 0.25 + py, state.dist.x);
   camera.lookAt(state.look.x + px * 0.3, lookY, 0);
-}
-
-// ---------------------------------------------------------------------------
-// Plaques: HTML cards pinned under each painting
-// ---------------------------------------------------------------------------
-const plaqueEls = createPlaques(document.querySelector('.plaques'));
-const anchor = new THREE.Vector3();
-
-function updatePlaques() {
-  const show = settings.plaques === 'on';
-  camera.updateMatrixWorld();
-  frames.forEach((f, i) => {
-    const el = plaqueEls[i];
-    // Fully visible when standing in front of the painting, fading as we walk away
-    const away = Math.abs(state.body.x - f.x) / 0.7;
-    const o = show ? Math.max(0, 1 - away * away) : 0;
-    el.style.opacity = o.toFixed(3);
-    el.style.visibility = o > 0.01 ? 'visible' : 'hidden';
-    el.inert = o < 0.5;
-    if (o <= 0.01) return;
-    anchor.set(f.x, EYE - f.height / 2 - 0.11, 0.03).project(camera);
-    const sx = (anchor.x * 0.5 + 0.5) * innerWidth;
-    const sy = (-anchor.y * 0.5 + 0.5) * innerHeight;
-    // Shrink slightly when the camera steps back, so it feels attached to the wall
-    const s = THREE.MathUtils.clamp(distanceAt(f.x) / state.dist.x, 0.82, 1);
-    el.style.transform = `translate3d(${(sx - el.offsetWidth / 2).toFixed(1)}px, ${(sy + (1 - o) * 10).toFixed(1)}px, 0) scale(${s.toFixed(3)})`;
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -410,6 +454,7 @@ addEventListener('keydown', (e) => {
 
 addEventListener('settings:change', (e) => {
   if (e.detail.key === 'theme') applyTheme();
+  if (e.detail.key === 'plaques') applyPlaqueVisibility();
 });
 
 // Trackpad / mouse wheel: one gesture = one painting
@@ -547,6 +592,7 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  cssRenderer.setSize(innerWidth, innerHeight);
 });
 
 const clock = new THREE.Clock();
@@ -554,9 +600,9 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 1 / 20);
   if (frames.length) {
     updateRig(dt);
-    updatePlaques();
   }
   renderer.render(scene, camera);
+  cssRenderer.render(cssScene, camera);
   requestAnimationFrame(frame);
 }
 

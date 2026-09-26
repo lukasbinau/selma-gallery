@@ -115,7 +115,7 @@ export function createPlaques(container) {
     el.setAttribute('aria-label', p.title);
     el.innerHTML = `
       <h2 class="plaque__title">${p.title}</h2>
-      <p class="plaque__meta">${ARTIST}, ${p.year}<br />${p.medium} · ${p.size}</p>
+      <p class="plaque__meta">${ARTIST}, ${p.year}<br />${p.medium} · <span class="nowrap">${p.size}</span></p>
       <p class="plaque__desc">${p.description}</p>
       <div class="plaque__foot">
         ${

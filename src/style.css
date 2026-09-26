@@ -327,78 +327,90 @@ input:focus-visible {
 }
 
 /* ------------------------------------------------------------------ Plaques */
+/* Plaque faces live in 3D (CSS3DRenderer) on top of a lit slab drawn in WebGL,
+   so the face itself is transparent. Sizes here are at the plaque's design
+   width of 240px; the 3D scene scales it to 72 cm on the wall. */
 .plaques {
   position: fixed;
+  top: 0;
+  left: 0;
+  visibility: hidden; /* only used to measure before moving into 3D */
+  pointer-events: none;
+}
+.plaque-layer {
+  position: fixed !important;
   inset: 0;
   pointer-events: none;
   z-index: 1;
 }
 .plaque {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 300px;
-  padding: 15px 18px 14px;
-  background: var(--paper);
+  width: 240px;
+  padding: 15px 17px 12px;
   color: var(--paper-ink);
-  border-radius: 3px;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.6) inset,
-    0 10px 24px rgba(0, 0, 0, 0.28),
-    0 2px 4px rgba(0, 0, 0, 0.2);
-  transform-origin: top center;
-  will-change: transform, opacity;
-  opacity: 0;
-  visibility: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  visibility: visible;
 }
 .plaque__title {
   font-family: 'Instrument Serif', serif;
   font-weight: 400;
-  font-size: 22px;
+  font-size: 19px;
   line-height: 1.1;
+  letter-spacing: 0.005em;
 }
 .plaque__meta {
   margin-top: 4px;
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 9.5px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
   color: var(--paper-dim);
 }
 .plaque__desc {
-  margin-top: 9px;
-  font-size: 12.5px;
-  line-height: 1.5;
+  margin-top: 8px;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.32;
+  color: #2e2924;
 }
 .plaque__foot {
-  margin-top: 12px;
-  padding-top: 11px;
-  border-top: 1px solid var(--paper-line);
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--paper-line);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 .plaque__price {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
 }
 .plaque__sold {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 9px;
   font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--paper-dim);
 }
 .plaque__sold::before {
   content: '';
-  width: 10px;
-  height: 10px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--red-dot);
 }
 .plaque .btn {
   pointer-events: auto;
+  height: 22px;
+  padding: 0 10px;
+  font-size: 9.5px;
+  letter-spacing: 0.02em;
 }
 
 /* ------------------------------------------------------------------ Buttons */
@@ -941,7 +953,7 @@ input:focus-visible {
     max-width: 14ch;
   }
   .brand__sub {
-    display: none;
+    font-size: 10px;
   }
   .icon-btn {
     width: 40px;
@@ -964,13 +976,6 @@ input:focus-visible {
   .hint {
     display: none;
   }
-  .plaque {
-    width: 272px;
-    padding: 13px 15px 12px;
-  }
-  .plaque__desc {
-    font-size: 12px;
-  }
   .modal {
     align-items: end;
     padding: 0;
@@ -983,17 +988,14 @@ input:focus-visible {
   }
 }
 
-/* Short screens (e.g. phones in landscape): keep plaques compact */
-@media (max-height: 560px) {
-  .plaque__desc {
-    display: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
   }
+}
+
+.nowrap {
+  white-space: nowrap;
 }

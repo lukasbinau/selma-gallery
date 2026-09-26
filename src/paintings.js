@@ -5,7 +5,7 @@
 // price is in DKK. sold: true shows the gallery red dot instead of a buy button.
 const art = (file) => `${import.meta.env.BASE_URL}art/${file}`;
 
-export const ARTIST = 'Selma Frausing Benau';
+export const ARTIST = 'Selma Frausing Binau';
 
 export const paintings = [
   {
@@ -17,7 +17,7 @@ export const paintings = [
     medium: 'Oil pastel and gouache on paper',
     size: '30 × 40 cm',
     description:
-      'A face built from blocks of colour — violet hair, a flushed red cheek, a cool blue jaw — held together by a single confident black line.',
+      'A face made of weather: violet at the crown, fire in the cheek, and one dark line holding it all together.',
     price: 2800,
   },
   {
@@ -29,7 +29,7 @@ export const paintings = [
     medium: 'Oil on canvas',
     size: '40 × 50 cm',
     description:
-      'A red wall opens twice: once onto a window holding a single star, once onto blue steps that lead down to where that star is reflected.',
+      'The wall opens twice. Once for a star, and once for the steps that walk down to meet it.',
     price: 4200,
   },
   {
@@ -41,7 +41,7 @@ export const paintings = [
     medium: 'Oil pastel on paper',
     size: '45 × 35 cm',
     description:
-      'Rolling fields stitched together with cobalt hedgerows, the yellow rows almost humming beneath a flat summer sky.',
+      'Summer, in rows. The fields hum yellow, stitched shut with blue, under a sky that asks for nothing.',
     price: 3200,
   },
   {
@@ -53,7 +53,7 @@ export const paintings = [
     medium: 'Oil and oil pastel on canvas, artist’s frame',
     size: '50 × 60 cm',
     description:
-      'A house and its trees dissolve into ultramarine until only chalky outlines remain — the street as you remember it after dark.',
+      'The house forgets its edges. What is left is the chalk of it, the trees, and the long blue after.',
     price: 4500,
     sold: true,
   },
@@ -66,7 +66,7 @@ export const paintings = [
     medium: 'Watercolour on paper',
     size: '21 × 30 cm',
     description:
-      'A jug and a wine glass on a striped cloth, with light passing through the green glass and pooling in coloured shadows.',
+      'Light goes into the green glass and comes out as shadow, quietly, on a striped afternoon.',
     price: 1600,
   },
   {
@@ -78,7 +78,7 @@ export const paintings = [
     medium: 'Oil pastel on paper',
     size: '35 × 45 cm',
     description:
-      'The same fields, seen from the path itself: the land folds upward into a patchwork of rows, with a strip of sky held at the edge.',
+      'Walk far enough in and the land stands up around you, row on row, with only a strip of sky to keep.',
     price: 2600,
   },
 ];
