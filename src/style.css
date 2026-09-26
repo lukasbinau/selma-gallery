@@ -313,7 +313,7 @@ input:focus-visible {
 .hint {
   position: fixed;
   left: 50%;
-  bottom: calc(max(26px, env(safe-area-inset-bottom)) + 30px);
+  top: calc(max(22px, env(safe-area-inset-top)) + 12px);
   transform: translateX(-50%);
   font-size: 12px;
   letter-spacing: 0.04em;
