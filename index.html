@@ -71,6 +71,13 @@
           <button data-value="off">Hide</button>
         </div>
       </div>
+      <div class="setting">
+        <span class="setting__label">Atmosphere</span>
+        <div class="segmented" data-setting="fx">
+          <button data-value="on">Cinematic</button>
+          <button data-value="off">Plain</button>
+        </div>
+      </div>
     </div>
 
     <button class="nav nav--prev" aria-label="Previous painting">
@@ -80,13 +87,17 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
     </button>
 
+    <div class="caption" aria-hidden="true"></div>
     <footer class="counter">
       <span class="counter__current">01</span>
       <span class="counter__bar"><span class="counter__fill"></span></span>
       <span class="counter__total">06</span>
     </footer>
 
-    <div class="hint">Swipe or use the arrows</div>
+    <div class="hint">Swipe to walk · tap a painting to lean in</div>
+    <nav class="minimap" aria-label="Map of the room"></nav>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
 
     <div class="scrim" hidden></div>
 
@@ -310,7 +321,10 @@
     </footer>
 
     <div class="toast" role="status" aria-live="polite"></div>
-    <div class="loader"><span class="loader__text">Selma Frausing Binau</span></div>
+    <div class="loader">
+      <span class="loader__text">Selma Frausing Binau</span>
+      <span class="loader__bar"><span class="loader__fill"></span></span>
+    </div>
 
     <script type="module" src="/src/main.js"></script>
   </body>

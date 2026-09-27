@@ -27,6 +27,7 @@ export const settings = {
   theme: 'evening',
   motion: prefersReduced ? 'reduced' : 'full',
   plaques: 'on',
+  fx: 'on', // atmosphere: dust, light beams, vignette, grain
   ...read('selma:settings', {}),
 };
 

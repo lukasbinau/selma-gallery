@@ -89,6 +89,12 @@ input:focus-visible {
 #scene.is-pointing {
   cursor: pointer;
 }
+#scene.is-lean-target {
+  cursor: zoom-in;
+}
+#scene.is-leaning.is-lean-target {
+  cursor: zoom-out;
+}
 
 /* ------------------------------------------------------------------ Top bar */
 .topbar {
@@ -338,7 +344,7 @@ input:focus-visible {
 .hint {
   position: fixed;
   left: 50%;
-  top: calc(max(22px, env(safe-area-inset-top)) + 12px);
+  top: calc(max(22px, env(safe-area-inset-top)) + 38px);
   transform: translateX(-50%);
   font-size: 12px;
   letter-spacing: 0.04em;
@@ -976,6 +982,24 @@ input:focus-visible {
   transition: opacity 0.9s ease;
   z-index: 20;
 }
+.loader__bar {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  width: 120px;
+  height: 1px;
+  margin-left: -60px;
+  background: var(--track);
+  overflow: hidden;
+}
+.loader__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.3s var(--ease-snap);
+}
 .loader__text {
   font-family: 'Instrument Serif', serif;
   font-size: 36px;
@@ -1241,5 +1265,141 @@ input:focus-visible {
   }
   .legal.modal__card {
     padding: 26px 22px max(28px, env(safe-area-inset-bottom));
+  }
+}
+
+/* ------------------------------------------------------------------ Immersion */
+/* Title of the painting you're standing at */
+.caption {
+  position: fixed;
+  left: 50%;
+  top: calc(max(22px, env(safe-area-inset-top)) + 8px);
+  transform: translateX(-50%);
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+}
+.caption.is-changing {
+  opacity: 0;
+  transform: translate(-50%, 4px);
+}
+
+/* Room map: where you are, what's on the walls */
+.minimap {
+  position: fixed;
+  left: var(--gutter);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 30px);
+  width: 150px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  z-index: 2;
+}
+.minimap svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.minimap__walls {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.22;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+.minimap__bench {
+  fill: var(--ink);
+  opacity: 0.25;
+}
+.minimap__path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.12;
+  stroke-dasharray: 0.3 0.3;
+  opacity: 0.35;
+}
+.minimap__hit {
+  stroke: transparent;
+  stroke-width: 2.2;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.minimap__mark {
+  stroke: var(--ink);
+  stroke-width: 0.42;
+  stroke-linecap: butt;
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.minimap__mark.is-active {
+  stroke: var(--lavender);
+  opacity: 1;
+}
+:root[data-theme='daylight'] .minimap__mark.is-active {
+  stroke: var(--ultramarine);
+}
+.minimap__you circle {
+  fill: var(--ink);
+}
+.minimap__view {
+  fill: var(--ink);
+  opacity: 0.22;
+}
+
+/* Cinematic overlays */
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 70% at 50% 45%, transparent 50%, rgba(4, 6, 24, 0.55) 100%);
+  z-index: 1;
+}
+:root[data-theme='daylight'] .vignette {
+  background: radial-gradient(ellipse 80% 70% at 50% 45%, transparent 55%, rgba(40, 30, 80, 0.22) 100%);
+}
+.grain {
+  position: fixed;
+  inset: -50%;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 0.9s steps(4) infinite;
+  z-index: 1;
+}
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-3%, 2%); }
+  50% { transform: translate(2%, -4%); }
+  75% { transform: translate(-1%, 5%); }
+  100% { transform: translate(4%, -1%); }
+}
+:root[data-fx='off'] .vignette,
+:root[data-fx='off'] .grain {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .minimap {
+    display: none;
+  }
+  .caption {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grain {
+    animation: none;
   }
 }
