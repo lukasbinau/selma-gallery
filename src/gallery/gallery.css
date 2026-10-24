@@ -713,8 +713,8 @@
     transform: translate(-50%, 50%);
   }
   .galleri__hint {
-    top: auto;
-    bottom: calc(var(--g-bottom) + 90px);
+    /* under the caption, clear of the plaque at the bottom of small screens */
+    top: calc(var(--g-top) + 70px);
     max-width: calc(100% - 2 * var(--g-gutter));
     white-space: normal;
     text-align: center;

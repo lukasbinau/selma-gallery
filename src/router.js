@@ -13,6 +13,7 @@ import data from './vaerker.json';
 import artMeta from './art-meta.json';
 import { toast } from './toast.js';
 import { openContact, closeContact, isContactOpen } from './contact.js';
+import { flyIn, flyOut } from './transition.js';
 import { currentSection, scrollToSection, setThemeColor, SECTION_COLOUR } from './front.js';
 
 const WORKS = data.vaerker;
@@ -190,6 +191,10 @@ export async function enterGallery({ index = 0, intro = false, fromEl: from = nu
   view = 'entering';
   closeContact();
   fromEl = from || galleriTab;
+  // From a card the painting itself flies to the wall; otherwise the wipe
+  if (!instant && !intro && !reduced.matches && from?.classList?.contains('vaerk')) {
+    return enterByFlight({ index, card: from });
+  }
   wipe.classList.add('is-active');
   wipe.style.background = instant ? roomColour() : STRIP_COLOUR[currentSection()] || STRIP_COLOUR.top;
 
@@ -239,7 +244,7 @@ export async function enterGallery({ index = 0, intro = false, fromEl: from = nu
   // A hash with an unknown id landed on works[0]; make the URL say so
   const standing = WORKS[g.index];
   if (standing && !intro && parseHash().id !== standing.id) {
-    history.replaceState({ ...history.state, view: 'galleri', id: standing.id }, '', );
+    history.replaceState({ ...history.state, view: 'galleri', id: standing.id }, '', `#galleri/${standing.id}`);
   }
 
   lockScroll();
@@ -263,10 +268,73 @@ export async function enterGallery({ index = 0, intro = false, fromEl: from = nu
   return true;
 }
 
+// Entry from a card: the painting flies from the card to its place on the wall
+async function enterByFlight({ index, card }) {
+  let g;
+  try {
+    g = await ensureGallery();
+    g.setExposure(0.25);
+    lockScroll(); // the page's scrollbar goes; the root takes its final size first
+    const flew = await flyIn({ gallery: g, root, index, card, showRoom: () => g.show({ index, intro: false }) });
+    if (!flew) {
+      // No usable rects (the card's image is gone?): just show the room
+      root.style.visibility = '';
+      await g.show({ index, intro: false });
+    }
+  } catch (err) {
+    root.style.visibility = '';
+    if (html.dataset.view) unlockScroll();
+    console.warn('galleri', err);
+    const wasCold = isCold();
+    history.replaceState({ view: 'front' }, '', '#vaerker');
+    if (wasCold) scrollToSection('vaerker', 'instant');
+    view = 'front';
+    toast('Galleriet kunne ikke åbnes');
+    flush();
+    return false;
+  }
+  const standing = WORKS[g.index];
+  if (standing && parseHash().id !== standing.id) {
+    history.replaceState({ ...history.state, view: 'galleri', id: standing.id }, '', `#galleri/${standing.id}`);
+  }
+  setFrontInert(true);
+  setThemeColor(roomColour());
+  root.focus({ preventScroll: true });
+  rampExposure(g, 0.25, 1, 700); // the picture spots come up as the painting settles
+  view = 'galleri';
+  flush();
+  return true;
+}
+
 export async function exitGallery({ section = null } = {}) {
   if (view !== 'galleri') return false;
   view = 'leaving';
   closeContact();
+
+  // Back to the card we came from: the painting flies out of the room onto it
+  const card = fromEl && fromEl.isConnected && fromEl.classList?.contains('vaerk') ? fromEl : null;
+  if (card && gallery && !reduced.matches) {
+    const flew = await flyOut({
+      gallery,
+      root,
+      card,
+      leaveRoom: () => {
+        gallery.hide();
+        setFrontInert(false);
+        unlockScroll();
+        setThemeColor(SECTION_COLOUR[currentSection()]);
+        card.scrollIntoView({ block: 'center', behavior: 'instant' });
+      },
+    }).catch((err) => (console.warn('galleri', err), false));
+    if (flew || root.hidden) {
+      card.focus({ preventScroll: true });
+      if (flew) pulse(card);
+      view = 'front';
+      flush();
+      return true;
+    }
+  }
+
   wipe.classList.add('is-active');
   wipe.style.background = STRIP_COLOUR[currentSection()] || STRIP_COLOUR.top;
   await animate(wipe, [{ opacity: 0, transform: 'scaleX(1)' }, { opacity: 1, transform: 'scaleX(1)' }], { duration: 200 });
