@@ -2,7 +2,7 @@
 
 An online exhibition of Selma's paintings: a 3D gallery room you walk through by swiping, with a plaque under every painting and a pretend shop (no real payments).
 
-**Live:** https://lukasbinau.github.io/selma-gallery/
+**Live:** https://selmabinaukunst.dk (the old lukasbinau.github.io/selma-gallery link redirects here)
 
 ## Develop
 

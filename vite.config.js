@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
-// GitHub Pages serves the site from /selma-gallery/
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/selma-gallery/' : '/',
-}));
+// Relative asset paths: the site works both at lukasbinau.github.io/selma-gallery/
+// and at the root of the custom domain (selmabinaukunst.dk)
+export default defineConfig({
+  base: './',
+});
