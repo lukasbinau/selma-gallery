@@ -1,0 +1,58 @@
+{
+  "orange-mand": {
+    "w": 1391,
+    "h": 1833
+  },
+  "lille-stjerne": {
+    "w": 992,
+    "h": 1237
+  },
+  "blaa-time": {
+    "w": 1727,
+    "h": 2048
+  },
+  "rapsmarker": {
+    "w": 1765,
+    "h": 1397
+  },
+  "markvej": {
+    "w": 1397,
+    "h": 1765
+  },
+  "groent-glas": {
+    "w": 1081,
+    "h": 1614
+  },
+  "moenster-lyseroed": {
+    "w": 1481,
+    "h": 2048
+  },
+  "sol-og-figur": {
+    "w": 1973,
+    "h": 2048
+  },
+  "lilla-skyer": {
+    "w": 1503,
+    "h": 2048
+  },
+  "cirkler": {
+    "w": 2048,
+    "h": 1991
+  },
+  "ansigt": {
+    "w": 1137,
+    "h": 1527
+  },
+  "figur": {
+    "w": 1694,
+    "h": 1620
+  },
+  "blaa-fliser": {
+    "w": 1604,
+    "h": 2048
+  },
+  "roedt-moenster": {
+    "w": 1683,
+    "h": 2048
+  }
+}

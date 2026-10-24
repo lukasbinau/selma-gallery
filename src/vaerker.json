@@ -1,0 +1,145 @@
+{
+  "_hjaelp": "Ét objekt pr. værk, i den rækkefølge de vises på forsiden og hænger i galleriet. Tomme felter vises ikke på sitet. ramme: 'mat' = papir med hvid passepartout og sort ramme, 'float' = lærred i egetræs svæveramme, 'bare' = fotoet viser allerede rammen. Billederne ligger i public/art/<id>-2048.jpg (lavet af scripts/prepare-images.mjs).",
+  "vaerker": [
+    {
+      "id": "lilla-skyer",
+      "titel": "Lilla skyer",
+      "aar": 2026,
+      "om": "Dette værk er malet på en genbrugs træflis-plade. Hullerne er lukket med malertape.",
+      "teknik": "Akryl, oliekridt og kridt",
+      "maal": "",
+      "ramme": "float",
+      "solgt": false
+    },
+    {
+      "id": "moenster-lyseroed",
+      "titel": "Mønster lyserød",
+      "aar": 2026,
+      "om": "Dette værk er malet en sommerdag på en gammel træplade.",
+      "teknik": "Akryl, oliekridt",
+      "maal": "",
+      "ramme": "float",
+      "solgt": false
+    },
+    {
+      "id": "cirkler",
+      "titel": "Cirkler",
+      "aar": 2026,
+      "om": "",
+      "teknik": "",
+      "maal": "",
+      "ramme": "bare",
+      "solgt": false
+    },
+    {
+      "id": "ansigt",
+      "titel": "Ansigt",
+      "aar": 2025,
+      "om": "",
+      "teknik": "",
+      "maal": "",
+      "ramme": "bare",
+      "solgt": false
+    },
+    {
+      "id": "lille-stjerne",
+      "titel": "Lille stjerne",
+      "aar": 2025,
+      "om": "Væggen åbner sig to gange: én gang for en stjerne, og én gang for trappen, der går ned for at møde den.",
+      "teknik": "Olie på lærred",
+      "maal": "40 × 50 cm",
+      "ramme": "float",
+      "solgt": false
+    },
+    {
+      "id": "figur",
+      "titel": "Figur",
+      "aar": 2025,
+      "om": "",
+      "teknik": "",
+      "maal": "",
+      "ramme": "bare",
+      "solgt": false
+    },
+    {
+      "id": "orange-mand",
+      "titel": "Orange mand",
+      "aar": 2025,
+      "om": "Et ansigt lavet af vejr: violet i panden, ild i kinden og én mørk streg, der holder det hele sammen.",
+      "teknik": "Oliekridt og gouache på papir",
+      "maal": "30 × 40 cm",
+      "ramme": "mat",
+      "solgt": false
+    },
+    {
+      "id": "blaa-fliser",
+      "titel": "Blå fliser",
+      "aar": 2026,
+      "om": "",
+      "teknik": "",
+      "maal": "",
+      "ramme": "mat",
+      "solgt": false
+    },
+    {
+      "id": "roedt-moenster",
+      "titel": "Rødt mønster",
+      "aar": 2026,
+      "om": "",
+      "teknik": "",
+      "maal": "",
+      "ramme": "mat",
+      "solgt": false
+    },
+    {
+      "id": "sol-og-figur",
+      "titel": "Sol og figur",
+      "aar": 2026,
+      "om": "",
+      "teknik": "Akryl og oliekridt på lærred",
+      "maal": "",
+      "ramme": "bare",
+      "solgt": false
+    },
+    {
+      "id": "rapsmarker",
+      "titel": "Rapsmarker",
+      "aar": 2026,
+      "om": "Sommer, i rækker. Markerne nynner gult, syet sammen med blåt, under en himmel der ikke beder om noget.",
+      "teknik": "Oliekridt på papir",
+      "maal": "45 × 35 cm",
+      "ramme": "mat",
+      "solgt": false
+    },
+    {
+      "id": "blaa-time",
+      "titel": "Blå time",
+      "aar": 2025,
+      "om": "Huset glemmer sine kanter. Tilbage er kridtet af det, træerne og det lange blå bagefter.",
+      "teknik": "Olie og oliekridt på lærred, kunstnerens egen ramme",
+      "maal": "50 × 60 cm",
+      "ramme": "bare",
+      "solgt": false
+    },
+    {
+      "id": "groent-glas",
+      "titel": "Grønt glas",
+      "aar": 2026,
+      "om": "Lyset går ind i det grønne glas og kommer ud som skygge, stille, på en stribet eftermiddag.",
+      "teknik": "Akvarel på papir",
+      "maal": "21 × 30 cm",
+      "ramme": "mat",
+      "solgt": false
+    },
+    {
+      "id": "markvej",
+      "titel": "Markvej",
+      "aar": 2026,
+      "om": "Gå langt nok ind, og landskabet rejser sig omkring dig, række efter række, med kun en stribe himmel at holde fast i.",
+      "teknik": "Oliekridt på papir",
+      "maal": "35 × 45 cm",
+      "ramme": "mat",
+      "solgt": false
+    }
+  ]
+}
