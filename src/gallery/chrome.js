@@ -53,6 +53,11 @@ function settingsMarkup() {
 
 // Builds the chrome inside `root` and returns references to the parts gallery.js drives.
 export function buildChrome(root, { total }) {
+  // The room is a modal layer over the page while it is shown
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-modal', 'true');
+  root.setAttribute('aria-label', 'Galleri');
+  if (!root.hasAttribute('tabindex')) root.tabIndex = -1;
   root.dataset.theme = settings.theme;
   root.dataset.fx = settings.fx === 'off' ? 'off' : 'on';
   root.innerHTML = `

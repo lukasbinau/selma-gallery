@@ -1133,6 +1133,9 @@ export async function createGallery({ root, works, artMeta = {} }) {
 
   function onKey(e) {
     if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
+    // Keys belong to whatever dialog the page has open over the room (e.g. the contact sheet)
+    const t = e.target;
+    if (t && t !== document.body && t !== document.documentElement && t !== root && !root.contains(t)) return;
     if (e.key === 'Escape') {
       if (ui.settings.isOpen()) ui.settings.close({ restoreFocus: true });
       else if (state.leanGoal) setLean(false);
@@ -1313,6 +1316,16 @@ export async function createGallery({ root, works, artMeta = {} }) {
     if (!innerWidth || !innerHeight) return; // a hidden tab reports 0 × 0
     resize();
   });
+  // The root also changes size without a window resize: the page's scrollbar
+  // disappears when the front page locks scrolling, and the fixed root grows
+  // by its width. Keep the drawing buffer and the rail in step with it.
+  if (typeof ResizeObserver === 'function') {
+    const ro = new ResizeObserver((entries) => {
+      const r = entries[0]?.contentRect;
+      if (r && r.width > 0 && r.height > 0 && (Math.abs(r.width - view.w) > 0.5 || Math.abs(r.height - view.h) > 0.5)) resize();
+    });
+    ro.observe(root);
+  }
 
   function render() {
     renderer.render(scene, camera);
@@ -1323,6 +1336,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
     if (!running) return;
     const dt = tickClock();
     updateRig(dt);
+    drainSwaps();
     updateDust(clock.elapsed);
     updateMinimap();
     render();
@@ -1370,6 +1384,14 @@ export async function createGallery({ root, works, artMeta = {} }) {
     f.material.map = tex;
     if (old && old !== placeholder) old.dispose();
   }
+  // A full-size upload costs 10–90 ms on the next render. Let them land one
+  // per frame while the camera rests, never during the walk-in or a swipe.
+  const pendingSwaps = [];
+  function drainSwaps() {
+    if (!pendingSwaps.length || state.intro || state.speed > 0.05) return;
+    const { f, tex } = pendingSwaps.shift();
+    setArt(f, tex);
+  }
   function onLoadError(err) {
     console.warn('galleri: billede kunne ikke hentes', err?.target?.src ?? err);
     if (!failedToast) {
@@ -1398,7 +1420,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
     fullPromise ??= Promise.all(
       frames.map(async (f, i) => {
         try {
-          setArt(f, await loadTexture(artUrl(list[i].id, FULL_SIZE)));
+          pendingSwaps.push({ f, tex: await loadTexture(artUrl(list[i].id, FULL_SIZE)) });
         } catch (err) {
           onLoadError(err);
         }

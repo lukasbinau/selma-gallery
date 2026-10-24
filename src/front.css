@@ -130,6 +130,7 @@ html[data-view='galleri'] body {
 .bar__brand svg {
   height: 22px;
   width: auto;
+  fill: currentColor; /* the <use> clone does not inherit the hero svg's fill */
 }
 .bar__nav {
   display: flex;
@@ -353,8 +354,8 @@ html[data-view='galleri'] body {
 }
 .vaerk__caption {
   display: block;
-  width: 120%;
-  margin: 1.6cqw 0 0 -10%;
+  width: 112%;
+  margin: 1.6cqw 0 0 -6%;
 }
 .vaerk__title {
   font-size: inherit;
@@ -916,4 +917,11 @@ html[data-view='galleri'] body {
   .bar__pill {
     transition: none;
   }
+}
+
+/* Long toasts wrap on narrow phones instead of being clipped */
+.toast {
+  max-width: calc(100vw - 32px);
+  white-space: normal;
+  text-align: center;
 }

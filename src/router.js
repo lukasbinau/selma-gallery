@@ -209,8 +209,14 @@ export async function enterGallery({ index = 0, intro = false, fromEl: from = nu
   try {
     g = await ensureGallery();
     g.setExposure(0.2);
-    await Promise.all([wipeIn, g.show({ index, intro })]);
+    // The room is built behind the wipe: keep it invisible until the wipe has covered the page
+    root.style.visibility = 'hidden';
+    const shown = g.show({ index, intro });
+    await wipeIn;
+    await shown;
+    root.style.visibility = '';
   } catch (err) {
+    root.style.visibility = '';
     clearTimeout(slow);
     wipe.classList.remove('is-loading');
     console.warn('galleri', err);
@@ -229,6 +235,12 @@ export async function enterGallery({ index = 0, intro = false, fromEl: from = nu
   }
   clearTimeout(slow);
   wipe.classList.remove('is-loading');
+
+  // A hash with an unknown id landed on works[0]; make the URL say so
+  const standing = WORKS[g.index];
+  if (standing && !intro && parseHash().id !== standing.id) {
+    history.replaceState({ ...history.state, view: 'galleri', id: standing.id }, '', );
+  }
 
   lockScroll();
   setFrontInert(true);
