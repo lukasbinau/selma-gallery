@@ -1,0 +1,732 @@
+/* The 3D gallery's own styles. Everything is scoped to #galleri (the root the
+   module fills) or to the galleri- prefixed plaque classes, which also apply in
+   the measuring box on <body>, so nothing here leaks into the front page. */
+
+#galleri {
+  /* Selma's Canva palette */
+  --pink: #f767d3;
+  --yellow: #fcd23b;
+  --violet: #5e17eb;
+  --red: #ff2234;
+  --deep-violet: #230a66;
+
+  /* Evening room: pale ink on deep violet, pink glass, yellow progress */
+  --g-bg: var(--deep-violet);
+  --g-ink: #fbf6ff;
+  --g-ink-dim: rgba(251, 246, 255, 0.62);
+  --g-accent: var(--pink);
+  --g-glass: rgba(247, 103, 211, 0.16);
+  --g-glass-hover: rgba(247, 103, 211, 0.3);
+  --g-glass-border: rgba(247, 103, 211, 0.45);
+  --g-track: rgba(251, 246, 255, 0.22);
+  --g-fill: var(--yellow);
+  --g-mark: var(--pink);
+  --g-caption: var(--yellow);
+  --g-vignette: rgba(14, 3, 46, 0.6);
+
+  /* The popover and toast are pink paper with violet ink in both rooms */
+  --g-paper: #fff0fb;
+  --g-paper-2: #f8d4ef;
+  --g-paper-ink: #2a0a7a;
+  --g-paper-dim: #7b55b3;
+
+  --g-ease: cubic-bezier(0.2, 0.9, 0.25, 1);
+  --g-gutter: 28px;
+  --g-top: max(22px, env(safe-area-inset-top));
+  --g-bottom: max(12px, env(safe-area-inset-bottom));
+
+  position: fixed;
+  inset: 0;
+  z-index: var(--galleri-z, 100);
+  /* clip, not hidden: a hidden box is still a scroll container, and focus or
+     scrollIntoView() could shove the whole room sideways */
+  overflow: hidden;
+  overflow: clip;
+  background: var(--g-bg);
+  color: var(--g-ink);
+  font-family: 'Space Mono', ui-monospace, 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.5s;
+}
+#galleri[hidden] {
+  display: none !important;
+}
+#galleri[data-theme='daylight'] {
+  --g-bg: #e3dbf5;
+  --g-ink: #2a0a7a;
+  --g-ink-dim: rgba(42, 10, 122, 0.62);
+  --g-accent: var(--violet);
+  --g-glass: rgba(255, 255, 255, 0.5);
+  --g-glass-hover: rgba(255, 255, 255, 0.82);
+  --g-glass-border: rgba(94, 23, 235, 0.2);
+  --g-track: rgba(42, 10, 122, 0.18);
+  --g-caption: var(--violet);
+  --g-vignette: rgba(60, 30, 120, 0.22);
+}
+
+/* Resets are wrapped in :where() so they have no specificity and the component
+   rules below (plain classes) can override them. */
+:where(#galleri) *,
+:where(#galleri) *::before,
+:where(#galleri) *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+:where(#galleri) button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+:where(#galleri) button:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+#galleri [hidden] {
+  display: none !important;
+}
+:where(#galleri) svg {
+  display: block;
+}
+
+/* ------------------------------------------------------------------ Scene */
+.galleri__scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.galleri__scene.is-dragging {
+  cursor: grabbing;
+}
+.galleri__scene.is-pointing {
+  cursor: pointer;
+}
+.galleri__scene.is-lean-target {
+  cursor: zoom-in;
+}
+.galleri__scene.is-leaning.is-lean-target {
+  cursor: zoom-out;
+}
+
+/* Plaque faces in 3D (CSS3DRenderer) on top of the lit slabs drawn in WebGL */
+.galleri__plaques3d {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  overflow: clip !important; /* the renderer sets overflow: hidden inline; see #galleri */
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ------------------------------------------------------------------ Top bar */
+.galleri__topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: var(--g-top) var(--g-gutter) 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+  z-index: 3;
+}
+.galleri__topbar > * {
+  pointer-events: auto;
+}
+
+.galleri__back,
+.galleri__icon-btn,
+.galleri__nav {
+  background: var(--g-glass);
+  border: 1px solid var(--g-glass-border);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition:
+    background 0.2s,
+    color 0.2s,
+    transform 0.25s var(--g-ease);
+}
+.galleri__back:hover,
+.galleri__icon-btn:hover,
+.galleri__icon-btn[aria-expanded='true'],
+.galleri__nav:hover {
+  background: var(--g-glass-hover);
+}
+.galleri__back:active,
+.galleri__icon-btn:active,
+.galleri__nav:active {
+  transform: scale(0.94);
+}
+
+.galleri__back {
+  height: 42px;
+  padding: 0 18px 0 16px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.galleri__back:hover {
+  color: var(--g-accent);
+}
+
+.galleri__icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.galleri__icon-btn svg,
+.galleri__nav svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.galleri__icon-btn:hover svg,
+.galleri__nav:hover svg {
+  stroke: var(--g-accent);
+}
+
+/* Title of the painting you're standing at */
+.galleri__caption {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--g-top) + 12px);
+  transform: translateX(-50%);
+  max-width: calc(100% - 2 * (var(--g-gutter) + 150px));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--g-caption);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+}
+.galleri__caption.is-changing {
+  opacity: 0;
+  transform: translate(-50%, 4px);
+}
+
+.galleri__hint {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--g-top) + 40px);
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--g-ink-dim);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 2;
+  transition: opacity 0.6s;
+}
+.galleri__hint.is-hidden {
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------------ Settings */
+.galleri__popover {
+  position: absolute;
+  top: calc(var(--g-top) + 52px);
+  right: var(--g-gutter);
+  width: 272px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--g-paper);
+  color: var(--g-paper-ink);
+  box-shadow: 0 20px 50px rgba(20, 4, 60, 0.4);
+  display: grid;
+  gap: 14px;
+  z-index: 6;
+  transform-origin: top right;
+  animation: galleri-pop-in 0.22s var(--g-ease);
+}
+@keyframes galleri-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(-6px);
+  }
+}
+.galleri__setting {
+  display: grid;
+  gap: 7px;
+}
+.galleri__setting-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--g-paper-dim);
+}
+.galleri__segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--g-paper-2);
+}
+.galleri__segmented button {
+  padding: 7px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--g-paper-dim);
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.galleri__segmented button[aria-pressed='true'] {
+  background: var(--violet);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* ------------------------------------------------------------------ Arrows */
+.galleri__nav {
+  position: absolute;
+  top: 42%;
+  width: 56px;
+  height: 56px;
+  margin-top: -28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+.galleri__nav svg {
+  width: 22px;
+  height: 22px;
+}
+.galleri__nav--prev {
+  left: var(--g-gutter);
+}
+.galleri__nav--next {
+  right: var(--g-gutter);
+}
+.galleri__nav:disabled {
+  opacity: 0.2;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ Counter */
+.galleri__counter {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--g-bottom) + 32px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  color: var(--g-ink-dim);
+  pointer-events: none;
+  z-index: 2;
+}
+.galleri__counter-current {
+  color: var(--g-ink);
+}
+.galleri__counter-bar {
+  position: relative;
+  width: 96px;
+  height: 2px;
+  background: var(--g-track);
+  overflow: hidden;
+}
+.galleri__counter-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--g-fill);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.45s var(--g-ease);
+}
+
+/* ------------------------------------------------------------------ Minimap */
+.galleri__minimap {
+  position: absolute;
+  left: var(--g-gutter);
+  bottom: calc(var(--g-bottom) + 30px);
+  width: 150px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--g-glass);
+  border: 1px solid var(--g-glass-border);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  z-index: 2;
+}
+.galleri__minimap svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.galleri__minimap-walls {
+  fill: none;
+  stroke: var(--g-ink);
+  stroke-width: 0.22;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+.galleri__minimap-bench {
+  fill: var(--g-ink);
+  opacity: 0.25;
+}
+.galleri__minimap-path {
+  fill: none;
+  stroke: var(--g-ink);
+  stroke-width: 0.12;
+  stroke-dasharray: 0.3 0.3;
+  opacity: 0.35;
+}
+.galleri__minimap-hit {
+  stroke: transparent;
+  stroke-width: 2.2;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.galleri__minimap-mark {
+  stroke: var(--g-ink);
+  stroke-width: 0.42;
+  stroke-linecap: butt;
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.galleri__minimap-mark.is-active {
+  stroke: var(--g-mark);
+  opacity: 1;
+}
+.galleri__minimap-you circle {
+  fill: var(--g-ink);
+}
+.galleri__minimap-view {
+  fill: var(--g-ink);
+  opacity: 0.22;
+}
+
+/* ------------------------------------------------------------------ Toast + progress */
+.galleri__toast {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--g-top) + 6px);
+  transform: translate(-50%, -12px);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--g-paper);
+  color: var(--g-paper-ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 30px rgba(20, 4, 60, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.25s,
+    transform 0.35s var(--g-ease);
+  z-index: 10;
+  white-space: nowrap;
+}
+.galleri__toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.galleri__toast:empty {
+  display: none;
+}
+
+/* A hairline at the very top fills while the full-size photos arrive */
+.galleri__progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  pointer-events: none;
+  z-index: 11;
+}
+.galleri__progress span {
+  display: block;
+  height: 100%;
+  background: var(--yellow);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition:
+    transform 0.3s var(--g-ease),
+    opacity 0.6s 0.3s;
+}
+.galleri__progress.is-done span {
+  opacity: 0;
+}
+
+.galleri-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ Atmosphere */
+.galleri__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 70% at 50% 45%, transparent 50%, var(--g-vignette) 100%);
+  z-index: 1;
+}
+.galleri__grain {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  overflow: clip;
+  pointer-events: none;
+  opacity: 0.045;
+  z-index: 1;
+}
+.galleri__grain::before {
+  content: '';
+  position: absolute;
+  inset: -50%; /* oversized so the jitter never shows an edge; clipped by the parent */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: galleri-grain 0.9s steps(4) infinite;
+}
+@keyframes galleri-grain {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-3%, 2%);
+  }
+  50% {
+    transform: translate(2%, -4%);
+  }
+  75% {
+    transform: translate(-1%, 5%);
+  }
+  100% {
+    transform: translate(4%, -1%);
+  }
+}
+#galleri[data-fx='off'] .galleri__vignette,
+#galleri[data-fx='off'] .galleri__grain {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ Plaques */
+/* Pink lacquered wood (drawn in WebGL) with dark violet lettering. Sizes are at
+   the plaque's design width of 315px; the scene scales it to 1.05 m on the wall.
+   The measuring box lives on <body>, so these rules are not under #galleri. */
+.galleri-plaques {
+  position: fixed;
+  top: 0;
+  left: 0;
+  visibility: hidden; /* only used to measure before moving into 3D */
+  pointer-events: none;
+  z-index: -1;
+}
+.galleri-plaque {
+  --letter: #2a0a7a;
+  --letter-soft: rgba(42, 10, 122, 0.72);
+  --letter-line: rgba(42, 10, 122, 0.25);
+  --standoff: 0 0.7px 0.9px rgba(120, 30, 110, 0.35);
+  box-sizing: border-box;
+  width: 315px;
+  margin: 0;
+  padding: 18px 24px 16px;
+  color: var(--letter);
+  font-family: 'Space Mono', ui-monospace, 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  visibility: visible;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.galleri-plaque > * {
+  margin: 0;
+}
+.galleri-plaque__title {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: var(--standoff);
+  overflow-wrap: anywhere;
+}
+.galleri-plaque__meta {
+  margin-top: 6px;
+  font-size: 8.5px;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--letter-soft);
+  text-shadow: var(--standoff);
+}
+.galleri-plaque__om {
+  margin-top: 9px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+  text-shadow: var(--standoff);
+}
+.galleri-plaque__foot {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--letter-line);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.galleri-plaque__btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--letter);
+  background: rgba(255, 232, 248, 0.85);
+  box-shadow: inset 0 0 0 0.75px var(--letter-soft);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.2s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+.galleri-plaque__btn:hover {
+  background: #fff;
+}
+.galleri-plaque__btn:active {
+  transform: scale(0.96);
+}
+.galleri-plaque__btn:focus-visible {
+  outline: 1px solid var(--letter);
+  outline-offset: 1px;
+}
+.galleri-plaque__sold {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--letter-soft);
+  text-shadow: var(--standoff);
+}
+.galleri-plaque__sold::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff2234;
+  box-shadow: 0 0.6px 0.8px rgba(120, 30, 110, 0.35);
+}
+
+/* ------------------------------------------------------------------ Small screens */
+@media (max-width: 760px) {
+  .galleri__minimap {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  #galleri {
+    --g-gutter: 16px;
+  }
+  .galleri__icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+  .galleri__back {
+    height: 40px;
+    padding: 0 14px 0 12px;
+    font-size: 10px;
+  }
+  .galleri__caption {
+    top: calc(var(--g-top) + 48px);
+    max-width: calc(100% - 2 * var(--g-gutter));
+    font-size: 11px;
+  }
+  .galleri__popover {
+    top: calc(var(--g-top) + 50px);
+    width: min(272px, calc(100% - 2 * var(--g-gutter)));
+  }
+  .galleri__nav {
+    width: 46px;
+    height: 46px;
+    margin-top: 0;
+    top: auto;
+    bottom: calc(var(--g-bottom) + 28px);
+  }
+  .galleri__counter {
+    bottom: calc(var(--g-bottom) + 51px);
+    transform: translate(-50%, 50%);
+  }
+  .galleri__hint {
+    top: auto;
+    bottom: calc(var(--g-bottom) + 90px);
+    max-width: calc(100% - 2 * var(--g-gutter));
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galleri__grain::before {
+    animation: none;
+  }
+  .galleri__popover {
+    animation: none;
+  }
+}

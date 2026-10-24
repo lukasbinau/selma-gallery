@@ -1,7 +1,6 @@
-// Small persisted state: viewer settings and the (demo) cart.
+// Persisted viewer settings (room theme, camera motion, plaques, atmosphere).
 // localStorage can be unavailable (private mode, blocked storage), so every
 // access is guarded and the site still works without it.
-import { paintings } from './paintings.js';
 
 const read = (key, fallback) => {
   try {
@@ -20,9 +19,18 @@ const write = (key, value) => {
 };
 const emit = (name, detail) => dispatchEvent(new CustomEvent(name, { detail }));
 
+// The shop is gone; forget any cart an earlier visit left behind
+try {
+  localStorage.removeItem('selma:cart');
+} catch {
+  /* ignore */
+}
+
 // ---------------------------------------------------------------- settings
 const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Keys and values are the same as before, so existing visitors' choices survive:
+// theme evening|daylight, motion full|reduced, plaques on|off, fx on|off
 export const settings = {
   theme: 'evening',
   motion: prefersReduced ? 'reduced' : 'full',
@@ -36,31 +44,3 @@ export function setSetting(key, value) {
   write('selma:settings', settings);
   emit('settings:change', { key, value });
 }
-
-// ---------------------------------------------------------------- cart
-const buyable = (id) => paintings.some((p) => p.id === id && !p.sold);
-let ids = read('selma:cart', []).filter(buyable);
-
-export const cart = {
-  has: (id) => ids.includes(id),
-  count: () => ids.length,
-  items: () => ids.map((id) => paintings.find((p) => p.id === id)),
-  subtotal: () => cart.items().reduce((sum, p) => sum + p.price, 0),
-  add(id) {
-    if (!buyable(id) || ids.includes(id)) return;
-    ids = [...ids, id];
-    this.save();
-  },
-  remove(id) {
-    ids = ids.filter((x) => x !== id);
-    this.save();
-  },
-  clear() {
-    ids = [];
-    this.save();
-  },
-  save() {
-    write('selma:cart', ids);
-    emit('cart:change');
-  },
-};
