@@ -11,8 +11,11 @@ import { createSky } from './sky.js';
 import { createGarden } from './garden.js';
 import * as F from './furniture.js';
 import { buildWork } from './framing.js';
-import { oakFloor, oakGrain, fabric, wool, plaster, toTexture, leafSprite, boxShadowSprite, makeCanvas, pnoise } from './textures.js';
+import { toTexture, setSource, leafSprite, boxShadowSprite, makeCanvas } from './textures.js';
 import { wallpaperTextures } from './wallpapers.js';
+import { loadSources } from './texture-files.js';
+import { breathe } from '../breathe.js';
+import { freeTexture } from '../art-texture.js';
 
 export const ROOM = { x0: -2.9, x1: 2.9, z0: -4.6, z1: 4.6, h: 2.8 };
 const WALL_T = 0.25;
@@ -175,7 +178,10 @@ const white1 = (() => {
 })();
 
 // ------------------------------------------------------------------ createRoom
-export function createRoom({ canvas, overlay, mobile = false }) {
+// Built in slices: the main thread is handed back (breathe) between them, so
+// a click or an animation frame never waits for the whole build. The
+// textures are fetched as files and decoded off the main thread meanwhile.
+export async function createRoom({ canvas, overlay, mobile = false }) {
   const Q = {
     tex: mobile ? 512 : 1024,
     shadow: mobile ? 1024 : 2048,
@@ -205,32 +211,35 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 400);
 
   // ---------------------------------------------------------------- textures
-  const floorT = oakFloor(Q.tex);
-  const tex = (c, srgb = true, repeat = 1) => {
-    const t = toTexture(c, { srgb, aniso });
+  // Pre-made files (texture-files.js), fetched all at once; each texture is
+  // made now and gets its image when the file is in, before the build ends
+  const filling = [];
+  const fileTex = (stem, part, { srgb = part === 'map', repeat = 1, aniso: a = aniso } = {}) => {
+    const t = toTexture(null, { srgb, aniso: a });
     t.repeat.set(repeat, repeat);
+    filling.push(loadSources(stem).then((src) => setSource(t, src[part])));
     return t;
   };
-  const floorMap = tex(floorT.map, true, 1 / 2.4);
-  const floorRough = tex(floorT.rough, false, 1 / 2.4);
-  const floorNormal = tex(floorT.normal, false, 1 / 2.4);
-  const oak = tex(oakGrain(512), true, 1);
+  const floor = `floor-${Q.tex}`;
+  const floorMap = fileTex(floor, 'map', { repeat: 1 / 2.4 });
+  const floorRough = fileTex(floor, 'rough', { repeat: 1 / 2.4 });
+  const floorNormal = fileTex(floor, 'normal', { repeat: 1 / 2.4 });
+  const oak = fileTex('oak', 'map');
   oak.repeat.set(1.2, 2.4);
-  const oakDark = tex(oakGrain(512, { light: [150, 112, 80], dark: [92, 64, 44], seed: 4 }), true, 1);
+  const oakDark = fileTex('oak-dark', 'map');
   oakDark.repeat.set(1.2, 2.4);
-  const boucle = fabric(256, { boucle: true });
-  const linen = fabric(256, { boucle: false, seed: 9 });
-  const boucleMap = tex(boucle.map, true, 1 / 0.22);
-  const boucleNormal = tex(boucle.normal, false, 1 / 0.22);
-  const linenMap = tex(linen.map, true, 1 / 0.18);
-  const linenNormal = tex(linen.normal, false, 1 / 0.18);
-  const woolT = wool(256);
-  const woolMap = tex(woolT.map, true, 1 / 0.35);
-  const woolNormal = tex(woolT.normal, false, 1 / 0.35);
-  const plasterT = plaster(256);
-  const plasterMap = tex(plasterT.map, true, 1 / 1.6);
-  const plasterNormal = tex(plasterT.normal, false, 1 / 1.6);
-  const canvasWeave = tex(fabric(128, { seed: 3 }).normal, false, 1 / 0.04);
+  const boucleMap = fileTex('boucle', 'map', { repeat: 1 / 0.22 });
+  const boucleNormal = fileTex('boucle', 'normal', { repeat: 1 / 0.22 });
+  const linenMap = fileTex('linen', 'map', { repeat: 1 / 0.18 });
+  const linenNormal = fileTex('linen', 'normal', { repeat: 1 / 0.18 });
+  const woolMap = fileTex('wool', 'map', { repeat: 1 / 0.35 });
+  const woolNormal = fileTex('wool', 'normal', { repeat: 1 / 0.35 });
+  const plasterMap = fileTex('plaster', 'map', { repeat: 1 / 1.6 });
+  const plasterNormal = fileTex('plaster', 'normal', { repeat: 1 / 1.6 });
+  const canvasWeave = fileTex('weave', 'normal', { repeat: 1 / 0.04 });
+  // Painted frames: the grain barely shows through the paint
+  const paintedGrain = fileTex('painted-grain', 'map');
+  paintedGrain.repeat.set(1.2, 2.4);
   const contactShadow = boxShadowSprite(128, 0.35);
 
   // Fluted door fronts: vertical half-round grooves every 2 cm
@@ -330,6 +339,8 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   artPlaceholder.needsUpdate = true;
   mats.art.map = artPlaceholder;
 
+  await breathe();
+
   // ---------------------------------------------------------------- architecture
   const arch = new THREE.Group();
   scene.add(arch);
@@ -419,6 +430,8 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   // the curtain track
   arch.add(worldBox(x0 + 0.08, x0 + 0.16, h - 0.03, h, z0, z1, mats.lampWhite, { cast: false }));
 
+  await breathe();
+
   // ---------------------------------------------------------------- furniture
   const furn = new THREE.Group();
   scene.add(furn);
@@ -451,7 +464,9 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   place(F.sideTable(mats), sx + 1.28, z0 + 0.36);
   const lantern = F.floorLantern(mats);
   place(lantern.group, sx + 1.9, z0 + 0.4);
+  await breathe();
   place(F.oliveTree(mats, { quality: Q.leaves }), sx + 2.85, z0 + 0.6);
+  await breathe();
 
   // dining room: the sideboard under the work, the table out in the room
   const bx = VIEWS[1].artX;
@@ -479,13 +494,16 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const pend = F.pendant(mats, 0.95);
   pend.group.position.set(tableX, h, tableZ);
   furn.add(pend.group);
+  await breathe();
   place(F.figTree(mats, { quality: Q.leaves }), bx + 1.45, z1 - 0.45);
+  await breathe();
 
   // ---------------------------------------------------------------- garden + sky
   const sky = createSky();
   scene.add(sky);
-  const garden = createGarden({ quality: Q.leaves, aniso });
+  const garden = await createGarden({ quality: Q.leaves, aniso, fileTex });
   scene.add(garden.group);
+  await breathe();
 
   // ---------------------------------------------------------------- lights
   const hemi = new THREE.HemisphereLight('#ffffff', '#8a7a68', 0.0);
@@ -540,7 +558,10 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   scene.add(pictureSpot, pictureSpot.target);
 
   // ---------------------------------------------------------------- environment captures
+  // One PMREM generator per capture size: a generator that switches size
+  // throws its filter shaders away and builds them again, every capture
   const pmrem = new THREE.PMREMGenerator(renderer);
+  const skyPmrem = new THREE.PMREMGenerator(renderer);
   const cubeRT = new THREE.WebGLCubeRenderTarget(Q.env, { type: THREE.HalfFloatType });
   const cubeCam = new THREE.CubeCamera(0.05, 400, cubeRT);
   cubeCam.position.set(0.2, 1.4, 0);
@@ -563,7 +584,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     sky.material.uniforms.uDisc.value = 0;
     skyCubeCam.update(renderer, skyScene);
     sky.material.uniforms.uDisc.value = 1;
-    const next = pmrem.fromCubemap(skyCubeRT.texture);
+    const next = skyPmrem.fromCubemap(skyCubeRT.texture);
     skyEnv?.dispose();
     skyEnv = next;
     garden.setEnvironment(skyEnv.texture, 1);
@@ -579,7 +600,9 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     roomEnv?.dispose();
     roomEnv = next;
     scene.environment = roomEnv.texture;
+    envReady = true;
   }
+  let envReady = false; // a real capture lights the room (see warmUp)
   let envDirty = 2; // number of room captures still wanted (2 = also a bounce of a bounce)
 
   // ---------------------------------------------------------------- state
@@ -786,7 +809,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   // ---------------------------------------------------------------- the work
   let artTexture = null;
   function setArtTexture(t) {
-    if (artTexture && artTexture !== t) artTexture.dispose();
+    if (artTexture && artTexture !== t) freeTexture(artTexture); // GPU copy and bitmaps
     artTexture = t;
     mats.art.map = t || artPlaceholder;
     mats.art.needsUpdate = false;
@@ -810,23 +833,6 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     }
     return m;
   }
-  const paintedGrain = (() => {
-    const c = makeCanvas(256, 128);
-    const g = c.getContext('2d');
-    const img = g.createImageData(256, 128);
-    for (let y = 0; y < 128; y++) {
-      for (let x = 0; x < 256; x++) {
-        const v = 0.94 + (pnoise((x / 256) * 4, (y / 128) * 60, 4, 60, 2) - 0.5) * 0.06;
-        const i = (y * 256 + x) * 4;
-        img.data[i] = img.data[i + 1] = img.data[i + 2] = v * 255;
-        img.data[i + 3] = 255;
-      }
-    }
-    g.putImageData(img, 0, 0);
-    const t = toTexture(c, { aniso });
-    t.repeat.set(1.2, 2.4);
-    return t;
-  })();
 
   /**
    * Hang a work. `spec` = { size (cm), medium, bare, offer }. Returns the
@@ -873,23 +879,33 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   }
 
   // ---------------------------------------------------------------- walls
+  // Only the wallpaper on the wall is fetched; another one when it is chosen
+  // (or prefetched: prewarmWall, on hover or focus of its swatch)
   const wallpaperCache = new Map();
   function wallpaper(wall) {
-    let t = wallpaperCache.get(wall.id);
-    if (!t) {
-      t = wallpaperTextures(wall, Q.tex);
-      for (const k of ['map', 'rough', 'normal']) {
-        t[k].anisotropy = aniso;
-        t[k].repeat.set(1 / t.width, 1 / t.height);
-      }
-      wallpaperCache.set(wall.id, t);
+    let p = wallpaperCache.get(wall.id);
+    if (!p) {
+      p = loadSources(`wp-${wall.id}-${Q.tex}`).then((src) => {
+        const t = wallpaperTextures(wall, src);
+        for (const k of ['map', 'rough', 'normal']) {
+          t[k].anisotropy = aniso;
+          t[k].repeat.set(1 / t.width, 1 / t.height);
+        }
+        return t;
+      });
+      wallpaperCache.set(wall.id, p);
     }
-    return t;
+    return p;
   }
-  function setWall(wall) {
+  // Resolves once the wall shows `wall` (false if another wall was chosen
+  // while its wallpaper was still loading)
+  let wallToken = 0;
+  async function setWall(wall) {
+    const token = ++wallToken;
+    const t = wall.kind === 'paper' ? await wallpaper(wall) : null;
+    if (token !== wallToken) return false;
     state.wall = wall;
-    if (wall.kind === 'paper') {
-      const t = wallpaper(wall);
+    if (t) {
       mats.wall.map = t.map;
       mats.wall.normalMap = t.normal;
       mats.wall.normalScale.set(0.6, 0.6);
@@ -906,6 +922,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     }
     mats.woodwork.color.set(wall.woodwork || '#f3f1ec');
     envDirty = Math.max(envDirty, 1);
+    return true;
   }
 
   function setPalette(colours) {
@@ -992,9 +1009,12 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     kick();
   }
 
-  // Render one plain frame right now (also used before a snapshot)
-  function renderNow() {
-    if (envDirty > 0) {
+  // Render one plain frame right now (also used before a snapshot). With
+  // `quick`, an environment captured earlier (the warm-up's) lights this
+  // first frame, and the fresh captures follow in the render loop: the
+  // picture converges to exactly the same image, it just starts sooner.
+  function renderNow({ quick = false } = {}) {
+    if (envDirty > 0 && !(quick && envReady)) {
       if (envDirty >= 2) captureSky();
       captureRoom();
       envDirty = Math.max(0, envDirty - 1);
@@ -1145,6 +1165,120 @@ export function createRoom({ canvas, overlay, mobile = false }) {
 
   // ---------------------------------------------------------------- warm up
   applyTime(state.time);
+  await Promise.all(filling);
+
+  // Get everything to the GPU before the room is first shown, one slice at
+  // a time: textures, then the shaders, then (with `render`) one capture of
+  // the environment and one tiny frame, which also builds the programs a
+  // compile does not (shadow maps, the pipeline's own passes).
+  //
+  // The shaders are compiled for the target the pipeline renders into (a
+  // float buffer, tone mapped only at the end): compiled for the screen
+  // they would be other programs. compileAsync uses KHR_parallel_shader_compile
+  // where there is one; where there is none, linking would block at first
+  // use, so each program is touched in a slice of its own instead.
+  // The shadow maps draw every caster with a depth program of its own kind
+  // (two-sided, cut out by a leaf texture…), which no compile builds. Draw
+  // them once, one kind of caster at a time, into the pipeline's buffer (it
+  // is still 1 × 1 px here), so each link has a slice of its own.
+  async function warmShadows() {
+    const kinds = new Map();
+    scene.traverse((o) => {
+      if (!o.isMesh || !o.castShadow || !o.visible) return;
+      const m = o.material;
+      const key = [m.side, m.shadowSide, m.alphaTest > 0 && !!m.map, !!o.isInstancedMesh].join();
+      if (!kinds.has(key)) kinds.set(key, []);
+      kinds.get(key).push(o);
+    });
+    const casters = [...kinds.values()].flat();
+    try {
+      for (const group of kinds.values()) {
+        await breathe();
+        casters.forEach((o) => (o.visible = false));
+        group.forEach((o) => (o.visible = true));
+        renderer.setRenderTarget(pipeline.targets.frame);
+        renderer.render(scene, camera);
+        renderer.setRenderTarget(null);
+      }
+    } finally {
+      casters.forEach((o) => (o.visible = true));
+    }
+  }
+
+  async function warmUp({ render = false } = {}) {
+    // The work's own materials (frame, mat, glass…) are in no mesh yet: a
+    // stand-in each, out of sight, for the compile
+    const standIns = new THREE.Group();
+    const card = new THREE.PlaneGeometry(0.01, 0.01);
+    const inScene = new Set();
+    scene.traverse((o) => o.material && [].concat(o.material).forEach((m) => inScene.add(m)));
+    Object.values(mats)
+      .flat()
+      .filter((m) => !inScene.has(m))
+      .forEach((m) => standIns.add(new THREE.Mesh(card, m)));
+    standIns.position.set(0, -10, 0);
+    const textures = new Set();
+    const materials = new Set();
+    for (const root of [scene, standIns, skyScene]) {
+      root.traverse((o) => {
+        if (!o.material) return;
+        for (const m of [].concat(o.material)) {
+          materials.add(m);
+          for (const v of Object.values(m)) if (v?.isTexture) textures.add(v);
+        }
+      });
+    }
+    let n = 0;
+    for (const t of textures) {
+      if (!t.image) continue;
+      renderer.initTexture(t);
+      if (++n % 6 === 0) await breathe();
+    }
+    async function compile() {
+      scene.add(standIns);
+      renderer.setRenderTarget(pipeline.targets.frame);
+      let compiled;
+      try {
+        // the sky's own scene too: its capture is the first thing rendered
+        compiled = Promise.all([renderer.compileAsync(scene, camera), renderer.compileAsync(skyScene, camera)]);
+      } finally {
+        renderer.setRenderTarget(null);
+        scene.remove(standIns);
+      }
+      await compiled;
+      const programs = new Set([...materials].map((m) => renderer.properties.get(m).currentProgram).filter(Boolean));
+      for (const program of programs) {
+        await breathe();
+        program.getUniforms(); // the link, if it is still pending
+      }
+    }
+    // Until the first capture, the room is lit by black environments of the
+    // real size (the size is part of the program): a black environment adds
+    // nothing, as none does, but the programs are the ones every frame after
+    // the captures uses, so they are built once
+    if (!roomEnv) {
+      roomEnv = pmrem.fromCubemap(cubeRT.texture); // never rendered: black
+      scene.environment = roomEnv.texture;
+      skyEnv = skyPmrem.fromCubemap(skyCubeRT.texture);
+      garden.setEnvironment(skyEnv.texture, 1);
+    }
+    await compile();
+    card.dispose();
+    await warmShadows();
+    if (render) {
+      await breathe();
+      captureSky();
+      await breathe();
+      captureRoom();
+    }
+    if (!render) return;
+    await breathe();
+    pipeline.step(scene, camera, jitter);
+    pipeline.reset();
+    // the real captures follow when a work hangs here (its colours and the
+    // cushions it picks light the room)
+    envDirty = 2;
+  }
 
   return {
     renderer,
@@ -1203,13 +1337,14 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     },
     lights: { sun, skyLight, pictureSpot },
     pipeline,
-    prewarmWall(wall) {
-      if (wall?.kind === 'paper') {
-        const t = wallpaper(wall);
-        // upload now, so the first frame with it does not stall
-        ['map', 'rough', 'normal'].forEach((k) => renderer.initTexture(t[k]));
-      }
+    // Fetch a wallpaper ahead of its choice, and upload it, so the first
+    // frame with it does not stall
+    async prewarmWall(wall) {
+      if (wall?.kind !== 'paper') return;
+      const t = await wallpaper(wall);
+      ['map', 'rough', 'normal'].forEach((k) => renderer.initTexture(t[k]));
     },
+    warmUp,
     setCanvasEdge(colour) {
       mats.canvasEdge.color.set(colour);
     },

@@ -3,7 +3,8 @@
 // lit by the sun and by its own sky environment (exteriorEnv), so it reads as
 // bright daylight beyond the room's exposure.
 import * as THREE from 'three';
-import { lawn, oakFloor, fbm, makeCanvas, toTexture, birchBark, rand, normalFromHeight } from './textures.js';
+import { makeCanvas, toTexture, rand, fbm } from './textures.js';
+import { breathe } from '../breathe.js';
 import { taperedTube, mesh } from './furniture.js';
 
 // A canvas of many small leaves on a transparent ground: one card = one twig's worth
@@ -161,32 +162,6 @@ function hedge(mats, { x0, x1, z0, z1, height, seed }) {
   return m;
 }
 
-function hedgeTextures() {
-  const S = 256;
-  const height = new Float32Array(S * S);
-  const c = makeCanvas(S);
-  const g = c.getContext('2d');
-  const img = g.createImageData(S, S);
-  for (let y = 0; y < S; y++) {
-    for (let x = 0; x < S; x++) {
-      const u = x / S;
-      const v = y / S;
-      const leaves = fbm(u, v, 24, 3, 41);
-      const big = fbm(u, v, 4, 3, 42);
-      const h = leaves * 0.7 + big * 0.3;
-      height[y * S + x] = h;
-      const k = Math.min(1, Math.max(0, h * 1.3 - 0.25));
-      const i = (y * S + x) * 4;
-      img.data[i] = 34 + k * 46;
-      img.data[i + 1] = 52 + k * 60;
-      img.data[i + 2] = 24 + k * 22;
-      img.data[i + 3] = 255;
-    }
-  }
-  g.putImageData(img, 0, 0);
-  return { map: toTexture(c), normal: toTexture(normalFromHeight(height, S, 6), { srgb: false }) };
-}
-
 // The far tree line: a painted band of crowns on a wide arc
 function treeLineTexture(seed = 61) {
   const W = 2048;
@@ -215,19 +190,17 @@ function treeLineTexture(seed = 61) {
   return t;
 }
 
-export function createGarden({ quality = 1, aniso = 8 } = {}) {
+// fileTex(stem, part, options): a texture from the pre-made files (see
+// room.js and texture-files.js)
+export async function createGarden({ quality = 1, aniso = 8, fileTex } = {}) {
   const group = new THREE.Group();
   group.name = 'garden';
 
-  const grassTex = toTexture(lawn(512), { aniso });
-  grassTex.repeat.set(18, 18);
-  const deck = oakFloor(512, { tone: [128, 110, 92], seed: 9 });
-  const deckMap = toTexture(deck.map, { aniso });
-  const deckNormal = toTexture(deck.normal, { srgb: false, aniso });
-  deckMap.repeat.set(1 / 2.4, 1 / 2.4);
-  deckNormal.repeat.copy(deckMap.repeat);
-  const ht = hedgeTextures();
-  const barkTex = toTexture(birchBark(256));
+  const grassTex = fileTex('lawn', 'map', { repeat: 18 });
+  const deckMap = fileTex('deck', 'map', { repeat: 1 / 2.4 });
+  const deckNormal = fileTex('deck', 'normal', { repeat: 1 / 2.4 });
+  const ht = { map: fileTex('hedge', 'map', { aniso: 8 }), normal: fileTex('hedge', 'normal', { aniso: 8 }) };
+  const barkTex = fileTex('birch-bark', 'map', { aniso: 8 });
   barkTex.repeat.set(1, 3);
 
   const mats = {
@@ -277,10 +250,12 @@ export function createGarden({ quality = 1, aniso = 8 } = {}) {
   group.add(hedge(mats, { x0: -18.5, x1: -6.8, z0: -14.4, z1: -13.6, height: 1.7, seed: 5 }));
   group.add(hedge(mats, { x0: -18.5, x1: -9, z0: 13.6, z1: 14.4, height: 1.7, seed: 7 }));
 
-  // trees
+  // trees (a breath between them: the crowns take a moment)
+  await breathe();
   group.add(birch(mats, -9.5, -6.5, 8.5, 11, quality));
   group.add(birch(mats, -11.5, -3.6, 7.2, 12, quality));
   group.add(birch(mats, -8.6, 5.8, 9, 13, quality));
+  await breathe();
   group.add(bigTree(mats, -27, -9, 15, 21, quality));
   group.add(bigTree(mats, -30, 8, 17, 22, quality));
   group.add(bigTree(mats, -24, 22, 13, 23, quality));

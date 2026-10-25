@@ -17,7 +17,7 @@ import artMeta from './art-meta.json';
 import { toast } from './toast.js';
 import { openContact, closeContact, isContactOpen } from './contact.js';
 import { flyIn, flyOut, flyAcross, liftOff, nextFrame } from './transition.js';
-import { artFormat } from './art-format.js';
+import { artFormat, artUrl } from './art-format.js';
 import { currentSection, scrollToSection, setThemeColor, SECTION_COLOUR } from './front.js';
 
 const WORKS = data.vaerker;
@@ -40,8 +40,8 @@ const STRIP_COLOUR = { top: '#5e17eb', vaerker: '#f767d3', 'om-mig': '#fcd23b' }
 const WIPE_MS = 480;
 const EXPOSURE_MS = 900;
 const LOADING = { galleri: 'Henter galleriet', stue: 'Indretter stuen' };
-// The photo "I din stue" shows (it loads the JPEGs), for the ghost that leaves it
-const artUrl = (id) => `${import.meta.env.BASE_URL}art/${id}-1024.jpg`;
+// A view's photo for a flying ghost when the view cannot name the file it shows
+const ghostSrc = (id) => artUrl(id, 1024);
 
 // ---------------------------------------------------------------- state
 let view = 'front'; // front | galleri | stue at rest; entering | leaving in between
@@ -132,12 +132,13 @@ export function ensureGallery() {
   return galleryPromise;
 }
 
-export function ensureStue() {
+// `warm`: built ahead in idle time, so it may also render once (see stue.js)
+export function ensureStue({ warm = false } = {}) {
   if (!stuePromise) {
     stuePromise = (async () => {
       if (!hasWebGL() || !stueRoot) throw new Error('no-webgl');
       const { createStue } = await loadStueChunk();
-      const s = await createStue({ root: stueRoot, works: WORKS, artMeta });
+      const s = await createStue({ root: stueRoot, works: WORKS, artMeta, warm });
       if (!s.webgl) throw new Error('no-webgl');
       s.on('exit', () => {
         if (!isContactOpen()) leaveStue();
@@ -157,6 +158,19 @@ export function ensureStue() {
   return stuePromise;
 }
 
+// A computer that can afford it builds the room ahead, in idle time, once
+// the works have been seen: a pointer that hovers (not a phone), a fast
+// connection without Save-Data, and some memory and cores to spare. Where
+// the browser does not say, it is given the benefit of the doubt.
+function canBuildAhead() {
+  const c = navigator.connection;
+  if (c?.saveData || (c?.effectiveType && c.effectiveType !== '4g')) return false;
+  if (navigator.deviceMemory && navigator.deviceMemory < 4) return false;
+  if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) return false;
+  if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return false;
+  return Math.min(screen.width || 0, screen.height || 0) >= 700;
+}
+
 // Prefetch the chunks once the works come into view, build a view on intent
 const vaerker = document.getElementById('vaerker');
 if (vaerker) {
@@ -168,14 +182,22 @@ if (vaerker) {
     idle(() => loadChunk().catch(() => {}));
     idle(() => loadStueChunk().catch(() => {}));
     idle(() => artFormat());
+    // The room is built in slices, so a click meanwhile still answers at once
+    if (canBuildAhead()) idle(() => view === 'front' && ensureStue({ warm: true }).catch(() => {}), { timeout: 4000 });
   });
   io.observe(vaerker);
 }
+// Phones and slow connections build a view when it is about to be asked for
+// (hover, focus, touch); I DIN STUE also fetches its painting's photo then
 const onIntent = (e) => {
   const t = e.target.closest?.('.vaerk, .vaerk__stue, [data-galleri]');
   if (!t) return;
-  if (t.classList.contains('vaerk__stue')) ensureStue().catch(() => {});
-  else ensureGallery().catch(() => {});
+  if (t.classList.contains('vaerk__stue')) {
+    const id = t.dataset.stue;
+    ensureStue()
+      .then((s) => view === 'front' && s.preload(id))
+      .catch(() => {});
+  } else ensureGallery().catch(() => {});
 };
 document.addEventListener('pointerenter', onIntent, { capture: true, passive: true });
 document.addEventListener('focusin', onIntent, { passive: true });
@@ -640,7 +662,7 @@ async function enterStueFromGallery({ id }) {
       setThemeColor(STUE_COLOUR);
     };
     const from = !reduced.matches && gallery ? gallery.currentRect() : null;
-    const src = gallery?.currentSrc?.() || artUrl(id);
+    const src = gallery?.currentSrc?.() || ghostSrc(id);
     const flew =
       from &&
       (await flyAcross({ from, src, colour: STUE_COLOUR, prepare, change, to: () => s.currentRect(), label: LOADING.stue }));
@@ -675,7 +697,7 @@ async function exitStueToGallery() {
       from &&
       (await flyAcross({
         from,
-        src: artUrl(WORKS[index].id),
+        src: stue.currentSrc?.() || ghostSrc(WORKS[index].id),
         colour: roomColour(),
         prepare,
         change,

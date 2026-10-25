@@ -2,24 +2,30 @@
 // and a wall, and buy painting + frame as one. Loaded lazily by the router,
 // like the gallery; nothing else imports three.js for it.
 //
-//   const stue = await createStue({ root, works, artMeta });
+//   const stue = await createStue({ root, works, artMeta, warm });
+//   stue.preload('markvej');                // optional: fetch the photo ahead (hover)
 //   await stue.prepare('markvej');          // hang it (rectAtRest is valid now)
 //   await stue.show({ id: 'markvej', from: 'front' });
 //   stue.on('exit', () => …);  stue.on('work', ({ id }) => …)  // painting switched inside
 //
 // The API mirrors the gallery's where the transitions need it: resize(),
-// rectAtRest(index), currentRect(), setExposure(k), show(), hide().
-import * as THREE from 'three';
+// rectAtRest(index), currentRect(), currentSrc(), setExposure(k), show(), hide().
+//
+// The build ends with a warm-up (room.warmUp): textures and shaders go to the
+// GPU in slices, so the first frame does not stall. With `warm`, used when
+// the room is built ahead in idle time, it also renders the environment once.
 import './stue.css';
 import { createRoom, viewsFor, VIEWS, TIMES, viewById } from './room.js';
 import { WALLS, wallpaperSwatch } from './wallpapers.js';
+import { swatchUrl, SWATCH_PX } from './texture-files.js';
+import { createArtLoader, freeTexture } from '../art-texture.js';
+import { artUrl } from '../art-format.js';
 import { offersFor, workSize, mediumOf, priceOf, formatKr, sizeLabel, NONE } from './catalogue.js';
-import { samplePalette } from './palette.js';
+import { samplePalette, edgeColour } from './palette.js';
+import palettes from './palettes.json';
 import { openContact, isContactOpen } from '../contact.js';
 import { buildChrome, fillRail, markRail, centreInRail, STRINGS, TIME_ICONS, viewIcon, esc } from './chrome.js';
 
-const BASE = import.meta.env.BASE_URL;
-const artUrl = (id, size) => `${BASE}art/${id}-${size}.jpg`;
 const ZERO_RECT = () => ({ x: 0, y: 0, width: 0, height: 0 });
 
 // ------------------------------------------------------------------ preferences
@@ -58,10 +64,12 @@ function noWebglStue({ on, off }) {
     setExposure() {},
     resize() {},
     setFrom() {},
+    preload() {},
+    currentSrc: () => null,
   };
 }
 
-export async function createStue({ root, works, artMeta = {} }) {
+export async function createStue({ root, works, artMeta = {}, warm = false }) {
   if (!root) throw new Error('createStue: root mangler');
   const list = Array.isArray(works) ? works : [];
 
@@ -83,7 +91,7 @@ export async function createStue({ root, works, artMeta = {} }) {
 
   let room;
   try {
-    room = createRoom({ canvas: ui.canvas, overlay: ui.fade, mobile });
+    room = await createRoom({ canvas: ui.canvas, overlay: ui.fade, mobile });
   } catch (err) {
     console.warn('stue', err);
     root.replaceChildren();
@@ -110,52 +118,42 @@ export async function createStue({ root, works, artMeta = {} }) {
   };
   const savePrefs = () => writePrefs({ wall: state.wallId, time: state.timeId, frame: state.frameId });
 
-  room.setWall(WALLS.find((w) => w.id === state.wallId));
   room.setTime(state.timeId);
+  await room.setWall(WALLS.find((w) => w.id === state.wallId));
 
   // ---------------------------------------------------------------- the work
-  const loader = new THREE.TextureLoader();
+  // The photo in the best format, decoded off the main thread, with the soft
+  // mipmaps the gallery uses (art-texture.js)
+  const art = createArtLoader({ anisotropy: Math.min(8, room.renderer.capabilities.getMaxAnisotropy()), name: 'stue' });
+  await art.setup();
   const fullSize = mobile || Math.min(innerWidth, innerHeight) * devicePixelRatio < 1400 ? 1024 : 2048;
-  const loadTexture = (url) =>
-    new Promise((resolve, reject) => {
-      loader.load(
-        url,
-        (t) => {
-          t.colorSpace = THREE.SRGBColorSpace;
-          t.anisotropy = Math.min(8, room.renderer.capabilities.getMaxAnisotropy());
-          resolve(t);
-        },
-        undefined,
-        reject,
-      );
-    });
-
-  // Average colour along the photo's border: the painted edge of a canvas
-  function edgeColour(img) {
-    try {
-      const c = document.createElement('canvas');
-      c.width = c.height = 16;
-      const g = c.getContext('2d', { willReadFrequently: true });
-      g.drawImage(img, 0, 0, 16, 16);
-      const d = g.getImageData(0, 0, 16, 16).data;
-      let r = 0;
-      let gg = 0;
-      let b = 0;
-      let n = 0;
-      for (let y = 0; y < 16; y++) {
-        for (let x = 0; x < 16; x++) {
-          if (x > 0 && x < 15 && y > 0 && y < 15) continue;
-          const i = (y * 16 + x) * 4;
-          r += d[i];
-          gg += d[i + 1];
-          b += d[i + 2];
-          n++;
-        }
-      }
-      return `rgb(${Math.round(r / n)},${Math.round(gg / n)},${Math.round(b / n)})`;
-    } catch {
-      return '#d8d0c2';
+  // Full size, else the 640 thumb; null if neither comes
+  const loadWork = (id) =>
+    art.load(id, fullSize).catch(() =>
+      art.load(id, 640).catch((err) => {
+        console.warn('stue: billede kunne ikke hentes', err);
+        return null;
+      }),
+    );
+  // A photo fetched ahead (on hover of I DIN STUE), kept until it is hung
+  let ahead = null; // { id, promise }
+  function preload(id) {
+    if (!id || ahead?.id === id || id === state.id) return;
+    dropAhead();
+    ahead = { id, promise: loadWork(id) };
+  }
+  function dropAhead() {
+    ahead?.promise.then((t) => freeTexture(t));
+    ahead = null;
+  }
+  function takeWork(id) {
+    if (ahead?.id === id) {
+      const { promise } = ahead;
+      ahead = null;
+      return promise;
     }
+    dropAhead();
+    return loadWork(id);
   }
 
   function chooseOffer(offers, work) {
@@ -193,18 +191,9 @@ export async function createStue({ root, works, artMeta = {} }) {
   async function prepare(id) {
     const token = ++loadToken;
     const spec = specFor(id);
-    let tex = null;
-    try {
-      tex = await loadTexture(artUrl(spec.work.id, fullSize));
-    } catch {
-      try {
-        tex = await loadTexture(artUrl(spec.work.id, 640));
-      } catch (err) {
-        console.warn('stue: billede kunne ikke hentes', err);
-      }
-    }
+    const tex = spec.work.id === state.id ? null : await takeWork(spec.work.id);
     if (token !== loadToken) {
-      tex?.dispose();
+      freeTexture(tex);
       return false;
     }
     applySpec(spec, tex, { keepView: false });
@@ -217,8 +206,12 @@ export async function createStue({ root, works, artMeta = {} }) {
     state.offer = chooseOffer(spec.offers, spec.work);
     if (tex) {
       room.setArtTexture(tex);
-      room.setPalette(samplePalette(tex.image));
-      room.setCanvasEdge(edgeColour(tex.image));
+      // Sampled at build time from the JPEG (npm run stue-textures): a photo
+      // decoded to a bitmap, or in another format, samples a little
+      // differently, and the room should not change colour with the browser
+      const known = palettes[spec.work.id];
+      room.setPalette(known?.palette || samplePalette(tex.image));
+      room.setCanvasEdge(known?.edge || edgeColour(tex.image));
     }
     const outer = room.hang({ size: spec.size, medium: spec.medium, bare: spec.bare, offer: state.offer });
     pickView(outer, keepView);
@@ -241,15 +234,10 @@ export async function createStue({ root, works, artMeta = {} }) {
       const token = ++loadToken;
       const spec = specFor(id);
       root.classList.add('is-busy');
-      let tex = null;
-      try {
-        tex = await loadTexture(artUrl(spec.work.id, fullSize));
-      } catch {
-        tex = await loadTexture(artUrl(spec.work.id, 640)).catch(() => null);
-        if (!tex) toast(STRINGS.failed);
-      }
+      const tex = await takeWork(spec.work.id);
+      if (!tex && token === loadToken) toast(STRINGS.failed);
       if (token !== loadToken) {
-        tex?.dispose();
+        freeTexture(tex);
         return;
       }
       root.classList.remove('is-busy');
@@ -311,7 +299,7 @@ export async function createStue({ root, works, artMeta = {} }) {
   }
 
   // ---------------------------------------------------------------- UI
-  const thumb = (id) => artUrl(id, 640);
+  const thumb = (id) => artUrl(id, 640, art.format);
   // "Sort ramme, 30 × 40 cm med passepartout" – unless the name already says so
   const offerText = (o) => `${o.label}, ${sizeLabel(o.inner)}${o.mat && !/passepartout/i.test(o.label) ? ` ${STRINGS.withMat}` : ''}`;
   // "Sort blanklakeret træramme, smal 13 mm" → "Sort blanklakeret træramme" in the rail
@@ -354,21 +342,41 @@ export async function createStue({ root, works, artMeta = {} }) {
     );
   }
 
+  // Wallpaper swatches are files (texture-files.js); one that fails to load
+  // is drawn here instead
   const swatches = new Map();
+  function swatchFor(w) {
+    if (!swatches.has(w.id)) {
+      swatches.set(w.id, swatchUrl(w));
+      const probe = new Image();
+      probe.onerror = () => {
+        swatches.set(w.id, wallpaperSwatch(w, SWATCH_PX));
+        renderWalls();
+      };
+      probe.src = swatchUrl(w);
+    }
+    return swatches.get(w.id);
+  }
   function renderWalls() {
     fillRail(
       ui.rails.wall,
       WALLS.map((w) => {
         let bg = w.colour;
-        if (w.kind === 'paper') {
-          if (!swatches.has(w.id)) swatches.set(w.id, wallpaperSwatch(w, 128));
-          bg = `url(${swatches.get(w.id)}) center / cover`;
-        }
+        if (w.kind === 'paper') bg = `url(${swatchFor(w)}) center / cover, ${w.colour}`;
         return { id: w.id, label: w.name, sub: w.kind === 'paper' ? 'Tapet' : 'Maling', html: `<span class="stue__sw" style="background:${bg}"></span>` };
       }),
       state.wallId,
     );
   }
+  // A wallpaper is fetched when its swatch is pointed at or focused, so the
+  // click that follows only has to show it
+  const prefetchWall = (e) => {
+    const id = e.target.closest?.('.stue__opt')?.dataset.id;
+    const wall = WALLS.find((w) => w.id === id);
+    if (wall?.kind === 'paper') room.prewarmWall(wall).catch(() => {});
+  };
+  ui.rails.wall.addEventListener('pointerover', prefetchWall, { passive: true });
+  ui.rails.wall.addEventListener('focusin', prefetchWall);
 
   function renderTimes() {
     fillRail(
@@ -571,7 +579,7 @@ export async function createStue({ root, works, artMeta = {} }) {
     else if (!state.work) await prepare(list[0]?.id);
     resize();
     room.show();
-    room.renderNow();
+    room.renderNow({ quick: true });
     if (!state.shown) {
       state.shown = true;
       addEventListener('keydown', onKey);
@@ -583,7 +591,6 @@ export async function createStue({ root, works, artMeta = {} }) {
       requestAnimationFrame(() => r());
       setTimeout(r, 120);
     });
-    prewarm();
   }
 
   function hide() {
@@ -596,32 +603,15 @@ export async function createStue({ root, works, artMeta = {} }) {
     root.hidden = true;
   }
 
-  // Draw the other wallpapers while the visitor looks, so choosing one is instant
-  let prewarmed = false;
-  function prewarm() {
-    if (prewarmed) return;
-    prewarmed = true;
-    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 300));
-    const queue = WALLS.filter((w) => w.kind === 'paper');
-    const next = () => {
-      const w = queue.shift();
-      if (!w) return;
-      room.prewarmWall?.(w);
-      idle(next);
-    };
-    idle(next);
-  }
-
   // ---------------------------------------------------------------- build
   renderWorks();
   renderWalls();
   renderTimes();
   root.dataset.time = state.timeId;
-  // compile every shader now, off the critical path where the browser allows it
   try {
-    await room.renderer.compileAsync(room.scene, room.camera);
-  } catch {
-    /* compileAsync is an optimisation only */
+    await room.warmUp({ render: warm });
+  } catch (err) {
+    console.warn('stue: warm-up', err); // an optimisation only
   }
 
   const stue = {
@@ -633,6 +623,7 @@ export async function createStue({ root, works, artMeta = {} }) {
       return state.index;
     },
     prepare,
+    preload,
     show,
     hide,
     // another painting, inside the room (crossfade); no 'work' event comes back
@@ -652,6 +643,8 @@ export async function createStue({ root, works, artMeta = {} }) {
     currentRect() {
       return this.rectAtRest(state.id);
     },
+    // The URL of the photo on the wall (for a ghost that flies off it)
+    currentSrc: () => room.mats.art.map?.userData.url || null,
     setExposure: (k) => room.setExposure(k),
     debug: { room, state, NONE },
   };

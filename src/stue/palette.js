@@ -59,3 +59,31 @@ export function samplePalette(img) {
     return DEFAULT.slice();
   }
 }
+
+// Average colour along the photo's border: the painted edge of a canvas
+export function edgeColour(img) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = c.height = 16;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, 16, 16);
+    const d = g.getImageData(0, 0, 16, 16).data;
+    let r = 0;
+    let gg = 0;
+    let b = 0;
+    let n = 0;
+    for (let y = 0; y < 16; y++) {
+      for (let x = 0; x < 16; x++) {
+        if (x > 0 && x < 15 && y > 0 && y < 15) continue;
+        const i = (y * 16 + x) * 4;
+        r += d[i];
+        gg += d[i + 1];
+        b += d[i + 2];
+        n++;
+      }
+    }
+    return `rgb(${Math.round(r / n)},${Math.round(gg / n)},${Math.round(b / n)})`;
+  } catch {
+    return '#d8d0c2';
+  }
+}

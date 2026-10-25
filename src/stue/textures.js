@@ -1,8 +1,11 @@
-// Procedural textures for the room: everything is drawn in code at load time,
-// so the feature ships no image assets. All tiles repeat seamlessly (noise
-// lattices wrap with the tile) and are sized in real-world metres by the
-// caller through texture.repeat.
+// Procedural textures for the room: everything is drawn in code. The costly
+// ones (per-pixel noise) are drawn once at build time into small files
+// (npm run stue-textures, see texture-files.js), and drawn here at runtime
+// only if a file fails. All tiles repeat seamlessly (noise lattices wrap with
+// the tile) and are sized in real-world metres by the caller through
+// texture.repeat.
 import * as THREE from 'three';
+import { isBitmap } from '../art-texture.js';
 
 // ------------------------------------------------------------------ noise
 const hash = (n) => {
@@ -57,13 +60,25 @@ export function makeCanvas(w, h = w) {
   return c;
 }
 
-export function toTexture(canvas, { srgb = true, repeat = true, aniso = 8 } = {}) {
-  const t = new THREE.CanvasTexture(canvas);
+// A texture from a canvas, or from a pre-made file decoded to an ImageBitmap,
+// or (source null) one whose image comes later through setSource()
+export function toTexture(source, { srgb = true, repeat = true, aniso = 8 } = {}) {
+  const t = new THREE.Texture();
+  if (source) setSource(t, source);
   t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
   if (repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.anisotropy = aniso;
   t.generateMipmaps = true;
   t.minFilter = THREE.LinearMipmapLinearFilter;
+  return t;
+}
+
+// A bitmap is decoded already flipped (WebGL ignores UNPACK_FLIP_Y for
+// bitmaps), so it lands the same way up as a canvas uploaded with flipY
+export function setSource(t, source) {
+  t.image = source;
+  t.flipY = !isBitmap(source);
+  t.needsUpdate = true;
   return t;
 }
 
@@ -262,6 +277,23 @@ export function plaster(size = 256, seed = 12) {
   return { map, normal: normalFromHeight(height, size, 0.8) };
 }
 
+// Painted frames: the wood grain barely shows through the paint
+export function paintedGrain(W = 256, H = 128) {
+  const c = makeCanvas(W, H);
+  const g = c.getContext('2d');
+  const img = g.createImageData(W, H);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const v = 0.94 + (pnoise((x / W) * 4, (y / H) * 60, 4, 60, 2) - 0.5) * 0.06;
+      const i = (y * W + x) * 4;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v * 255;
+      img.data[i + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+
 // ------------------------------------------------------------------ garden
 // A lawn seen from a few metres: blades, clover patches, mowing stripes.
 export function lawn(size = 512, seed = 21) {
@@ -277,6 +309,32 @@ export function lawn(size = 512, seed = 21) {
     const dryness = clamp01((fbm(u, v, 2, 3, seed + 5) - 0.62) * 3);
     mix3(o, o.slice(), dry, dryness * 0.5);
   });
+}
+
+// Clipped beech hedge: small leaves over larger clumps. Returns { map, normal }.
+export function hedge(S = 256) {
+  const height = new Float32Array(S * S);
+  const c = makeCanvas(S);
+  const g = c.getContext('2d');
+  const img = g.createImageData(S, S);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const u = x / S;
+      const v = y / S;
+      const leaves = fbm(u, v, 24, 3, 41);
+      const big = fbm(u, v, 4, 3, 42);
+      const h = leaves * 0.7 + big * 0.3;
+      height[y * S + x] = h;
+      const k = Math.min(1, Math.max(0, h * 1.3 - 0.25));
+      const i = (y * S + x) * 4;
+      img.data[i] = 34 + k * 46;
+      img.data[i + 1] = 52 + k * 60;
+      img.data[i + 2] = 24 + k * 22;
+      img.data[i + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  return { map: c, normal: normalFromHeight(height, S, 6) };
 }
 
 // One leaf on a transparent card (u = along the leaf). Shapes: 'olive' narrow

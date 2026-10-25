@@ -20,7 +20,8 @@ import '@fontsource/space-mono/700.css';
 import './gallery.css';
 import { settings } from '../store.js';
 import { buildChrome, createPlaques, measurePlaques, pad, STRINGS } from './chrome.js';
-import { artFormat, artUrl } from '../art-format.js';
+import { createArtLoader, freeTexture as freeArtTexture } from '../art-texture.js';
+import { breathe } from '../breathe.js';
 
 // ---------------------------------------------------------------------------
 // Tunables
@@ -92,46 +93,6 @@ const UP = new THREE.Vector3(0, 1, 0);
 const clamp = THREE.MathUtils.clamp;
 const reduced = () => settings.motion === 'reduced';
 const ZERO_RECT = () => ({ x: 0, y: 0, width: 0, height: 0 });
-
-// Let the browser paint a frame (and handle a click) between two slices of
-// work; the timer carries on where rAF stalls (a background tab)
-const breathe = () =>
-  new Promise((resolve) => {
-    const timer = setTimeout(resolve, 50);
-    requestAnimationFrame(() =>
-      setTimeout(() => {
-        clearTimeout(timer);
-        resolve();
-      }, 0),
-    );
-  });
-
-// Paintings are decoded with createImageBitmap, flipped for WebGL on the way.
-// Whether the options work is checked once: a 1 × 2 image, red above blue,
-// must come out blue on top. Older Safari ignores the options (or has no
-// createImageBitmap at all) and gets TextureLoader instead.
-const BITMAP_OPTIONS = { imageOrientation: 'flipY', premultiplyAlpha: 'none', colorSpaceConversion: 'none' };
-const isBitmap = (x) => typeof ImageBitmap !== 'undefined' && x instanceof ImageBitmap;
-let bitmapCheck = null;
-function bitmapsWork() {
-  return (bitmapCheck ??= (async () => {
-    if (typeof createImageBitmap !== 'function' || typeof fetch !== 'function') return false;
-    try {
-      const pixels = new ImageData(new Uint8ClampedArray([255, 0, 0, 255, 0, 0, 255, 255]), 1, 2);
-      const bitmap = await createImageBitmap(pixels, BITMAP_OPTIONS);
-      const c = document.createElement('canvas');
-      c.width = 1;
-      c.height = 2;
-      const ctx = c.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(bitmap, 0, 0);
-      bitmap.close();
-      const [r, , b] = ctx.getImageData(0, 0, 1, 1).data;
-      return b > 128 && r < 128;
-    } catch {
-      return false;
-    }
-  })());
-}
 
 // ---------------------------------------------------------------------------
 // Procedural texture helpers (pure maths, shared by every instance)
@@ -1420,74 +1381,19 @@ export async function createGallery({ root, works, artMeta = {} }) {
   // first; the rest upgrade as you walk up to them. On a small screen a work
   // more than FAR away drops back to its thumb, which caps GPU memory.
   //
-  // The files come in the best format the browser decodes (art-format.js) and
-  // are decoded off the main thread: fetch → createImageBitmap, already
-  // flipped for WebGL. A browser whose createImageBitmap ignores its options
-  // (older Safari) gets THREE.TextureLoader and <img> decoding instead.
+  // The files come in the best format the browser decodes and are decoded off
+  // the main thread, with a soft mipmap chain (art-texture.js, shared with
+  // "I din stue").
   const NEAR = 2;
   const FAR = NEAR + 2;
   const PARALLEL = 3; // full-size downloads at a time
   const THUMB = 640;
-  const texLoader = new THREE.TextureLoader();
-  let format = 'jpg';
-  let bitmaps = false;
-  let texSetup = null;
-  const setupTextures = () =>
-    (texSetup ??= Promise.all([artFormat(), bitmapsWork()]).then(([f, b]) => {
-      format = f;
-      bitmaps = b;
-    }));
-
-  async function loadTexture(url, signal) {
-    let tex;
-    if (bitmaps) {
-      const res = await fetch(url, { signal, credentials: 'same-origin' });
-      if (!res.ok) throw Object.assign(new Error(`${res.status} ${url}`), { unusable: res.status === 404 });
-      const blob = await res.blob();
-      const bitmap = await createImageBitmap(blob, BITMAP_OPTIONS).catch((err) => {
-        throw Object.assign(err, { unusable: true }); // fetched fine, but would not decode
-      });
-      tex = new THREE.Texture(bitmap);
-      tex.flipY = false; // flipped while decoding: WebGL ignores UNPACK_FLIP_Y for bitmaps
-    } else {
-      // an <img> error does not say why: treat it as a file this browser cannot use
-      tex = await texLoader.loadAsync(url).catch((err) => {
-        throw Object.assign(new Error(`${url} kunne ikke indlæses`), { cause: err, unusable: true });
-      });
-    }
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = maxAniso;
-    tex.userData.url = url;
-    try {
-      await softMipmaps(tex);
-    } catch (err) {
-      freeTexture(tex);
-      throw err;
-    }
-    tex.needsUpdate = true;
-    return tex;
-  }
-
-  // The format test passed but this file would not decode (or is missing):
-  // JPEG from now on, which every browser reads
-  async function loadArt(id, size, signal) {
-    try {
-      return await loadTexture(artUrl(id, size, format), signal);
-    } catch (err) {
-      if (!err?.unusable || format === 'jpg') throw err; // a network hiccup is not the format's fault
-      console.warn(`galleri: ${format} virker ikke her, skifter til jpg`, err);
-      format = 'jpg';
-      return loadTexture(artUrl(id, size, 'jpg'), signal);
-    }
-  }
-
-  // GPU memory and the decoded pixels both go: dispose() frees the GPU copy,
-  // close() the bitmaps (the base image and every mipmap level)
+  const art = createArtLoader({ anisotropy: maxAniso, name: 'galleri' });
+  const setupTextures = () => art.setup();
+  const loadArt = (id, size, signal) => art.load(id, size, signal);
+  // The placeholder stays; everything else is freed (see art-texture.js)
   function freeTexture(tex) {
-    if (!tex || tex === placeholder) return;
-    tex.dispose();
-    for (const level of new Set([tex.image, ...(tex.mipmaps || [])])) level?.close?.();
-    tex.mipmaps = [];
+    if (tex !== placeholder) freeArtTexture(tex);
   }
 
   let loadedCount = 0;
@@ -1507,63 +1413,6 @@ export async function createGallery({ root, works, artMeta = {} }) {
     f.size = size;
     if (old === f.thumb) old.dispose();
     else if (old !== tex) freeTexture(old);
-  }
-
-  // The GPU builds mipmaps by plain 2 × 2 averaging. A painting with a fine,
-  // regular texture (Lilla skyer's coarse weave board) then turns into bands
-  // of moiré as soon as it is seen from a step back, i.e. at every resting
-  // view, while leaning in (level 0) stays sharp. Build the chain here
-  // instead, with a slight blur before each halving, which keeps the weave
-  // from folding into stripes. Browsers without canvas filters (Safari) get
-  // the same plain halving the GPU would do. It runs as a texture arrives,
-  // so the frame that swaps it in only uploads.
-  const canBlur = typeof CanvasRenderingContext2D !== 'undefined' && 'filter' in CanvasRenderingContext2D.prototype;
-  async function softMipmaps(tex) {
-    const image = tex.image;
-    if (!image?.width || tex.mipmaps?.length) return;
-    const levels = [image];
-    let src = image;
-    let w = image.width;
-    let h = image.height;
-    while (w > 1 || h > 1) {
-      let from = src;
-      if (canBlur && Math.min(w, h) > 4) {
-        const blur = document.createElement('canvas');
-        blur.width = w;
-        blur.height = h;
-        const b = blur.getContext('2d');
-        b.filter = 'blur(0.8px)';
-        b.drawImage(src, 0, 0, w, h);
-        from = blur;
-      }
-      w = Math.max(1, w >> 1);
-      h = Math.max(1, h >> 1);
-      const c = document.createElement('canvas');
-      c.width = w;
-      c.height = h;
-      const ctx = c.getContext('2d');
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(from, 0, 0, w, h);
-      if (from !== src && from !== image) from.width = from.height = 0;
-      levels.push(c);
-      src = c;
-    }
-    // three sets the unpack flags (flipY…) only when the base image is not a
-    // bitmap, so a bitmap texture needs bitmap levels too, or they would land
-    // upside down. The levels were drawn from the flipped bitmap: no flip.
-    if (isBitmap(image)) {
-      const canvases = levels.slice(1);
-      const made = await Promise.allSettled(canvases.map((c) => createImageBitmap(c)));
-      canvases.forEach((c) => (c.width = c.height = 0));
-      const failed = made.find((r) => r.status === 'rejected');
-      if (failed) {
-        made.forEach((r) => r.value?.close());
-        throw failed.reason;
-      }
-      levels.splice(1, Infinity, ...made.map((r) => r.value));
-    }
-    tex.mipmaps = levels;
-    tex.generateMipmaps = false;
   }
 
   // A full-size upload costs 10–90 ms on the next render. Let them land one

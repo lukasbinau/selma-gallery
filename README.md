@@ -31,3 +31,5 @@ Mønsterfliserne i siderne (firkløveren og solen) skæres ud i `TILES` øverst 
 ## Rammer i "I din stue"
 
 Rammerne, kunden kan vælge, står i `src/stue/frames.json` (kun kundepriser, aldrig indkøbspriser: filen ligger offentligt). Et værk får kun de rammer at se, der findes i en størrelse, som passer til værkets `maal`. Kilder og licenser for stuen: `src/stue/CREDITS.md`.
+
+Stuens teksturer (gulv, træ, stof, puds, græs, tapeter og deres prøver) tegnes af koden i `src/stue/textures.js` og `src/stue/wallpapers.js`. De tegnes én gang til små filer i `public/stue/` med `npm run stue-textures` (bruger Playwright og den Chromium, der følger med); kør det igen, hvis du ændrer tegnekoden. Mangler en fil, tegner stuen selv teksturen. Samme script gemmer farverne, stuen låner fra hvert værk (puder, vase, bøger), i `src/stue/palettes.json`; kør `npm run stue-textures -- --palettes` efter `npm run images`, når du har tilføjet et værk.

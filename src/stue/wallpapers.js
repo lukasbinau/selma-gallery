@@ -474,10 +474,11 @@ function drawBrede(g, W, H) {
 const DRAW = { tulipan: drawTulipan, rosenhave: drawRosenhave, smalle: drawSmalle, brede: drawBrede };
 
 /**
- * Textures for a wallpaper: { map, normal, rough, width, height } where width
- * and height are the real-world size of one tile in metres.
+ * The three canvases of a wallpaper tile, { map, rough, normal }: one roll
+ * width `px` wide (the colour), half that (roughness) and 256 px (normals).
+ * Drawn at build time into files (texture-files.js); here only as a fallback.
  */
-export function wallpaperTextures(wall, px = 1024) {
+export function wallpaperCanvases(wall, px = 1024) {
   const W = px;
   const H = Math.round((px * wall.repeatH) / ROLL);
   const c = makeCanvas(W, H);
@@ -523,23 +524,35 @@ export function wallpaperTextures(wall, px = 1024) {
     }
   }
   const normal = normalFromHeight(height, NW, 1.2, NH);
+  return { map: c, rough: rc, normal };
+}
 
+/**
+ * Textures for a wallpaper from its canvases or decoded files: { map, normal,
+ * rough, width, height } where width and height are the real-world size of
+ * one tile in metres.
+ */
+export function wallpaperTextures(wall, sources) {
   return {
-    map: toTexture(c),
-    rough: toTexture(rc, { srgb: false }),
-    normal: toTexture(normal, { srgb: false }),
+    map: toTexture(sources.map),
+    rough: toTexture(sources.rough, { srgb: false }),
+    normal: toTexture(sources.normal, { srgb: false }),
     width: ROLL,
     height: wall.repeatH,
   };
 }
 
-// A small square preview for the swatch rail (CSS background)
+// A small square preview for the swatch rail: drawn into a file at build
+// time (texture-files.js), as a PNG data URL only as a fallback
 export function wallpaperSwatch(wall, px = 160) {
+  return wallpaperSwatchCanvas(wall, px).toDataURL('image/png');
+}
+export function wallpaperSwatchCanvas(wall, px = 160) {
   const c = makeCanvas(px, px);
   const g = c.getContext('2d');
   // Draw at a scale where ~30 cm of paper fills the swatch
   const tile = makeCanvas(Math.round(px * 1.8), Math.round((px * 1.8 * wall.repeatH) / ROLL));
   DRAW[wall.pattern](tile.getContext('2d'), tile.width, tile.height);
   g.drawImage(tile, -px * 0.2, -px * 0.1);
-  return c.toDataURL('image/png');
+  return c;
 }

@@ -1,0 +1,101 @@
+{
+  "moenster-lyseroed": {
+    "palette": [
+      "#b14281",
+      "#81a2da",
+      "#7f2930",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(165,76,131)"
+  },
+  "lilla-skyer": {
+    "palette": [
+      "#6265ad",
+      "#a68a73",
+      "#834146",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(138,119,118)"
+  },
+  "cirkler": {
+    "palette": [
+      "#444ca5",
+      "#7e8b4b",
+      "#752241",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(109,124,65)"
+  },
+  "ansigt": {
+    "palette": [
+      "#aa7a31",
+      "#70914d",
+      "#6f2125",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(94,89,34)"
+  },
+  "lille-stjerne": {
+    "palette": [
+      "#cf5b6e",
+      "#386ec1",
+      "#553e6d",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(210,58,110)"
+  },
+  "figur": {
+    "palette": [
+      "#b14c7a",
+      "#ad393b",
+      "#203d6f",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(159,65,93)"
+  },
+  "orange-mand": {
+    "palette": [
+      "#d27463",
+      "#af788d",
+      "#6e6648",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(137,98,84)"
+  },
+  "blaa-fliser": {
+    "palette": [
+      "#8490cf",
+      "#ac9ac1",
+      "#85526c",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(123,139,217)"
+  },
+  "rapsmarker": {
+    "palette": [
+      "#949650",
+      "#69afd4",
+      "#40503f",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(119,154,131)"
+  },
+  "blaa-time": {
+    "palette": [
+      "#466cb0",
+      "#7f8f74",
+      "#d8c6a5",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(89,141,213)"
+  },
+  "groent-glas": {
+    "palette": [
+      "#6788b7",
+      "#7f9664",
+      "#385747",
+      "#5b6a7d"
+    ],
+    "edge": "rgb(190,190,186)"
+  }
+}
