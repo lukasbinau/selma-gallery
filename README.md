@@ -14,6 +14,7 @@ npm run dev
 - Forsiden: `index.html`, `src/front.css`, `src/front.js`, `src/router.js`, `src/contact.js`
 - 3D-galleriet: `src/gallery/` (hentes først, når nogen åbner det)
 - Testside for galleriet alene: `/dev-galleri.html`
+- "I din stue" (et værk i en stue, med ramme og væg): `src/stue/`, testside `/dev-stue.html?id=<værk>`
 
 Et push til `main` deployer automatisk til GitHub Pages.
 
@@ -26,3 +27,7 @@ Et push til `main` deployer automatisk til GitHub Pages.
 Tekster på forsiden (bio m.m.) rettes direkte i `index.html`. De store ordmærker er vektorgrafik fra Canva-designet (`src/wordmarks/`); kør `node scripts/extract-wordmarks.mjs <Selma.svg>` efter en ny Canva-eksport. "SELMA BINAU KUNST" i menulinjen og "OM MIG" er sat af de samme bogstaver med `node scripts/compose-wordmarks.mjs` (B, I og det smalle M fandtes ikke i designet og er tegnet til).
 
 Mønsterfliserne i siderne (firkløveren og solen) skæres ud i `TILES` øverst i `scripts/prepare-images.mjs`; skift kilde eller udsnit dér og kør `npm run images`.
+
+## Rammer i "I din stue"
+
+Rammerne, kunden kan vælge, står i `src/stue/frames.json` (kun kundepriser, aldrig indkøbspriser: filen ligger offentligt). Et værk får kun de rammer at se, der findes i en størrelse, som passer til værkets `maal`. Kilder og licenser for stuen: `src/stue/CREDITS.md`.

@@ -578,7 +578,11 @@ export async function createStue({ root, works, artMeta = {} }) {
     }
     renderAll();
     selectTab(state.tab);
-    await new Promise((r) => requestAnimationFrame(() => r()));
+    // one frame for the picture to land (a timer too: rAF stalls in background tabs)
+    await new Promise((r) => {
+      requestAnimationFrame(() => r());
+      setTimeout(r, 120);
+    });
     prewarm();
   }
 
