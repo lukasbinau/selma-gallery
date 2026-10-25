@@ -1,23 +1,25 @@
 {
-  "_hjaelp": "Ét objekt pr. værk, i den rækkefølge de vises på forsiden og hænger i galleriet. Tomme felter vises ikke på sitet. ramme: 'mat' = papir med hvid passepartout og sort ramme, 'float' = lærred i egetræs svæveramme, 'bare' = fotoet viser allerede rammen. Billederne ligger i public/art/<id>-2048.jpg (lavet af scripts/prepare-images.mjs).",
+  "_hjaelp": "Ét objekt pr. værk, i den rækkefølge de vises på forsiden og hænger i galleriet. Tomme felter vises ikke på sitet. pris: hele kroner som et tal (fx 2399, vises som \"2.399 kr.\"); null = ingen pris vises endnu. solgt: true viser \"Solgt\" i stedet for købeknappen. ramme: 'mat' = papir med hvid passepartout og sort ramme, 'float' = lærred i egetræs svæveramme, 'bare' = fotoet viser allerede rammen. Billederne ligger i public/art/<id>-2048.jpg (lavet af scripts/prepare-images.mjs).",
   "vaerker": [
+    {
+      "id": "moenster-lyseroed",
+      "titel": "Lyserødt mønster",
+      "aar": 2026,
+      "om": "Dette værk er malet på en sommerdag.",
+      "teknik": "Akryl, oliekridt og kridt på genbrugs-træplade",
+      "maal": "60 × 86 cm",
+      "pris": 2399,
+      "ramme": "float",
+      "solgt": false
+    },
     {
       "id": "lilla-skyer",
       "titel": "Lilla skyer",
       "aar": 2026,
       "om": "Dette værk er malet på en genbrugs træflis-plade. Hullerne er lukket med malertape.",
       "teknik": "Akryl, oliekridt og kridt",
-      "maal": "",
-      "ramme": "float",
-      "solgt": false
-    },
-    {
-      "id": "moenster-lyseroed",
-      "titel": "Mønster lyserød",
-      "aar": 2026,
-      "om": "Dette værk er malet en sommerdag på en gammel træplade.",
-      "teknik": "Akryl, oliekridt",
-      "maal": "",
+      "maal": "50 × 70 cm",
+      "pris": 2000,
       "ramme": "float",
       "solgt": false
     },
@@ -26,18 +28,20 @@
       "titel": "Cirkler",
       "aar": 2026,
       "om": "",
-      "teknik": "",
-      "maal": "",
+      "teknik": "Akryl og oliekridt på gammelt lærred",
+      "maal": "50 × 50 cm",
+      "pris": 1200,
       "ramme": "bare",
       "solgt": false
     },
     {
       "id": "ansigt",
-      "titel": "Ansigt",
-      "aar": 2025,
+      "titel": "Blå øjne",
+      "aar": 2026,
       "om": "",
-      "teknik": "",
-      "maal": "",
+      "teknik": "Akryl, kridt og oliekridt på lærred",
+      "maal": "30 × 40 cm",
+      "pris": 800,
       "ramme": "bare",
       "solgt": false
     },
@@ -46,59 +50,43 @@
       "titel": "Lille stjerne",
       "aar": 2025,
       "om": "Væggen åbner sig to gange: én gang for en stjerne, og én gang for trappen, der går ned for at møde den.",
-      "teknik": "Olie på lærred",
+      "teknik": "Oliemaling, oliekridt og akryl",
       "maal": "40 × 50 cm",
+      "pris": 2000,
       "ramme": "float",
       "solgt": false
     },
     {
       "id": "figur",
-      "titel": "Figur",
-      "aar": 2025,
+      "titel": "Vådt hår",
+      "aar": 2026,
       "om": "",
-      "teknik": "",
-      "maal": "",
+      "teknik": "Akryl, oliekridt og kridt på hjemmelavet lærred af genbrugsmaterialer",
+      "maal": "69 × 67 cm",
+      "pris": 3999,
       "ramme": "bare",
-      "solgt": false
+      "solgt": true
     },
     {
       "id": "orange-mand",
       "titel": "Orange mand",
       "aar": 2025,
       "om": "Et ansigt lavet af vejr: violet i panden, ild i kinden og én mørk streg, der holder det hele sammen.",
-      "teknik": "Oliekridt og gouache på papir",
-      "maal": "30 × 40 cm",
+      "teknik": "Akryl, kridt og oliekridt på gammelt savsmuldstapet, plakatformat",
+      "maal": "43 × 51 cm",
+      "pris": 1200,
       "ramme": "mat",
       "solgt": false
     },
     {
       "id": "blaa-fliser",
-      "titel": "Blå fliser",
+      "titel": "Blåt mønster",
       "aar": 2026,
       "om": "",
-      "teknik": "",
-      "maal": "",
+      "teknik": "Akvarel på papir",
+      "maal": "A4 (21 × 29,7 cm)",
+      "pris": 400,
       "ramme": "mat",
-      "solgt": false
-    },
-    {
-      "id": "roedt-moenster",
-      "titel": "Rødt mønster",
-      "aar": 2026,
-      "om": "",
-      "teknik": "",
-      "maal": "",
-      "ramme": "mat",
-      "solgt": false
-    },
-    {
-      "id": "sol-og-figur",
-      "titel": "Sol og figur",
-      "aar": 2026,
-      "om": "",
-      "teknik": "Akryl og oliekridt på lærred",
-      "maal": "",
-      "ramme": "bare",
       "solgt": false
     },
     {
@@ -106,8 +94,9 @@
       "titel": "Rapsmarker",
       "aar": 2026,
       "om": "Sommer, i rækker. Markerne nynner gult, syet sammen med blåt, under en himmel der ikke beder om noget.",
-      "teknik": "Oliekridt på papir",
-      "maal": "45 × 35 cm",
+      "teknik": "Akryl, oliekridt og kridt på gammelt savsmuldstapet",
+      "maal": "66 × 53 cm",
+      "pris": 1500,
       "ramme": "mat",
       "solgt": false
     },
@@ -118,6 +107,7 @@
       "om": "Huset glemmer sine kanter. Tilbage er kridtet af det, træerne og det lange blå bagefter.",
       "teknik": "Olie og oliekridt på lærred, kunstnerens egen ramme",
       "maal": "50 × 60 cm",
+      "pris": null,
       "ramme": "bare",
       "solgt": false
     },
@@ -128,16 +118,7 @@
       "om": "Lyset går ind i det grønne glas og kommer ud som skygge, stille, på en stribet eftermiddag.",
       "teknik": "Akvarel på papir",
       "maal": "21 × 30 cm",
-      "ramme": "mat",
-      "solgt": false
-    },
-    {
-      "id": "markvej",
-      "titel": "Markvej",
-      "aar": 2026,
-      "om": "Gå langt nok ind, og landskabet rejser sig omkring dig, række efter række, med kun en stribe himmel at holde fast i.",
-      "teknik": "Oliekridt på papir",
-      "maal": "35 × 45 cm",
+      "pris": null,
       "ramme": "mat",
       "solgt": false
     }

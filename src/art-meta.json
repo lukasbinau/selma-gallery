@@ -15,20 +15,16 @@
     "w": 1765,
     "h": 1397
   },
-  "markvej": {
-    "w": 1397,
-    "h": 1765
-  },
   "groent-glas": {
     "w": 1081,
     "h": 1614
   },
-  "moenster-lyseroed": {
-    "w": 1481,
+  "blaa-fliser": {
+    "w": 1448,
     "h": 2048
   },
-  "sol-og-figur": {
-    "w": 1973,
+  "moenster-lyseroed": {
+    "w": 1489,
     "h": 2048
   },
   "lilla-skyer": {
@@ -46,13 +42,5 @@
   "figur": {
     "w": 1694,
     "h": 1620
-  },
-  "blaa-fliser": {
-    "w": 1604,
-    "h": 2048
-  },
-  "roedt-moenster": {
-    "w": 1683,
-    "h": 2048
   }
 }
