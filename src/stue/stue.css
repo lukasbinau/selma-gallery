@@ -490,6 +490,12 @@
   .stue__lines {
     font-size: 10px;
   }
+  .stue__lines span {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
   .stue__buy {
     flex-direction: column;
     align-items: end;

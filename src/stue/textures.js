@@ -254,9 +254,9 @@ export function plaster(size = 256, seed = 12) {
   const height = new Float32Array(size * size);
   const map = paint(size, (u, v, o, x, y) => {
     const m = fbm(u, v, 3, 4, seed);
-    const roller = pnoise(u * 2, v * 40, 2, 40, seed + 1);
-    height[y * size + x] = m * 0.6 + roller * 0.15;
-    const k = 0.965 + (m - 0.5) * 0.05 + (roller - 0.5) * 0.01;
+    const roller = pnoise(u * 12, v * 30, 12, 30, seed + 1);
+    height[y * size + x] = m * 0.6 + roller * 0.05;
+    const k = 0.975 + (m - 0.5) * 0.035;
     o[0] = o[1] = o[2] = clamp01(k) * 255;
   });
   return { map, normal: normalFromHeight(height, size, 0.8) };

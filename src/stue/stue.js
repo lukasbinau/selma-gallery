@@ -78,7 +78,8 @@ export async function createStue({ root, works, artMeta = {} }) {
     });
 
   const ui = buildChrome(root);
-  const mobile = matchMedia('(pointer: coarse)').matches || Math.min(screen.width || 0, screen.height || 0) < 700;
+  const q = new URLSearchParams(location.search).get('quality');
+  const mobile = q ? q === 'mobile' : matchMedia('(pointer: coarse)').matches || Math.min(screen.width || 0, screen.height || 0) < 700;
 
   let room;
   try {

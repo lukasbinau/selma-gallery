@@ -61,16 +61,19 @@ export function viewsFor(outer) {
   return { list, best };
 }
 
-// Hanging height: centre at eye level (≈1.45 m), but always clear of the furniture
+// Hanging height above furniture: the frame's bottom edge 20 cm above the sofa
+// back or the sideboard (as interior stylists hang it), but the centre never
+// above eye level (1.45 m) unless the work is too tall for that.
 function hangCentre(view, outer) {
-  const clear = view.furnitureTop + 0.22 + outer.h / 2;
-  return Math.min(Math.max(1.45, clear), ROOM.h - 0.28 - outer.h / 2);
+  const above = view.furnitureTop + 0.2 + outer.h / 2;
+  return Math.min(Math.max(above, 1.12), ROOM.h - 0.28 - outer.h / 2);
 }
 
 // ------------------------------------------------------------------ times of day
 // sun: direction towards the sun (the glazing faces -x), colour, strength.
 // sky: gradient for the sky dome. skyLight: daylight entering through the
-// glazing. lamps: 0..1 interior lamps. env: strength of the room's bounce light.
+// glazing. lamps: 0..1 interior lamps. env: strength of the room's bounce light
+// (kept below 1: the room is captured from itself, so more would feed back).
 export const TIMES = [
   {
     id: 'morgen',
@@ -79,8 +82,8 @@ export const TIMES = [
     sky: { zenith: '#86a9d4', horizon: '#f1dcc6', ground: '#5d5a48', cloud: '#fff0e2', cover: 0.38, intensity: 1.5 },
     skyLight: { colour: '#c3d3ec', intensity: 4.4 },
     lamps: 0,
-    env: 0.84,
-    exposure: 1.2,
+    env: 0.85,
+    exposure: 3.6,
     fog: '#e6dccf',
   },
   {
@@ -90,19 +93,19 @@ export const TIMES = [
     sky: { zenith: '#5f90cf', horizon: '#dde7f0', ground: '#5f5d4a', cloud: '#ffffff', cover: 0.32, intensity: 2.1 },
     skyLight: { colour: '#d0def2', intensity: 5.6 },
     lamps: 0,
-    env: 0.9,
-    exposure: 1.02,
+    env: 0.85,
+    exposure: 4.0,
     fog: '#dfe6ec',
   },
   {
     id: 'aften',
     name: 'Aften',
-    sun: { dir: [-0.78, 0.1, -0.62], colour: '#ff9450', intensity: 9.0 },
+    sun: { dir: [-0.78, 0.1, -0.62], colour: '#ffa868', intensity: 5.5 },
     sky: { zenith: '#4b5b8c', horizon: '#f5a26a', ground: '#3d3730', cloud: '#f6b089', cover: 0.45, intensity: 1.1 },
-    skyLight: { colour: '#d9b49c', intensity: 3.0 },
-    lamps: 0.85,
-    env: 1.05,
-    exposure: 1.32,
+    skyLight: { colour: '#9fb0dc', intensity: 2.6 },
+    lamps: 0.4,
+    env: 0.75,
+    exposure: 1.9,
     fog: '#c99a7e',
   },
   {
@@ -112,8 +115,8 @@ export const TIMES = [
     sky: { zenith: '#04060d', horizon: '#121a2c', ground: '#05060a', cloud: '#1a2236', cover: 0.25, intensity: 1, stars: 1.4 },
     skyLight: { colour: '#5c6d99', intensity: 0.12 },
     lamps: 1,
-    env: 1.35,
-    exposure: 1.5,
+    env: 0.55,
+    exposure: 1.4,
     fog: '#0b1020',
   },
 ];
@@ -324,14 +327,16 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const { x0, x1, z0, z1, h } = ROOM;
   arch.add(worldBox(x0 - WALL_T, x1 + WALL_T, -0.3, 0, z0 - WALL_T, z1 + WALL_T, mats.floor)); // floor slab
   arch.add(worldBox(x0 - 1.2, x1 + WALL_T, h, h + 0.3, z0 - WALL_T, z1 + WALL_T, mats.ceiling)); // roof with an overhang over the glazing
-  arch.add(worldBox(x0 - WALL_T, x1 + WALL_T, 0, h, z0 - WALL_T, z0, mats.wall)); // back wall (stue)
-  arch.add(worldBox(x0 - WALL_T, x1 + WALL_T, 0, h, z1, z1 + WALL_T, mats.wall)); // front wall (spise)
-  arch.add(worldBox(x1, x1 + WALL_T, 0, h, z0, z1, mats.wall)); // right wall
+  // walls run up into the roof slab, so no light leaks along the ceiling line
+  const hw = h + 0.15;
+  arch.add(worldBox(x0 - WALL_T, x1 + WALL_T, 0, hw, z0 - WALL_T, z0, mats.wall)); // back wall (stue)
+  arch.add(worldBox(x0 - WALL_T, x1 + WALL_T, 0, hw, z1, z1 + WALL_T, mats.wall)); // front wall (spise)
+  arch.add(worldBox(x1, x1 + WALL_T, 0, hw, z0, z1, mats.wall)); // right wall
   // the glazing wall: short solid returns at each end, the rest glass
   const gz0 = z0 + 0.35;
   const gz1 = z1 - 0.35;
-  arch.add(worldBox(x0 - WALL_T, x0, 0, h, z0, gz0, mats.wall));
-  arch.add(worldBox(x0 - WALL_T, x0, 0, h, gz1, z1, mats.wall));
+  arch.add(worldBox(x0 - WALL_T, x0, 0, hw, z0, gz0, mats.wall));
+  arch.add(worldBox(x0 - WALL_T, x0, 0, hw, gz1, z1, mats.wall));
   // fascia under the roof's overhang
   arch.add(worldBox(x0 - 1.2, x0 - 1.12, h - 0.12, h + 0.3, z0 - WALL_T, z1 + WALL_T, mats.windowFrame));
 
@@ -496,7 +501,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   scene.add(skyLight, skyLight.target);
 
   // lamps
-  const lanternLight = new THREE.PointLight('#ffc98a', 0, 9, 2);
+  const lanternLight = new THREE.PointLight('#ffd6a6', 0, 9, 2);
   lanternLight.position.copy(lantern.light).add(lantern.group.position);
   scene.add(lanternLight);
   const lampLight = new THREE.PointLight('#ffcf94', 0, 7, 2);
@@ -677,11 +682,12 @@ export function createRoom({ canvas, overlay, mobile = false }) {
       state.skyDirs.push(new THREE.Vector3(-Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)));
     }
     const L = t.lamps;
-    lanternLight.intensity = 2.2 * L;
-    lampLight.intensity = 1.6 * L;
-    pendLight.intensity = 9 * L;
-    pendGlow.intensity = 0.8 * L;
-    pictureSpot.intensity = 14 * L;
+    lanternLight.intensity = 5 * L;
+    lampLight.intensity = 3.5 * L;
+    pendLight.intensity = 14 * L;
+    pendGlow.intensity = 1.5 * L;
+    // a recessed spot on the work: dimmed by day, the main accent at night
+    pictureSpot.intensity = 12 * Math.max(L, 0.1);
     mats.paperShade.emissiveIntensity = 1.4 * L;
     mats.opal.emissiveIntensity = 1.2 * L;
     mats.pendantShade.emissiveIntensity = 0.25 * L;
@@ -748,7 +754,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     });
     if (wood) {
       // the colour tints the grain; brighten so the swatch colour is the average
-      m.color.multiplyScalar(1.25);
+      m.color.multiplyScalar(1.12);
     } else {
       // paint: the grain barely shows through
       m.map = paintedGrain;

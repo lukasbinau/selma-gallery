@@ -9,7 +9,7 @@ export const ROLL = 0.53; // m, standard Scandinavian roll width = one repeat
 
 // woodwork: skirting and door casings painted to go with the wall
 export const WALLS = [
-  { id: 'kalkhvid', name: 'Kalkhvid', kind: 'paint', colour: '#eeebe4', woodwork: '#f3f1ec' },
+  { id: 'kalkhvid', name: 'Kalkhvid', kind: 'paint', colour: '#f1efeb', woodwork: '#f4f3ef' },
   { id: 'havre', name: 'Havre', kind: 'paint', colour: '#d9d0c1', woodwork: '#d9d0c1' },
   { id: 'salvie', name: 'Salvie', kind: 'paint', colour: '#a8ae97', woodwork: '#a8ae97' },
   { id: 'dueblaa', name: 'Dueblå', kind: 'paint', colour: '#9fabb1', woodwork: '#9fabb1' },

@@ -389,32 +389,33 @@ export function diningTable(mats, { length = 2.0, width = 0.95 } = {}) {
   return g;
 }
 
-// A simple Scandinavian chair: oak frame, curved back rail, woven-look seat
+// A Danish dining chair: oak legs, a woven paper-cord seat in an oak frame and
+// a curved, steam-bent back rest
 export function chair(mats) {
   const g = new THREE.Group();
   const seatH = 0.45;
-  g.add(at(mesh(rbox(0.46, 0.04, 0.44, 0.012), mats.chairSeat), 0, seatH, 0));
-  const legGeo = new THREE.CylinderGeometry(0.016, 0.014, seatH, 12);
+  g.add(at(mesh(rbox(0.45, 0.035, 0.42, 0.01), mats.oak), 0, seatH - 0.02, 0));
+  g.add(at(mesh(rbox(0.4, 0.02, 0.37, 0.008), mats.chairSeat), 0, seatH, 0));
+  const legGeo = new THREE.CylinderGeometry(0.016, 0.013, seatH - 0.02, 12);
   for (const sx of [-1, 1]) {
     for (const sz of [-1, 1]) {
       const l = mesh(legGeo, mats.oak);
-      l.position.set(sx * 0.2, seatH / 2, sz * 0.19);
-      l.rotation.set(sz * 0.04, 0, -sx * 0.04);
+      l.position.set(sx * 0.19, (seatH - 0.02) / 2, sz * 0.17);
+      l.rotation.set(sz * 0.03, 0, -sx * 0.03);
       g.add(l);
     }
   }
-  // back posts and a curved top rail
+  // back posts rising from the rear legs, and the curved rest on top
   for (const sx of [-1, 1]) {
     const p = mesh(new THREE.CylinderGeometry(0.014, 0.016, 0.34, 10), mats.oak);
-    p.position.set(sx * 0.19, seatH + 0.17, -0.2);
-    p.rotation.x = -0.1;
+    p.position.set(sx * 0.19, seatH + 0.16, -0.18);
+    p.rotation.x = -0.08;
     g.add(p);
   }
-  const rail = mesh(new THREE.TorusGeometry(0.42, 0.018, 8, 32, 1.0), mats.oak);
-  rail.rotation.set(Math.PI / 2, 0, Math.PI / 2 - 0.5);
-  rail.position.set(0, seatH + 0.33, 0.2);
-  rail.scale.set(1, 1, 1.6);
-  g.add(rail);
+  const rest = mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.075, 32, 1, true, Math.PI - 0.62, 1.24), mats.oak);
+  rest.material.side = THREE.DoubleSide;
+  rest.position.set(0, seatH + 0.3, 0.12);
+  g.add(rest);
   return g;
 }
 
