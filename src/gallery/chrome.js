@@ -181,7 +181,7 @@ function createToast(el) {
 // ---------------------------------------------------------------- plaques
 // One <article> per work: TITEL, "ÅR · TEKNIK · MÅL" (filled fields only), the
 // OM text, the price, then a KØB OG KONTAKT button (emits 'contact') or a red
-// dot + SOLGT, and beside it I DIN STUE (emits 'stue').
+// dot + SOLGT, and mirrored at the right edge I DIN STUE (emits 'stue').
 export function createPlaques(works) {
   return works.map((w) => {
     const el = document.createElement('article');

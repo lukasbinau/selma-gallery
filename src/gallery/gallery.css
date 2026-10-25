@@ -619,13 +619,15 @@
   border-top: 0.5px solid var(--letter-line);
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between; /* the two actions mirror each other, one at each edge */
   gap: 8px;
 }
 .galleri-plaque__btn {
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 116px;
   height: 22px;
   padding: 0 12px;
   border: 0;
