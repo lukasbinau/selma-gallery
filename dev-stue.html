@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>I din stue · testside</title>
+    <style>
+      /* Test page for the room view alone. ?id=<værk> picks the work,
+         ?samples=8 shortens the progressive render, ?tm=neutral|aces swaps tone mapping. */
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #fcd23b;
+        font-family: 'Space Mono', monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stue" hidden></div>
+    <div class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/src/stue/dev.js"></script>
+  </body>
+</html>

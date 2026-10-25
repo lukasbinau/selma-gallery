@@ -1,0 +1,618 @@
+{
+  "_hjaelp": "ANSLÅEDE PRISER – kundepriser beregnet ud fra leverandørernes listepriser, ikke endelige tilbud. Denne fil er det offentlige rammekatalog til hjemmesiden og må kun indeholde kundepriser (aldrig indkøbspriser). Hver ramme har et id (små bogstaver og bindestreger, må ikke ændres når siden bruger det), et dansk navn, leverandør, materiale, farve som hex-kode (anslået ud fra produktfotos, kan justeres), finish, profilbredde og -dybde i mm, og om rammen leveres med passepartout. Under sizes står rammens indvendige mål i cm (bredde x højde), kundeprisen i hele kroner inkl. moms og om størrelsen kan bestilles; sæt available til false for midlertidigt at skjule en størrelse, og slet linjen helt hvis den udgår. Mål der ikke er standard (fx 21x30, 43x51 og 66x53) er specialmål som leverandøren laver på bestilling. Ret feltet opdateret til dagens dato, når du ændrer priser. Valgfrie felter: style ('svaever' = svæveramme om lærred/plade, vises ikke for papirværker). En ramme vises kun ved et værk, hvis den findes i en størrelse, der passer til værkets mål (eller, med passepartout, til et papirværk med en kant omkring). 'Ingen ramme' tilføjes altid af siden selv; den kan omdøbes ved at tilføje {\"id\": \"ingen\", \"name\": \"…\", \"none\": true}.",
+  "opdateret": "2026-10-25",
+  "frames": [
+    {
+      "id": "plakatkunst-orange-blank-13mm",
+      "name": "Orange blanklakeret træramme, smal 13 mm",
+      "supplier": "plakatkunst",
+      "material": "træ, blanklakeret",
+      "colour": "#E8641E",
+      "finish": "blank",
+      "profileWidthMm": 13,
+      "profileDepthMm": 13,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 21,
+          "innerHcm": 30,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 43,
+          "innerHcm": 51,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 66,
+          "innerHcm": 53,
+          "priceDkk": 595,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "plakatkunst-lyseroed-blank-13mm",
+      "name": "Lyserød blanklakeret træramme, smal 13 mm",
+      "supplier": "plakatkunst",
+      "material": "træ, blanklakeret",
+      "colour": "#F2A6BF",
+      "finish": "blank",
+      "profileWidthMm": 13,
+      "profileDepthMm": 13,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 21,
+          "innerHcm": 30,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 43,
+          "innerHcm": 51,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 66,
+          "innerHcm": 53,
+          "priceDkk": 595,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "plakatkunst-groen-blank-13mm",
+      "name": "Grøn blanklakeret træramme, smal 13 mm",
+      "supplier": "plakatkunst",
+      "material": "træ, blanklakeret",
+      "colour": "#2F8F5B",
+      "finish": "blank",
+      "profileWidthMm": 13,
+      "profileDepthMm": 13,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 21,
+          "innerHcm": 30,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 43,
+          "innerHcm": 51,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 66,
+          "innerHcm": 53,
+          "priceDkk": 595,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "plakatkunst-blaa-blank-13mm",
+      "name": "Blå blanklakeret træramme, smal 13 mm",
+      "supplier": "plakatkunst",
+      "material": "træ, blanklakeret",
+      "colour": "#2463C9",
+      "finish": "blank",
+      "profileWidthMm": 13,
+      "profileDepthMm": 13,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 21,
+          "innerHcm": 30,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 43,
+          "innerHcm": 51,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 66,
+          "innerHcm": 53,
+          "priceDkk": 595,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "plakatkunst-moerkeblaa-blank-13mm",
+      "name": "Mørkeblå blanklakeret træramme, smal 13 mm",
+      "supplier": "plakatkunst",
+      "material": "træ, blanklakeret",
+      "colour": "#1C2B4A",
+      "finish": "blank",
+      "profileWidthMm": 13,
+      "profileDepthMm": 13,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 21,
+          "innerHcm": 30,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 43,
+          "innerHcm": 51,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 66,
+          "innerHcm": 53,
+          "priceDkk": 595,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "plakatkunst-lilla-blank-13mm",
+      "name": "Lilla blanklakeret træramme, smal 13 mm",
+      "supplier": "plakatkunst",
+      "material": "træ, blanklakeret",
+      "colour": "#6E44A3",
+      "finish": "blank",
+      "profileWidthMm": 13,
+      "profileDepthMm": 13,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 21,
+          "innerHcm": 30,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 43,
+          "innerHcm": 51,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 66,
+          "innerHcm": 53,
+          "priceDkk": 595,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "plakatkunst-moerkeroed-blank-13mm",
+      "name": "Mørkerød blanklakeret træramme, smal 13 mm",
+      "supplier": "plakatkunst",
+      "material": "træ, blanklakeret",
+      "colour": "#7C1F27",
+      "finish": "blank",
+      "profileWidthMm": 13,
+      "profileDepthMm": 13,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 21,
+          "innerHcm": 30,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 43,
+          "innerHcm": 51,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 66,
+          "innerHcm": 53,
+          "priceDkk": 595,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "plakatkunst-gul-blank-13mm",
+      "name": "Gul blanklakeret træramme, smal 13 mm",
+      "supplier": "plakatkunst",
+      "material": "træ, blanklakeret",
+      "colour": "#F2C230",
+      "finish": "blank",
+      "profileWidthMm": 13,
+      "profileDepthMm": 13,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 21,
+          "innerHcm": 30,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 43,
+          "innerHcm": 51,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 66,
+          "innerHcm": 53,
+          "priceDkk": 595,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "plakatkunst-sort-blank-13mm",
+      "name": "Sort blanklakeret træramme, smal 13 mm",
+      "supplier": "plakatkunst",
+      "material": "træ, blanklakeret",
+      "colour": "#141414",
+      "finish": "blank",
+      "profileWidthMm": 13,
+      "profileDepthMm": 13,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 21,
+          "innerHcm": 30,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 43,
+          "innerHcm": 51,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 66,
+          "innerHcm": 53,
+          "priceDkk": 595,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "kraess-massiv-eg-15mm",
+      "name": "Massiv egetræsramme, 15 mm",
+      "supplier": "kraess",
+      "material": "massivt egetræ",
+      "colour": "#C8A271",
+      "finish": "natur-eg",
+      "profileWidthMm": 15,
+      "profileDepthMm": 15,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "kraess-massiv-eg-15mm-passepartout",
+      "name": "Massiv egetræsramme, 15 mm, med hvidt passepartout",
+      "supplier": "kraess",
+      "material": "massivt egetræ",
+      "colour": "#C8A271",
+      "finish": "natur-eg",
+      "profileWidthMm": 15,
+      "profileDepthMm": 15,
+      "passepartout": true,
+      "sizes": [
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 395,
+          "available": true
+        }
+      ]
+    }
+  ],
+  "estimeret": true
+}
