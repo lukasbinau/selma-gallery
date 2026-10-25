@@ -365,10 +365,11 @@ export function sideboard(mats, { width = 1.8, depth = 0.45, height = 0.72 } = {
 }
 
 // The still life on the sideboard: a big vase with branches, books, a bowl
-export function sideboardStyling(mats, width = 1.8) {
+// `vaseIn`: how far in from the end the vase stands
+export function sideboardStyling(mats, width = 1.8, vaseIn = 0.24) {
   const g = new THREE.Group();
-  g.add(at(vase(mats.ceramic[2], 0.38), -width / 2 + 0.24, 0, 0));
-  g.add(at(branchBunch(mats, 5, 0.75, 11), -width / 2 + 0.24, 0.32, 0));
+  g.add(at(vase(mats.ceramic[2], 0.38), -width / 2 + vaseIn, 0, 0));
+  g.add(at(branchBunch(mats, 5, 0.75, 11), -width / 2 + vaseIn, 0.32, 0));
   g.add(at(book(mats, 0.28, 0.22, 0.03, 0), width / 2 - 0.42, 0, 0.02, 0.08));
   g.add(at(book(mats, 0.25, 0.19, 0.028, 2), width / 2 - 0.42, 0.03, 0.02, 0.18));
   const bowl = mesh(lathe([[0.001, 0], [0.04, 0.002], [0.07, 0.025], [0.075, 0.045], [0.07, 0.046], [0.06, 0.025], [0.03, 0.008], [0.001, 0.007]]), mats.ceramic[1]);
