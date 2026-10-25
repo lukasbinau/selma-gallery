@@ -2,11 +2,15 @@
 //
 //   source/originals/*.jpg   photos of the works (uncropped)
 //   source/canva/*           the bitmaps embedded in Selma's Canva design
-//   public/art/<id>-{2048,1024,640}.jpg   every work, straight-on, three sizes
-//   public/studio/*.jpg      atelier photos for OM MIG
+//   public/art/<id>-{2048,1024,640}.{avif,webp,jpg}   every work, straight-on, three sizes
+//   public/studio/*.{avif,webp,jpg}                   atelier photos for OM MIG
 //   public/pattern/*.webp    the sidebar tiles (see TILES below)
-//   public/hero-banner.jpg   the strip under KUNST
+//   public/hero-banner{,-1200}.{avif,webp,jpg}         the strip under KUNST
 //   src/art-meta.json        pixel size of every work (for aspect-ratio / no layout shift)
+//
+// Every photo is written in three formats. Browsers pick AVIF (most of them,
+// and by far the smallest), else WebP, else JPEG: the front page through
+// <picture>, the gallery through src/art-format.js. See ENCODE for the settings.
 import sharp from 'sharp';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { rectify } from './rectify.mjs';
@@ -14,6 +18,31 @@ import { rectify } from './rectify.mjs';
 const ORIG = 'source/originals';
 const CANVA = 'source/canva';
 const SIZES = [2048, 1024, 640];
+
+// Encoder settings per output. The JPEGs keep the settings they always had.
+// AVIF and WebP were tuned against them so the paintings look the same:
+// crops of the finest detail (Lilla skyer's canvas weave, the pencil lines in
+// Ansigt) compared side by side at 2×, and SSIM against the uncompressed
+// image no lower than the JPEG's. AVIF keeps full colour resolution (4:4:4):
+// at 4:2:0 thin lines of saturated paint go soft.
+const ENCODE = {
+  art: {
+    640: { jpg: 80, webp: 78, avif: 58 },
+    1024: { jpg: 84, webp: 82, avif: 64 },
+    2048: { jpg: 84, webp: 82, avif: 64 },
+  },
+  photo: { jpg: 82, webp: 80, avif: 56 }, // atelier photos and the banner
+};
+
+// One image, three files: <base>.jpg, <base>.webp, <base>.avif
+async function writeFormats(img, base, q) {
+  const [info] = await Promise.all([
+    img.clone().jpeg({ quality: q.jpg, mozjpeg: true }).toFile(`${base}.jpg`),
+    img.clone().webp({ quality: q.webp, effort: 6, smartSubsample: true }).toFile(`${base}.webp`),
+    img.clone().avif({ quality: q.avif, effort: 6, chromaSubsampling: '4:4:4' }).toFile(`${base}.avif`),
+  ]);
+  return info;
+}
 
 // One entry per work, keyed by the id used in src/vaerker.json.
 //   file:    source photo
@@ -135,10 +164,8 @@ for (const [id, spec] of Object.entries(works)) {
   const buf = await (await straight(spec)).jpeg({ quality: 95 }).toBuffer();
   master[id] = buf;
   for (const size of SIZES) {
-    const info = await sharp(buf)
-      .resize({ width: size, height: size, fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: size === 640 ? 80 : 84, mozjpeg: true })
-      .toFile(`public/art/${id}-${size}.jpg`);
+    const img = sharp(buf).resize({ width: size, height: size, fit: 'inside', withoutEnlargement: true });
+    const info = await writeFormats(img, `public/art/${id}-${size}`, ENCODE.art[size]);
     if (size === 2048) meta[id] = { w: info.width, h: info.height };
   }
   console.log(id.padEnd(18), meta[id].w, '×', meta[id].h);
@@ -147,7 +174,7 @@ writeFileSync('src/art-meta.json', JSON.stringify(meta, null, 2) + '\n');
 
 for (const [name, file] of Object.entries(studio)) {
   for (const size of [1600, 800]) {
-    await sharp(file).rotate().resize({ width: size }).jpeg({ quality: 82, mozjpeg: true }).toFile(`public/studio/${name}-${size}.jpg`);
+    await writeFormats(sharp(file).rotate().resize({ width: size }), `public/studio/${name}-${size}`, ENCODE.photo);
   }
   console.log(name);
 }
@@ -173,10 +200,11 @@ for (const [name, { from, crop, mirror }] of Object.entries(TILES)) {
 {
   const { width, height } = await sharp(master['moenster-lyseroed']).metadata();
   const bh = Math.round(width / 1.92);
-  await sharp(master['moenster-lyseroed'])
+  const banner = await sharp(master['moenster-lyseroed'])
     .extract({ left: 0, top: Math.round(height * 0.02), width, height: bh })
-    .resize({ width: 2000 })
-    .jpeg({ quality: 82, mozjpeg: true })
-    .toFile('public/hero-banner.jpg');
+    .png() // lossless in between
+    .toBuffer();
+  await writeFormats(sharp(banner).resize({ width: 2000 }), 'public/hero-banner', ENCODE.photo);
+  await writeFormats(sharp(banner).resize({ width: 1200 }), 'public/hero-banner-1200', ENCODE.photo); // phones
   console.log('hero-banner');
 }

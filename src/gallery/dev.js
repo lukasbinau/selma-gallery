@@ -21,7 +21,7 @@ gallery.on('exit', () => {
 gallery.on('contact', (e) => say('contact', e));
 gallery.on('stue', (e) => say('stue', e));
 gallery.on('index', (e) => say('index', e));
-gallery.on('ready', () => say('ready: all full-size textures loaded'));
+gallery.on('ready', () => say('ready: the textures around you are loaded'));
 
 // Buttons on the stand-in front page: open at a given work
 const buttons = document.querySelector('.buttons');
