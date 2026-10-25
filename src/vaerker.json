@@ -121,6 +121,28 @@
       "pris": null,
       "ramme": "mat",
       "solgt": false
+    },
+    {
+      "id": "sol-og-figur",
+      "titel": "Sol og figur",
+      "aar": 2026,
+      "om": "",
+      "teknik": "Akryl og oliekridt på lærred",
+      "maal": "",
+      "pris": null,
+      "ramme": "bare",
+      "solgt": false
+    },
+    {
+      "id": "portraet",
+      "titel": "Portræt",
+      "aar": 2026,
+      "om": "",
+      "teknik": "",
+      "maal": "",
+      "pris": null,
+      "ramme": "mat",
+      "solgt": false
     }
   ]
 }

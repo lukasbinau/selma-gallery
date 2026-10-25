@@ -111,6 +111,19 @@ const works = {
       [198, 1782],
     ],
   },
+  // The board on a tablecloth, tape over the corners; edges found by scanning
+  // for the board against the cloth
+  'sol-og-figur': {
+    file: `${ORIG}/sol-og-figur-lyseroed.jpg`,
+    corners: [
+      [131, 244],
+      [993, 242],
+      [1018, 1134],
+      [117, 1141],
+    ],
+    inset: 0.008,
+  },
+  portraet: { file: `${ORIG}/portraet-blaat-haar.jpg` },
   ansigt: { file: `${CANVA}/img12.png`, trim: true },
   figur: { file: `${CANVA}/img13.png`, trim: true },
 };
@@ -123,7 +136,7 @@ const works = {
 const TILES = {
   // One blue quatrefoil from "Lyserødt mønster", pink around it, a hint of the green band below
   firkloever: { from: 'moenster-lyseroed', crop: [0.0786, 0.4873, 0.4466, 0.7549], mirror: true },
-  // The sun from "Sol og figur" (no longer on the site), centred on its dark blue sky
+  // The sun from the earlier, yellow state of "Sol og figur", centred on its dark blue sky
   sol: { from: `${CANVA}/img07.jpg`, crop: [704, 580, 1024, 900] },
 };
 
