@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { hasPris, formatPris } from './src/pris.js';
 
 // ---------------------------------------------------------------------------
 // Front-page plugin: fills index.html from the data files at build time (and
@@ -8,8 +9,10 @@ import { resolve } from 'node:path';
 //
 //   src/vaerker.json        the works, in display order (= hanging order)
 //   src/art-meta.json       pixel size of every photo, written by `npm run images`
-//   src/wordmarks/*.svg     SELMA / KUNST / ORIGINALE VÆRKER / PROCESSEN, lifted
-//                           from Selma's Canva design by scripts/extract-wordmarks.mjs
+//   src/wordmarks/*.svg     SELMA / KUNST / ORIGINALE VÆRKER, lifted from Selma's
+//                           Canva design by scripts/extract-wordmarks.mjs; the menu
+//                           bar's SELMA BINAU KUNST and OM MIG are set from the same
+//                           glyphs by scripts/compose-wordmarks.mjs
 //
 // How to add a work: add an object to src/vaerker.json, add its photo to
 // scripts/prepare-images.mjs and run `npm run images`. Nothing else to touch:
@@ -30,24 +33,24 @@ import { resolve } from 'node:path';
 const LAYOUT = {
   'moenster-lyseroed': { col: 37, span: 12, row: 1, rows: 2, shift: '2cqw' },
   'lilla-skyer': { col: 1, span: 17, row: 2, rows: 3 },
-  ansigt: { col: 20, span: 11, row: 4, rows: 3 },
-  'lille-stjerne': { col: 32, span: 16, row: 5, rows: 4 },
-  cirkler: { col: 2, span: 15, row: 6, rows: 2 },
+  cirkler: { col: 19, span: 13, row: 4, rows: 3 },
+  'lille-stjerne': { col: 33, span: 15, row: 5, rows: 4 },
+  ansigt: { col: 3, span: 13, row: 6, rows: 2 },
   figur: { col: 5, span: 18, row: 10, rows: 2 },
   'orange-mand': { col: 30, span: 19, row: 11, rows: 2 },
   'blaa-fliser': { col: 3, span: 15, row: 14, rows: 1 },
 };
 const FIRST_FREE_ROW = 15;
 
-// Works beyond the table continue the scatter: left, right, left, right…
+// Works beyond the table continue the scatter: right, left, right, left…
 // each spanning two rows and starting one row after the previous work, so
 // every work hangs beside the lower half of the one before it (a brick
 // stagger), with a little air (the shift) above each.
 const RHYTHM = [
-  { col: 3, span: 15 },
   { col: 30, span: 19 },
-  { col: 5, span: 18 },
+  { col: 3, span: 15 },
   { col: 32, span: 16 },
+  { col: 5, span: 18 },
 ];
 
 const esc = (s) =>
@@ -92,9 +95,14 @@ function renderWorks(root) {
       ]
         .filter(Boolean)
         .join('');
-      const action = w.solgt
+      // Price, then a row of two: buy (or the Solgt marker) and "I din stue",
+      // which the router turns into the painting hung in a living room
+      const price = !w.solgt && hasPris(w.pris) ? `<p class="vaerk__pris">${formatPris(w.pris)}</p>` : '';
+      const buy = w.solgt
         ? `<span class="vaerk__sold"><i aria-hidden="true"></i>Solgt</span>`
-        : `<button type="button" class="vaerk__contact" data-contact="${esc(w.id)}">Skriv til Selma ${ARROW}</button>`;
+        : `<button type="button" class="vaerk__contact" data-contact="${esc(w.id)}">Køb og kontakt</button>`;
+      const stue = `<a class="vaerk__stue" href="#stue/${esc(w.id)}" data-stue="${esc(w.id)}" aria-label="Se “${title}” i din stue">I din stue ${ARROW}</a>`;
+      const action = `<div class="vaerk__actions">${price}<div class="vaerk__buttons">${buy}${stue}</div></div>`;
       const alt = `“${title}”${year ? ` (${year})` : ''}, maleri af Selma Frausing Binau`;
       return `
         <div class="vaerk-cell" style="${style}">
@@ -117,7 +125,7 @@ function renderWordmark(root, name) {
   const viewBox = /viewBox="([^"]+)"/.exec(svg)?.[1];
   const inner = svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
   if (!viewBox) throw new Error(`src/wordmarks/${name}.svg has no viewBox`);
-  // The <g id> lets the menu bar reuse the SELMA paths through <use href="#wm-selma">
+  // The <g id> lets a page reuse the paths through <use href="#wm-<name>">
   return `<svg class="wm wm--${name}" viewBox="${viewBox}" fill="currentColor" aria-hidden="true" focusable="false"><g id="wm-${name}">${inner}</g></svg>`;
 }
 

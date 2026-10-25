@@ -122,15 +122,33 @@ html[data-view='galleri'] body {
   font-size: 12px;
   transition: background 0.45s;
 }
+/* SELMA BINAU KUNST from the hero's own glyphs (scripts/compose-wordmarks.mjs):
+   one line on wide screens, stacked in three where the nav needs the room */
 .bar__brand {
   flex: none;
+  display: block;
   color: var(--pink);
   border-radius: 4px;
 }
-.bar__brand svg {
-  height: 22px;
+.bar__brand .wm {
   width: auto;
-  fill: currentColor; /* the <use> clone does not inherit the hero svg's fill */
+  height: 20px;
+}
+.bar__brand .wm--brand-stack {
+  display: none;
+  height: 40px;
+}
+.bar__brand .b3 {
+  color: var(--yellow);
+  fill: var(--yellow);
+}
+@media (max-width: 960px) {
+  .bar__brand .wm--brand {
+    display: none;
+  }
+  .bar__brand .wm--brand-stack {
+    display: block;
+  }
 }
 .bar__nav {
   display: flex;
@@ -188,7 +206,7 @@ html[data-view='galleri'] body {
    with overflow hidden shows exactly the tiles that fit, spread evenly, and
    never a cut one. */
 .strip {
-  --tile-inset: 0.135; /* side padding as a share of the strip: quatrefoils are 73 % wide */
+  --tile-inset: 0.135; /* side padding as a share of the strip: the tiles are 73 % wide */
   position: absolute;
   top: 0;
   bottom: 0;
@@ -206,7 +224,7 @@ html[data-view='galleri'] body {
   pointer-events: none;
 }
 .vaerker .strip {
-  --tile-inset: 0.225; /* the suns are narrower: 55 % of the strip, portrait */
+  --tile-inset: 0.2; /* the suns sit a little smaller: 60 % of the strip */
 }
 .tile {
   flex: none;
@@ -218,7 +236,6 @@ html[data-view='galleri'] body {
   background-image: url('/pattern/firkloever.webp');
 }
 .tile--sol {
-  aspect-ratio: 3 / 4;
   background-image: url('/pattern/sol.webp');
 }
 
@@ -255,37 +272,42 @@ html[data-view='galleri'] body {
   padding-top: clamp(16px, 2.6cqw, 44px);
   min-height: calc(100svh - var(--bar-h));
   overflow: hidden; /* the banner's negative margin must not spill */
+  /* SELMA and KUNST must both fit on the first screen: on a wide, short window
+     they shrink with its height (two words ≈ half of it), and the gaps between
+     them follow the height too instead of the poster's tall rhythm. */
+  --wm-w: min(92.7cqw, (100svh - var(--bar-h)) * 1.55);
+  --gap: clamp(14px, 4.6svh, 9.5cqw);
 }
 .hero .sheet > * {
   flex: none;
 }
-.hero__selma {
+.hero__selma,
+.hero__kunst {
   position: relative;
   z-index: 1;
-  width: 92.7%;
-  margin-left: 3.8%;
+  width: var(--wm-w);
+  margin-left: calc((100% - var(--wm-w)) / 2 + 0.2cqw);
+}
+.hero__selma {
   color: var(--pink);
 }
 .hero__tagline {
-  margin-top: 14cqw;
+  margin-top: var(--gap);
   text-align: center;
   color: var(--yellow);
   font-size: var(--text);
   letter-spacing: 0.12em;
 }
 .hero__cta {
-  margin-top: 6.9cqw;
+  margin-top: calc(var(--gap) * 0.75);
   text-align: center;
 }
 .hero__kunst {
-  position: relative;
-  z-index: 1;
-  width: 91.8%;
-  margin-left: 4.8%;
-  margin-top: 9.5cqw;
+  margin-top: var(--gap);
+  margin-left: calc((100% - var(--wm-w)) / 2 + 0.7cqw);
   color: var(--yellow);
 }
-.hero__banner {
+.hero .sheet > .hero__banner {
   flex: 1 1 auto; /* fills whatever is left of the first screen */
   min-height: 0;
   width: calc(100% - var(--strip));
@@ -365,27 +387,68 @@ html[data-view='galleri'] body {
 .vaerk__caption p {
   margin-top: 0.7em;
 }
+/* Price, then KØB OG KONTAKT (or SOLGT) with I DIN STUE to its right; as
+   wide as the caption, so the pair stays on one row in the narrow cells */
+.vaerk__actions {
+  width: 112%;
+  margin: 1em 0 0 -6%;
+}
+.vaerk__pris {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.vaerk__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 0.7em;
+  font-size: clamp(11px, 0.92cqw, 13px);
+  line-height: 1.2;
+}
 .vaerk__contact,
+.vaerk__stue,
 .vaerk__sold {
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
-  margin-top: 0.9em;
+  min-height: 38px;
+  padding: 0 1em;
+  border-radius: 999px;
   font-size: inherit;
   letter-spacing: 0.08em;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    transform 0.25s var(--ease),
+    background 0.2s;
 }
 .vaerk__contact {
-  text-decoration: underline;
-  text-decoration-color: rgba(252, 210, 59, 0.45);
-  text-underline-offset: 0.3em;
-  transition: text-decoration-color 0.2s;
+  background: var(--pink);
+  color: var(--violet);
+  font-weight: 700;
 }
-.vaerk__contact:hover {
-  text-decoration-color: currentColor;
+.vaerk__stue {
+  border: 1px solid rgba(252, 210, 59, 0.7);
+  color: var(--yellow);
 }
-.vaerk__contact .arrow {
+.vaerk__stue:hover {
+  background: rgba(252, 210, 59, 0.14);
+}
+.vaerk__contact:hover,
+.vaerk__stue:hover {
+  transform: translateY(-1px);
+}
+.vaerk__contact:active,
+.vaerk__stue:active {
+  transform: scale(0.97);
+}
+.vaerk__stue .arrow {
   width: 1em;
   height: auto;
+}
+.vaerk__sold {
+  padding-left: 0.4em;
 }
 .vaerk__sold i {
   width: 0.7em;
@@ -425,8 +488,8 @@ html[data-view='galleri'] body {
   width: 5.9cqw;
 }
 
-/* ------------------------------------------------------------------ Processen */
-.processen {
+/* ------------------------------------------------------------------ Om mig */
+.om-mig {
   content-visibility: auto;
   contain-intrinsic-block-size: auto 1100px;
 }
@@ -435,8 +498,8 @@ html[data-view='galleri'] body {
   --strip-bg: var(--yellow);
   padding: 3.3cqw 0 2.5cqw;
 }
-.processen__heading {
-  width: 48.3%;
+.om-mig__heading {
+  width: 27.9%; /* the letters as large as the design's PROCESSEN at 48.3 % */
   margin: 0 auto;
   color: var(--violet);
 }
@@ -742,6 +805,37 @@ html[data-view='galleri'] body {
   font-size: 11px;
   opacity: 0.75;
 }
+/* Price, chosen frame and total, beside the thumbnail */
+.kontakt__prices {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin-top: 6px;
+}
+.kontakt__prices dt {
+  opacity: 0.75;
+}
+.kontakt__prices dd {
+  color: var(--yellow);
+}
+.kontakt__prices .is-total {
+  font-weight: 700;
+  opacity: 1;
+}
+/* No webshop: how paying works, said plainly */
+.kontakt__pay {
+  padding: 12px 14px;
+  border-left: 2px solid var(--pink);
+  background: rgba(0, 0, 0, 0.16);
+  font-size: 12px;
+}
+.kontakt__pay b {
+  display: block;
+  color: var(--pink);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
 
 /* ------------------------------------------------------------------ Mobile */
 @media (max-width: 760px) {
@@ -766,22 +860,18 @@ html[data-view='galleri'] body {
   .hero .sheet {
     padding-top: 72px;
   }
+  .hero .sheet {
+    --wm-w: min(100cqw, (100svh - var(--bar-h) - 72px) * 1.6);
+    --gap: clamp(14px, 12cqw, 6svh);
+  }
   .hero__selma,
   .hero__kunst {
-    width: 100%;
-    margin-left: 0;
+    margin-left: calc((100% - var(--wm-w)) / 2);
   }
   .hero__tagline {
-    margin-top: 12cqw;
     padding: 0 6%;
   }
-  .hero__cta {
-    margin-top: 8cqw;
-  }
-  .hero__kunst {
-    margin-top: 12cqw;
-  }
-  .hero__banner {
+  .hero .sheet > .hero__banner {
     width: 100%;
     margin-left: 0;
   }
@@ -818,6 +908,14 @@ html[data-view='galleri'] body {
     width: 100%;
     margin: 14px 0 0;
   }
+  .vaerk__actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .vaerk__buttons {
+    justify-content: flex-start;
+    font-size: 12px;
+  }
   .band {
     height: 56px;
     padding: 7px 4%;
@@ -830,8 +928,8 @@ html[data-view='galleri'] body {
   .sheet--atelier-a {
     padding: 72px 0 8cqw;
   }
-  .processen__heading {
-    width: 86%;
+  .om-mig__heading {
+    width: 50%;
   }
   .atelier-top {
     grid-template-columns: 1fr;
@@ -868,8 +966,8 @@ html[data-view='galleri'] body {
   .bar {
     gap: 10px;
   }
-  .bar__brand svg {
-    height: 18px;
+  .bar__brand .wm--brand-stack {
+    height: 38px;
   }
   .bar__nav {
     flex: 1;
