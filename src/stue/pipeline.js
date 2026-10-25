@@ -42,8 +42,9 @@ export function createPipeline(renderer, { samples = 48, msaa = 4 } = {}) {
     blending: THREE.CustomBlending,
     blendSrc: THREE.SrcAlphaFactor,
     blendDst: THREE.OneMinusSrcAlphaFactor,
-    blendSrcAlpha: THREE.OneFactor,
-    blendDstAlpha: THREE.ZeroFactor,
+    // alpha stays at the first sample's 1
+    blendSrcAlpha: THREE.ZeroFactor,
+    blendDstAlpha: THREE.OneFactor,
     depthTest: false,
     depthWrite: false,
   });
@@ -85,7 +86,12 @@ export function createPipeline(renderer, { samples = 48, msaa = 4 } = {}) {
     blendMat.uniforms.tFrame.value = frame.texture;
     blendMat.uniforms.uWeight.value = 1 / (i + 1);
     renderer.setRenderTarget(accum);
+    // the blend reads what is already there: clear only for the first sample
+    // (to opaque black, so the picture's alpha stays 1)
+    const autoClear = renderer.autoClear;
+    renderer.autoClear = i === 0;
     renderer.render(quadScene, quadCam);
+    renderer.autoClear = autoClear;
     count = i + 1;
 
     present();
@@ -109,6 +115,7 @@ export function createPipeline(renderer, { samples = 48, msaa = 4 } = {}) {
       return samples;
     },
     size,
+    targets: { frame, accum },
     dispose() {
       frame.dispose();
       accum.dispose();

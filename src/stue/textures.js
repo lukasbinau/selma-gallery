@@ -316,7 +316,10 @@ export function leafSprite(kind = 'olive', size = 128) {
   g.lineTo(0, -len * 0.95);
   g.stroke();
   const t = toTexture(c, { repeat: false });
-  t.premultiplyAlpha = false;
+  // Alpha-tested leaves vanish in blurry mip levels: sample the full-size
+  // sprite (the progressive render anti-aliases the edges)
+  t.generateMipmaps = false;
+  t.minFilter = THREE.LinearFilter;
   return t;
 }
 

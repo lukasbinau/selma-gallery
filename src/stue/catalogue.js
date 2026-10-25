@@ -2,6 +2,7 @@
 // really is (from the `maal` text in vaerker.json), what it is painted on, and
 // which frames from frames.json come in a size that fits it.
 import catalogue from './frames.json';
+import { hasPris, formatPris } from '../pris.js';
 
 // ISO A sizes, portrait (cm)
 const A_SIZES = { 0: [84.1, 118.9], 1: [59.4, 84.1], 2: [42, 59.4], 3: [29.7, 42], 4: [21, 29.7], 5: [14.8, 21], 6: [10.5, 14.8] };
@@ -66,14 +67,15 @@ export const FRAMES = (catalogue.frames || []).filter((f) => f && f.id);
 export const NONE = FRAMES.find((f) => f.none) || { id: 'ingen', name: 'Ingen ramme', none: true };
 
 const EXACT = 1.6; // cm of slack a frame without passepartout may have
-const MAT_MIN = 4; // a passepartout shows at least this much on each side (cm)…
+const MAT_MIN = 3.5; // a passepartout shows at least this much on each side (cm)…
 const MAT_MAX = 15; // …and at most this much
 
 /**
  * The frames that come in a size fitting `work`, each resolved to one size:
  *   { frame, size, price, mat: null | { w, h } (opening of the passepartout, cm),
  *     inner: { w, h } (frame opening, cm), label }
- * "Ingen ramme" is always first. Works whose photo already shows the artist's
+ * "Ingen ramme" is always first. `frame.passepartout` means the frame is sold
+ * with a white passepartout: it then only fits paper smaller than its opening. Works whose photo already shows the artist's
  * own frame only get "Ingen ramme".
  */
 export function offersFor(work, meta) {
@@ -105,7 +107,8 @@ function bestSize(frame, size, medium, style) {
     const dw = inner.w - size.w;
     const dh = inner.h - size.h;
     let fit = null;
-    if (dw >= -0.6 && dh >= -0.6 && dw <= EXACT && dh <= EXACT) {
+    // A frame sold with a passepartout only takes paper with a border around it
+    if (!frame.passepartout && dw >= -0.6 && dh >= -0.6 && dw <= EXACT && dh <= EXACT) {
       fit = { mat: null, score: dw + dh };
     } else if (
       style === 'plakat' &&
@@ -120,8 +123,6 @@ function bestSize(frame, size, medium, style) {
       // The passepartout's window overlaps the paper by 3 mm on every side
       fit = { mat: { w: size.w - 0.6, h: size.h - 0.6 }, score: 100 + dw + dh };
     }
-    // Paper looks best with a passepartout: prefer it when the frame offers one
-    if (fit && medium === 'paper' && frame.passepartout && !fit.mat) fit.score += 200;
     if (fit && (!best || fit.score < best.score)) best = { ...fit, inner, price: Number(s.priceDkk) || 0, size: s };
   }
   if (!best) return null;
@@ -129,8 +130,7 @@ function bestSize(frame, size, medium, style) {
 }
 
 // ------------------------------------------------------------------ money
-const kr = new Intl.NumberFormat('da-DK', { maximumFractionDigits: 0 });
-export const formatKr = (n) => `${kr.format(Math.round(n))} kr.`;
-export const priceOf = (work) => (Number.isFinite(Number(work?.pris)) && Number(work.pris) > 0 ? Number(work.pris) : null);
+export const formatKr = formatPris;
+export const priceOf = (work) => (hasPris(work?.pris) ? Math.round(Number(work.pris)) : null);
 export const sizeLabel = (s) => `${fmtCm(s.w)} × ${fmtCm(s.h)} cm`;
 const fmtCm = (v) => String(Math.round(v * 10) / 10).replace('.', ',');

@@ -28,7 +28,8 @@
   overscroll-behavior: none;
   outline: none;
 }
-#stue[hidden] {
+#stue[hidden],
+#stue [hidden] {
   display: none !important;
 }
 :where(#stue) *,
@@ -384,7 +385,10 @@
   line-height: 1.25;
 }
 #stue .stue__opt--frame {
-  width: 96px;
+  width: 100px;
+}
+.stue__opt--frame .stue__opt-label {
+  -webkit-line-clamp: 3;
 }
 .stue__opt--work img {
   width: 100%;

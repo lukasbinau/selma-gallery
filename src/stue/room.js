@@ -75,45 +75,45 @@ export const TIMES = [
   {
     id: 'morgen',
     name: 'Morgen',
-    sun: { dir: [-0.62, 0.3, 0.72], colour: '#ffd2a1', intensity: 4.2 },
+    sun: { dir: [-0.62, 0.3, 0.72], colour: '#ffd2a1', intensity: 10.5 },
     sky: { zenith: '#86a9d4', horizon: '#f1dcc6', ground: '#5d5a48', cloud: '#fff0e2', cover: 0.38, intensity: 1.5 },
-    skyLight: { colour: '#c3d3ec', intensity: 1.1 },
+    skyLight: { colour: '#c3d3ec', intensity: 4.4 },
     lamps: 0,
-    env: 0.28,
-    exposure: 1.0,
+    env: 0.84,
+    exposure: 1.2,
     fog: '#e6dccf',
   },
   {
     id: 'dag',
     name: 'Dag',
-    sun: { dir: [-0.5, 0.75, 0.42], colour: '#fff3e2', intensity: 5.2 },
+    sun: { dir: [-0.5, 0.75, 0.42], colour: '#fff3e2', intensity: 13.0 },
     sky: { zenith: '#5f90cf', horizon: '#dde7f0', ground: '#5f5d4a', cloud: '#ffffff', cover: 0.32, intensity: 2.1 },
-    skyLight: { colour: '#d0def2', intensity: 1.4 },
+    skyLight: { colour: '#d0def2', intensity: 5.6 },
     lamps: 0,
-    env: 0.3,
-    exposure: 0.85,
+    env: 0.9,
+    exposure: 1.02,
     fog: '#dfe6ec',
   },
   {
     id: 'aften',
     name: 'Aften',
-    sun: { dir: [-0.78, 0.1, -0.62], colour: '#ff9450', intensity: 3.6 },
+    sun: { dir: [-0.78, 0.1, -0.62], colour: '#ff9450', intensity: 9.0 },
     sky: { zenith: '#4b5b8c', horizon: '#f5a26a', ground: '#3d3730', cloud: '#f6b089', cover: 0.45, intensity: 1.1 },
-    skyLight: { colour: '#d9b49c', intensity: 0.75 },
+    skyLight: { colour: '#d9b49c', intensity: 3.0 },
     lamps: 0.85,
-    env: 0.35,
-    exposure: 1.1,
+    env: 1.05,
+    exposure: 1.32,
     fog: '#c99a7e',
   },
   {
     id: 'nat',
     name: 'Nat',
-    sun: { dir: [-0.4, 0.55, 0.3], colour: '#8fa6d8', intensity: 0.12 },
+    sun: { dir: [-0.4, 0.55, 0.3], colour: '#8fa6d8', intensity: 0.3 },
     sky: { zenith: '#04060d', horizon: '#121a2c', ground: '#05060a', cloud: '#1a2236', cover: 0.25, intensity: 1, stars: 1.4 },
-    skyLight: { colour: '#5c6d99', intensity: 0.03 },
+    skyLight: { colour: '#5c6d99', intensity: 0.12 },
     lamps: 1,
-    env: 0.45,
-    exposure: 1.25,
+    env: 1.35,
+    exposure: 1.5,
     fog: '#0b1020',
   },
 ];
@@ -184,7 +184,8 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', alpha: false });
   if (!renderer.getContext()) throw new Error('no-webgl');
   renderer.setPixelRatio(1);
-  renderer.toneMapping = sp.get('tm') === 'neutral' ? THREE.NeutralToneMapping : sp.get('tm') === 'aces' ? THREE.ACESFilmicToneMapping : THREE.AgXToneMapping;
+  // Neutral keeps the painting's own colours true; ?tm=agx|aces for comparison
+  renderer.toneMapping = sp.get('tm') === 'agx' ? THREE.AgXToneMapping : sp.get('tm') === 'aces' ? THREE.ACESFilmicToneMapping : THREE.NeutralToneMapping;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
@@ -1139,6 +1140,14 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     setExposure,
     show,
     hide,
+    // dev: render sample i straight to the screen (no accumulation)
+    debugSample(i) {
+      jitter(i, pipeline.size);
+      renderer.setRenderTarget(null);
+      renderer.render(scene, camera);
+    },
+    lights: { sun, skyLight, pictureSpot },
+    pipeline,
     prewarmWall(wall) {
       if (wall?.kind === 'paper') {
         const t = wallpaper(wall);

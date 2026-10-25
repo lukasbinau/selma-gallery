@@ -160,8 +160,17 @@ export async function createStue({ root, works, artMeta = {} }) {
   function chooseOffer(offers, work) {
     const pref = offers.find((o) => o.frame.id === state.frameId);
     if (pref) return pref;
-    // paper looks unfinished without a frame: start framed when one fits
-    if (mediumOf(work) === 'paper' && offers.length > 1) return offers[1];
+    // Paper looks unfinished without a frame: start with a calm one (a
+    // passepartout, then oak, then black). Canvas and board start as they are.
+    if (mediumOf(work) === 'paper' && offers.length > 1) {
+      const framed = offers.slice(1);
+      return (
+        framed.find((o) => o.mat) ||
+        framed.find((o) => /eg/i.test(o.frame.id)) ||
+        framed.find((o) => /sort/i.test(o.frame.id)) ||
+        framed[0]
+      );
+    }
     return offers[0];
   }
 
@@ -223,7 +232,7 @@ export async function createStue({ root, works, artMeta = {} }) {
 
   // Switch painting inside the view: crossfade, keep frame/wall/light choices
   let switchTimer = 0;
-  function switchWork(id) {
+  function switchWork(id, { silent = false } = {}) {
     if (id === state.id) return;
     clearTimeout(switchTimer);
     markRail(ui.rails.work, id);
@@ -248,7 +257,7 @@ export async function createStue({ root, works, artMeta = {} }) {
         applySpec(spec, tex, { keepView: true });
         if (state.viewId !== prevView) room.setViewInstant(state.viewId);
       });
-      emit('work', { id: state.id, index: state.index });
+      if (!silent) emit('work', { id: state.id, index: state.index });
       announce(`${spec.work.titel}`);
     }, 120);
   }
@@ -302,6 +311,10 @@ export async function createStue({ root, works, artMeta = {} }) {
 
   // ---------------------------------------------------------------- UI
   const thumb = (id) => artUrl(id, 640);
+  // "Sort ramme, 30 × 40 cm med passepartout" – unless the name already says so
+  const offerText = (o) => `${o.label}, ${sizeLabel(o.inner)}${o.mat && !/passepartout/i.test(o.label) ? ` ${STRINGS.withMat}` : ''}`;
+  // "Sort blanklakeret træramme, smal 13 mm" → "Sort blanklakeret træramme" in the rail
+  const shortName = (name) => String(name).split(',')[0];
   function frameVisual(offer) {
     const f = offer.frame;
     const img = `<img src="${thumb(state.id)}" alt="" loading="lazy" decoding="async">`;
@@ -329,11 +342,11 @@ export async function createStue({ root, works, artMeta = {} }) {
       ui.rails.frame,
       state.offers.map((o) => ({
         id: o.frame.id,
-        label: o.frame.none ? STRINGS.noFrame : o.label,
+        label: o.frame.none ? STRINGS.noFrame : shortName(o.label),
         sub: o.frame.none ? '' : `${sizeLabel(o.inner)}${o.mat ? ' + pp.' : ''} · ${formatKr(o.price)}`,
         aria: o.frame.none
           ? STRINGS.noFrame
-          : `${o.label}, ${sizeLabel(o.inner)}${o.mat ? `, ${STRINGS.withMat}` : ''}, ${formatKr(o.price)}`,
+          : `${offerText(o)}, ${formatKr(o.price)}`,
         html: frameVisual(o),
       })),
       state.offer?.frame.id,
@@ -392,7 +405,7 @@ export async function createStue({ root, works, artMeta = {} }) {
       lines.push(`${STRINGS.painting} ${sizeText} · ${pris ? formatKr(pris) : STRINGS.priceOnRequest.toLowerCase()}`);
     }
     if (o && !o.frame.none) {
-      lines.push(`${o.label}, ${sizeLabel(o.inner)}${o.mat ? ` ${STRINGS.withMat}` : ''} · ${formatKr(o.price)}`);
+      lines.push(`${offerText(o)} · ${formatKr(o.price)}`);
     } else {
       lines.push(STRINGS.noFrame);
     }
@@ -496,7 +509,7 @@ export async function createStue({ root, works, artMeta = {} }) {
     const o = state.offer;
     const frame =
       o && !o.frame.none
-        ? { label: `${o.label}, ${sizeLabel(o.inner)}${o.mat ? ` ${STRINGS.withMat}` : ''}`, price: o.price }
+        ? { label: offerText(o), price: o.price }
         : null;
     openContact({ id: state.id, from: ui.cta, frame });
   });
@@ -617,6 +630,8 @@ export async function createStue({ root, works, artMeta = {} }) {
     prepare,
     show,
     hide,
+    // another painting, inside the room (crossfade); no 'work' event comes back
+    select: (id) => switchWork(id, { silent: true }),
     on,
     off,
     setFrom,

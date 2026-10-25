@@ -29,6 +29,8 @@ function clusterSprite({ colours, size = 256, leaves = 70, seed = 1, leafScale =
     g.restore();
   }
   const t = toTexture(c, { repeat: false });
+  t.generateMipmaps = false; // see leafSprite: keep alpha-tested edges solid
+  t.minFilter = THREE.LinearFilter;
   return t;
 }
 

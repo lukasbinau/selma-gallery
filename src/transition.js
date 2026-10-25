@@ -3,6 +3,10 @@
 // will sit once the camera rests (gallery.rectAtRest), then FLIP-animated
 // from the card's rect; a veil in the room's colour covers the hand-over.
 // Only transform/opacity animate, so it stays smooth on phones.
+//
+// Any view with the gallery's rect API (resize, rectAtRest, currentRect) can
+// use it, such as "I din stue": pass `colour` for its veil. flyAcross()
+// carries the painting from one view's wall to another's.
 
 const ROOM_COLOUR = { evening: '#230a66', daylight: '#e3dbf5' };
 const EASE = 'cubic-bezier(0.65, 0, 0.35, 1)';
@@ -20,10 +24,10 @@ function play(el, keyframes, options) {
   return Promise.race([settled, fallback]);
 }
 
-function makeVeil(root) {
+function makeVeil(root, colour) {
   const veil = document.createElement('div');
   veil.className = 'fly-veil';
-  veil.style.background = ROOM_COLOUR[root.dataset.theme] || ROOM_COLOUR.evening;
+  veil.style.background = colour || ROOM_COLOUR[root?.dataset.theme] || ROOM_COLOUR.evening;
   document.body.append(veil);
   return veil;
 }
@@ -31,7 +35,7 @@ function makeVeil(root) {
 function makeGhost(img, rect) {
   const ghost = document.createElement('img');
   ghost.className = 'fly-ghost';
-  ghost.src = img.currentSrc || img.src;
+  ghost.src = typeof img === 'string' ? img : img.currentSrc || img.src;
   ghost.alt = '';
   ghost.decoding = 'sync';
   Object.assign(ghost.style, {
@@ -56,7 +60,7 @@ const cardImage = (card) => card?.querySelector?.('.vaerk__frame img') || null;
  * revealed with the ghost gone. `showRoom` must un-hide the room and resolve
  * when its first frame has been rendered.
  */
-export async function flyIn({ gallery, root, index, card, showRoom }) {
+export async function flyIn({ gallery, root, index, card, showRoom, colour }) {
   const img = cardImage(card);
   if (!img) return false;
 
@@ -65,7 +69,7 @@ export async function flyIn({ gallery, root, index, card, showRoom }) {
   const to = gallery.rectAtRest(index);
   if (!to || !to.width || !to.height) return false;
 
-  const veil = makeVeil(root);
+  const veil = makeVeil(root, colour);
   const ghost = makeGhost(img, to);
   ghost.style.transform = flipFrom(from, to);
   await nextFrame(); // let the ghost paint at the card before it moves
@@ -100,14 +104,14 @@ export async function flyIn({ gallery, root, index, card, showRoom }) {
  * Room → card. `leaveRoom` hides the room and restores the page (scroll
  * unlocked, card scrolled into view); it runs while the veil covers the hand-over.
  */
-export async function flyOut({ gallery, root, card, leaveRoom }) {
+export async function flyOut({ gallery, root, card, leaveRoom, colour }) {
   const img = cardImage(card);
   if (!img) return false;
 
   const from = gallery.currentRect();
   if (!from || !from.width || !from.height) return false;
 
-  const veil = makeVeil(root);
+  const veil = makeVeil(root, colour);
   const ghost = makeGhost(img, from);
   await nextFrame();
   await play(veil, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
@@ -122,6 +126,46 @@ export async function flyOut({ gallery, root, card, leaveRoom }) {
     play(veil, [{ opacity: 1 }, { opacity: 0 }], { duration: 360, delay: 60, easing: 'ease-in' }),
   ]);
   await play(ghost, [{ opacity: 1 }, { opacity: 0 }], { duration: 160 });
+  ghost.remove();
+  veil.remove();
+  return true;
+}
+
+/**
+ * One view's wall → another's (gallery ↔ "I din stue"). The ghost starts on
+ * the painting where it hangs now (`from`, a rect); the veil fades up in the
+ * new view's colour while `change()` hides the old view and shows the new
+ * one (resolving once it has rendered); then the ghost glides onto `to()`,
+ * the painting's rect in the new view, and dissolves into it. `src` is the
+ * photo's URL. Resolves false (nothing done) without a usable start rect.
+ */
+export async function flyAcross({ from, src, colour, change, to }) {
+  if (!from || !from.width || !from.height || !src) return false;
+  const probe = new Image();
+  probe.src = src;
+  await Promise.race([probe.decode().catch(() => {}), new Promise((r) => setTimeout(r, 600))]);
+
+  const veil = makeVeil(null, colour);
+  const ghost = makeGhost(src, from);
+  await nextFrame();
+  await play(veil, [{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
+  try {
+    await change();
+  } catch (err) {
+    ghost.remove();
+    veil.remove();
+    throw err;
+  }
+  await nextFrame();
+  const target = to();
+  if (target && target.width && target.height) {
+    // the ghost sits at `from`: move it onto the new rect
+    await play(ghost, [{ transform: 'none' }, { transform: flipFrom(target, from) }], { duration: FLY_MS, easing: EASE });
+  }
+  await Promise.all([
+    play(veil, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: 'ease-in' }),
+    play(ghost, [{ opacity: 1 }, { opacity: 0 }], { duration: 340, delay: 100, easing: 'ease-in' }),
+  ]);
   ghost.remove();
   veil.remove();
   return true;
