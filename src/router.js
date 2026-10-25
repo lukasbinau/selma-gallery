@@ -16,7 +16,8 @@ import data from './vaerker.json';
 import artMeta from './art-meta.json';
 import { toast } from './toast.js';
 import { openContact, closeContact, isContactOpen } from './contact.js';
-import { flyIn, flyOut, flyAcross } from './transition.js';
+import { flyIn, flyOut, flyAcross, liftOff, nextFrame } from './transition.js';
+import { artFormat } from './art-format.js';
 import { currentSection, scrollToSection, setThemeColor, SECTION_COLOUR } from './front.js';
 
 const WORKS = data.vaerker;
@@ -39,6 +40,7 @@ const STRIP_COLOUR = { top: '#5e17eb', vaerker: '#f767d3', 'om-mig': '#fcd23b' }
 const WIPE_MS = 480;
 const EXPOSURE_MS = 900;
 const LOADING = { galleri: 'Henter galleriet', stue: 'Indretter stuen' };
+// The photo "I din stue" shows (it loads the JPEGs), for the ghost that leaves it
 const artUrl = (id) => `${import.meta.env.BASE_URL}art/${id}-1024.jpg`;
 
 // ---------------------------------------------------------------- state
@@ -59,6 +61,11 @@ let savedScroll = 0;
 // with Back/Forward), so the exit control pushes a front state instead of
 // going back out of the site.
 const isCold = () => !!history.state?.cold;
+
+// Is the current history entry still one of `which`? A visitor who pressed
+// Back while a view was opening is on another entry by now (its popstate
+// waits in `pending`): the URL corrections below must not overwrite that one.
+const onEntry = (which) => parseHash().view === which;
 
 const parseHash = (hash = location.hash) => {
   const m = /^#galleri(?:\/([\w-]+))?$/.exec(hash);
@@ -103,7 +110,7 @@ export function ensureGallery() {
       g.on('index', ({ index }) => {
         if (view !== 'galleri' && view !== 'entering') return;
         const w = WORKS[index];
-        if (w) history.replaceState({ ...history.state, view: 'galleri', id: w.id }, '', `#galleri/${w.id}`);
+        if (w && onEntry('galleri')) history.replaceState({ ...history.state, view: 'galleri', id: w.id }, '', `#galleri/${w.id}`);
       });
       g.on('exit', () => {
         if (!isContactOpen()) leave();
@@ -160,6 +167,7 @@ if (vaerker) {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 800));
     idle(() => loadChunk().catch(() => {}));
     idle(() => loadStueChunk().catch(() => {}));
+    idle(() => artFormat());
   });
   io.observe(vaerker);
 }
@@ -277,6 +285,9 @@ export async function enterGallery({ index = 0, intro = false, fromEl: from = nu
 
   let g;
   try {
+    // The wipe's first frame goes on screen before anything is loaded or
+    // built; from then on it scales in on the compositor, whatever the room costs
+    await nextFrame();
     g = await ensureGallery();
     g.setExposure(0.2);
     // The room is built behind the wipe: keep it invisible until the wipe has covered the page
@@ -308,7 +319,7 @@ export async function enterGallery({ index = 0, intro = false, fromEl: from = nu
 
   // A hash with an unknown id landed on works[0]; make the URL say so
   const standing = WORKS[g.index];
-  if (standing && !intro && parseHash().id !== standing.id) {
+  if (standing && !intro && onEntry('galleri') && parseHash().id !== standing.id) {
     history.replaceState({ ...history.state, view: 'galleri', id: standing.id }, '', `#galleri/${standing.id}`);
   }
 
@@ -333,20 +344,25 @@ export async function enterGallery({ index = 0, intro = false, fromEl: from = nu
   return true;
 }
 
-// Entry from a card: the painting flies from the card to its place on the wall
+// Entry from a card: the painting lifts off the card at once, and flies on to
+// its place on the wall as soon as the room is ready behind the veil
 async function enterByFlight({ index, card }) {
+  const lift = hasWebGL() ? liftOff({ card, root, colour: roomColour(), label: LOADING.galleri }) : null;
   let g;
   try {
+    if (lift) await lift.shown;
     g = await ensureGallery();
     g.setExposure(0.25);
     lockScroll(); // the page's scrollbar goes; the root takes its final size first
-    const flew = await flyIn({ gallery: g, root, index, card, showRoom: () => g.show({ index, intro: false }) });
+    const flew = await flyIn({ gallery: g, root, index, card, lift, showRoom: () => g.show({ index, intro: false }) });
     if (!flew) {
       // No usable rects (the card's image is gone?): just show the room
       root.style.visibility = '';
       await g.show({ index, intro: false });
+      await lift?.fade();
     }
   } catch (err) {
+    lift?.drop(); // the painting settles back on its card
     root.style.visibility = '';
     if (html.dataset.view) unlockScroll();
     console.warn('galleri', err);
@@ -359,7 +375,7 @@ async function enterByFlight({ index, card }) {
     return false;
   }
   const standing = WORKS[g.index];
-  if (standing && parseHash().id !== standing.id) {
+  if (standing && onEntry('galleri') && parseHash().id !== standing.id) {
     history.replaceState({ ...history.state, view: 'galleri', id: standing.id }, '', `#galleri/${standing.id}`);
   }
   setFrontInert(true);
@@ -447,7 +463,10 @@ export async function enterStue({ id, fromEl: from = null, instant = false } = {
   setWipeLabel('stue');
 
   if (!instant && !reduced.matches && card && card.getBoundingClientRect().height > 0) {
+    // The painting lifts off its card at once, while the room loads behind the veil
+    const lift = hasWebGL() ? liftOff({ card, root: stueRoot, colour: STUE_COLOUR, label: LOADING.stue }) : null;
     try {
+      if (lift) await lift.shown;
       const s = await ensureStue();
       s.setFrom('front');
       s.setExposure(0.3);
@@ -462,14 +481,17 @@ export async function enterStue({ id, fromEl: from = null, instant = false } = {
         index,
         card,
         colour: STUE_COLOUR,
+        lift,
         showRoom: () => s.show({ id, from: 'front' }),
       });
       if (!flew) {
         stueRoot.style.visibility = '';
         await s.show({ id, from: 'front' });
+        await lift?.fade();
       }
       return arriveInStue(s, { ramp: 700 });
     } catch (err) {
+      lift?.drop();
       return stueFailed(err);
     }
   }
@@ -488,6 +510,7 @@ export async function enterStue({ id, fromEl: from = null, instant = false } = {
         });
   const slow = setTimeout(() => wipe.classList.add('is-loading'), instant ? 0 : WIPE_MS);
   try {
+    await nextFrame(); // the wipe is on screen before the room is loaded and built
     const s = await ensureStue();
     s.setFrom('front');
     s.setExposure(0.3);
@@ -527,7 +550,7 @@ async function arriveInStue(s, { ramp = 0, settle = null } = {}) {
   const lights = ramp ? rampExposure(s, 0.3, 1, ramp) : (s.setExposure(1), null);
   if (settle) await Promise.all([settle, lights]);
   // The URL names the painting actually shown (an unknown id landed on works[0])
-  if (s.id && parseHash().id !== s.id) history.replaceState({ ...history.state, view: 'stue', id: s.id }, '', `#stue/${s.id}`);
+  if (s.id && onEntry('stue') && parseHash().id !== s.id) history.replaceState({ ...history.state, view: 'stue', id: s.id }, '', `#stue/${s.id}`);
   view = 'stue';
   flush();
   return true;
@@ -599,12 +622,16 @@ async function enterStueFromGallery({ id }) {
   view = 'entering';
   closeContact();
   try {
-    const s = await ensureStue();
-    s.setFrom('galleri');
-    s.setExposure(1);
-    stueRoot.style.visibility = 'hidden';
-    stueRoot.hidden = false;
-    await s.prepare(id);
+    // The veil comes up at once; the room loads and is hung behind it
+    let s;
+    const prepare = async () => {
+      s = await ensureStue();
+      s.setFrom('galleri');
+      s.setExposure(1);
+      stueRoot.style.visibility = 'hidden';
+      stueRoot.hidden = false;
+      await s.prepare(id);
+    };
     const change = async () => {
       gallery?.hide();
       stueRoot.style.visibility = '';
@@ -613,8 +640,11 @@ async function enterStueFromGallery({ id }) {
       setThemeColor(STUE_COLOUR);
     };
     const from = !reduced.matches && gallery ? gallery.currentRect() : null;
-    const flew = from && (await flyAcross({ from, src: artUrl(id), colour: STUE_COLOUR, change, to: () => s.currentRect() }));
-    if (!flew) await crossfade(STUE_COLOUR, change);
+    const src = gallery?.currentSrc?.() || artUrl(id);
+    const flew =
+      from &&
+      (await flyAcross({ from, src, colour: STUE_COLOUR, prepare, change, to: () => s.currentRect(), label: LOADING.stue }));
+    if (!flew) await crossfade(STUE_COLOUR, change, prepare, 'stue');
     return arriveInStue(s);
   } catch (err) {
     if (gallery && root.hidden) await gallery.show({ index: gallery.index }).catch(() => {});
@@ -629,7 +659,10 @@ async function exitStueToGallery() {
   closeContact();
   const index = Math.max(indexOf(stue?.id), 0);
   try {
-    const g = await ensureGallery();
+    let g;
+    const prepare = async () => {
+      g = await ensureGallery();
+    };
     const change = async () => {
       stue.hide();
       g.setExposure(1);
@@ -638,8 +671,18 @@ async function exitStueToGallery() {
       setThemeColor(roomColour());
     };
     const from = !reduced.matches ? stue.currentRect() : null;
-    const flew = from && (await flyAcross({ from, src: artUrl(WORKS[index].id), colour: roomColour(), change, to: () => g.currentRect() }));
-    if (!flew) await crossfade(roomColour(), change);
+    const flew =
+      from &&
+      (await flyAcross({
+        from,
+        src: artUrl(WORKS[index].id),
+        colour: roomColour(),
+        prepare,
+        change,
+        to: () => g.currentRect(),
+        label: LOADING.galleri,
+      }));
+    if (!flew) await crossfade(roomColour(), change, prepare, 'galleri');
   } catch (err) {
     // The gallery could not be built: leave the room for the front page instead
     console.warn('galleri', err);
@@ -649,18 +692,34 @@ async function exitStueToGallery() {
     return exitStue();
   }
   const w = WORKS[index];
-  if (w) history.replaceState({ ...history.state, view: 'galleri', id: w.id }, '', `#galleri/${w.id}`);
+  if (w && onEntry('galleri')) history.replaceState({ ...history.state, view: 'galleri', id: w.id }, '', `#galleri/${w.id}`);
   root.focus({ preventScroll: true });
   view = 'galleri';
   flush();
   return true;
 }
 
-// A veil in the next view's colour: up, change underneath, down
-async function crossfade(colour, change) {
+// A veil in the next view's colour: up (at once, while `prepare` loads the
+// next view), change underneath, down
+async function crossfade(colour, change, prepare = null, which = 'galleri') {
+  setWipeLabel(which);
   wipe.classList.add('is-active');
   wipe.style.background = colour;
-  await animate(wipe, [{ opacity: 0, transform: 'scaleX(1)' }, { opacity: 1, transform: 'scaleX(1)' }], { duration: 220 });
+  const slow = setTimeout(() => wipe.classList.add('is-loading'), 700);
+  try {
+    await Promise.all([
+      animate(wipe, [{ opacity: 0, transform: 'scaleX(1)' }, { opacity: 1, transform: 'scaleX(1)' }], { duration: 220 }),
+      prepare?.(),
+    ]);
+  } catch (err) {
+    clearTimeout(slow);
+    wipe.classList.remove('is-loading');
+    await animate(wipe, [{ opacity: 1, transform: 'scaleX(1)' }, { opacity: 0, transform: 'scaleX(1)' }], { duration: 200 });
+    wipe.classList.remove('is-active');
+    throw err;
+  }
+  clearTimeout(slow);
+  wipe.classList.remove('is-loading');
   await change();
   await animate(wipe, [{ opacity: 1, transform: 'scaleX(1)' }, { opacity: 0, transform: 'scaleX(1)' }], { duration: 280 });
   wipe.classList.remove('is-active');
