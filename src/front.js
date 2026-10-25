@@ -1,6 +1,6 @@
 // The front page's own behaviour: the menu bar follows the section under it,
-// section tabs scroll smoothly, and every "Skriv til Selma" opens the contact
-// sheet. Entering the gallery is the router's job (src/router.js).
+// section tabs scroll smoothly, and every "Køb og kontakt" / "Kontakt" opens
+// the contact sheet. Entering the gallery is the router's job (src/router.js).
 import { openContact } from './contact.js';
 
 const html = document.documentElement;
@@ -8,7 +8,12 @@ const themeMeta = document.querySelector('meta[name="theme-color"]');
 const tabs = [...document.querySelectorAll('.bar__tab[data-tab]')];
 const sections = [...document.querySelectorAll('main > section[id]')];
 
-export const SECTION_COLOUR = { top: '#ff2234', vaerker: '#5e17eb', processen: '#ff2234' };
+export const SECTION_COLOUR = { top: '#ff2234', vaerker: '#5e17eb', 'om-mig': '#ff2234' };
+
+// The section was called PROCESSEN until autumn 2026: old links land on OM MIG.
+// Runs before the router reads the hash (main.js imports this module first).
+const RENAMED = { '#processen': '#om-mig' };
+if (RENAMED[location.hash]) history.replaceState(history.state, '', RENAMED[location.hash]);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
 let current = html.dataset.section || 'top';
@@ -57,7 +62,7 @@ document.addEventListener('click', (e) => {
   scrollToSection(id);
 });
 
-// Every "Skriv til Selma": card buttons, KONTAKT tab, footer
+// Every contact button: KØB OG KONTAKT on the cards, the KONTAKT tab, the footer
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-contact]');
   if (!b || b.closest('#galleri')) return; // the room's plaques emit 'contact' themselves (router)

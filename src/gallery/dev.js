@@ -19,6 +19,7 @@ gallery.on('exit', () => {
   gallery.hide();
 });
 gallery.on('contact', (e) => say('contact', e));
+gallery.on('stue', (e) => say('stue', e));
 gallery.on('index', (e) => say('index', e));
 gallery.on('ready', () => say('ready: all full-size textures loaded'));
 

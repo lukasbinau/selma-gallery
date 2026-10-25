@@ -47,31 +47,81 @@ function homography([p0, p1, p2, p3]) {
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 
+// A polyline as a function of t in 0..1, by arc length
+function polyline(points) {
+  const lens = [0];
+  for (let i = 1; i < points.length; i++) lens.push(lens[i - 1] + dist(points[i - 1], points[i]));
+  const total = lens[lens.length - 1];
+  return (t) => {
+    const s = t * total;
+    let i = 1;
+    while (i < points.length - 1 && lens[i] < s) i++;
+    const k = (s - lens[i - 1]) / (lens[i] - lens[i - 1] || 1);
+    const a = points[i - 1];
+    const b = points[i];
+    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  };
+}
+
+// Coons patch through four edge polylines that share the corners: every
+// bowed edge of the photo becomes a straight edge of the output
+function coons([tl, tr, br, bl], edges) {
+  const T = polyline([tl, ...(edges.top || []), tr]);
+  const B = polyline([bl, ...(edges.bottom || []), br]);
+  const L = polyline([tl, ...(edges.left || []), bl]);
+  const R = polyline([tr, ...(edges.right || []), br]);
+  return (u, v) => {
+    const t = T(u);
+    const b = B(u);
+    const l = L(v);
+    const r = R(v);
+    const p = [0, 0];
+    for (let c = 0; c < 2; c++) {
+      p[c] =
+        (1 - v) * t[c] + v * b[c] + (1 - u) * l[c] + u * r[c] -
+        ((1 - u) * (1 - v) * tl[c] + u * (1 - v) * tr[c] + (1 - u) * v * bl[c] + u * v * br[c]);
+    }
+    return p;
+  };
+}
+
 /**
  * @param {string|Buffer} input  image file or buffer
  * @param {number[][]} corners   [[x,y] top-left, top-right, bottom-right, bottom-left]
  * @param {number} maxEdge       longest output edge in px
+ * @param {object} [opts]
+ * @param {object} [opts.edges]  points along bowed edges, corners not repeated:
+ *                               { top, bottom } left → right, { left, right } top → bottom
+ * @param {number} [opts.aspect] output width / height when the real size is known
+ *                               (a curled sheet photographs shorter than it is)
+ * @param {number} [opts.inset]  share cut from every side (hides a soft paper edge)
  * @returns {Promise<sharp.Sharp>} the straightened image
  */
-export async function rectify(input, corners, maxEdge = 2048) {
+export async function rectify(input, corners, maxEdge = 2048, { edges = null, aspect = null, inset = 0 } = {}) {
   const { data, info } = await sharp(input).rotate().flatten({ background: '#ffffff' }).raw().toBuffer({ resolveWithObject: true });
   const { width: sw, height: sh, channels } = info;
   const [tl, tr, br, bl] = corners;
-  // Output aspect from the quad's average edge lengths
-  const w0 = (dist(tl, tr) + dist(bl, br)) / 2;
-  const h0 = (dist(tl, bl) + dist(tr, br)) / 2;
+  // Output aspect from the quad's average edge lengths, unless it is given
+  const w0 = aspect || (dist(tl, tr) + dist(bl, br)) / 2;
+  const h0 = aspect ? 1 : (dist(tl, bl) + dist(tr, br)) / 2;
   const scale = maxEdge / Math.max(w0, h0);
   const ow = Math.round(w0 * scale);
   const oh = Math.round(h0 * scale);
   const H = homography(corners);
+  const patch = edges ? coons(corners, edges) : null;
   const out = Buffer.alloc(ow * oh * 3);
   for (let y = 0; y < oh; y++) {
-    const v = (y + 0.5) / oh;
+    const v = inset + ((y + 0.5) / oh) * (1 - 2 * inset);
     for (let x = 0; x < ow; x++) {
-      const u = (x + 0.5) / ow;
-      const d = H[6] * u + H[7] * v + 1;
-      const sx = (H[0] * u + H[1] * v + H[2]) / d;
-      const sy = (H[3] * u + H[4] * v + H[5]) / d;
+      const u = inset + ((x + 0.5) / ow) * (1 - 2 * inset);
+      let sx, sy;
+      if (patch) {
+        [sx, sy] = patch(u, v);
+      } else {
+        const d = H[6] * u + H[7] * v + 1;
+        sx = (H[0] * u + H[1] * v + H[2]) / d;
+        sy = (H[3] * u + H[4] * v + H[5]) / d;
+      }
       // Bilinear sample
       const x0 = Math.max(0, Math.min(sw - 2, Math.floor(sx)));
       const y0 = Math.max(0, Math.min(sh - 2, Math.floor(sy)));

@@ -5,6 +5,9 @@
 //   await gallery.show({ index: 3 });      // stand in front of works[3]
 //   gallery.on('exit', () => gallery.hide());
 //
+// Events: 'index' { index }, 'exit', 'ready', and from the plaques
+// 'contact' { id } (KØB OG KONTAKT) and 'stue' { id } (I DIN STUE).
+//
 // `root` is an empty <div id="galleri" hidden>; the module builds all of its
 // own DOM inside it (plus a measuring box for the plaques on <body>).
 import * as THREE from 'three';
@@ -846,12 +849,13 @@ export async function createGallery({ root, works, artMeta = {} }) {
     renderer.shadowMap.needsUpdate = true;
   }
 
-  // SKRIV TIL SELMA on a plaque
+  // KØB OG KONTAKT and I DIN STUE on a plaque
   root.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-contact]');
+    const b = e.target.closest('[data-contact], [data-stue]');
     if (!b) return;
     e.preventDefault();
-    emit('contact', { id: b.dataset.contact });
+    if (b.dataset.stue) emit('stue', { id: b.dataset.stue });
+    else emit('contact', { id: b.dataset.contact });
   });
 
   // ---------------------------------------------------------------- the rail
@@ -1079,6 +1083,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
     state.target = next;
     state.intro = false;
     setLean(false);
+    sharpen(next);
     if (reduced()) snapRig();
     renderUI(changed);
     if (changed) emit('index', { index: next });
@@ -1380,16 +1385,61 @@ export async function createGallery({ root, works, artMeta = {} }) {
   let failedToast = false;
   const progress = () => ui.setProgress(++loadedCount / Math.max(1, frames.length * 2));
   function setArt(f, tex) {
+    softMipmaps(tex);
     const old = f.material.map;
     f.material.map = tex;
     if (old && old !== placeholder) old.dispose();
   }
+
+  // The GPU builds mipmaps by plain 2 × 2 averaging. A painting with a fine,
+  // regular texture (Lilla skyer's coarse weave board) then turns into bands
+  // of moiré as soon as it is seen from a step back, i.e. at every resting
+  // view, while leaning in (level 0) stays sharp. Build the chain here
+  // instead, with a slight blur before each halving, which keeps the weave
+  // from folding into stripes. Browsers without canvas filters (Safari) get
+  // the same plain halving the GPU would do.
+  const canBlur = typeof CanvasRenderingContext2D !== 'undefined' && 'filter' in CanvasRenderingContext2D.prototype;
+  function softMipmaps(tex) {
+    const image = tex.image;
+    if (!image?.width || tex.mipmaps?.length) return;
+    const levels = [image];
+    let src = image;
+    let w = image.width;
+    let h = image.height;
+    while (w > 1 || h > 1) {
+      let from = src;
+      if (canBlur && Math.min(w, h) > 4) {
+        const blur = document.createElement('canvas');
+        blur.width = w;
+        blur.height = h;
+        const b = blur.getContext('2d');
+        b.filter = 'blur(0.8px)';
+        b.drawImage(src, 0, 0, w, h);
+        from = blur;
+      }
+      w = Math.max(1, w >> 1);
+      h = Math.max(1, h >> 1);
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(from, 0, 0, w, h);
+      levels.push(c);
+      src = c;
+    }
+    tex.mipmaps = levels;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+  }
   // A full-size upload costs 10–90 ms on the next render. Let them land one
-  // per frame while the camera rests, never during the walk-in or a swipe.
+  // per frame while the camera rests, never during the walk-in or a swipe,
+  // and the painting you are standing at always first.
   const pendingSwaps = [];
   function drainSwaps() {
     if (!pendingSwaps.length || state.intro || state.speed > 0.05) return;
-    const { f, tex } = pendingSwaps.shift();
+    const k = Math.max(0, pendingSwaps.findIndex((s) => s.f === frames[state.index]));
+    const [{ f, tex }] = pendingSwaps.splice(k, 1);
     setArt(f, tex);
   }
   function onLoadError(err) {
@@ -1400,14 +1450,52 @@ export async function createGallery({ root, works, artMeta = {} }) {
     }
   }
 
+  // Each frame remembers the size it should end up showing (f.want); a load
+  // that has been overtaken by a newer request is thrown away on arrival.
+  function request(i, size) {
+    const f = frames[i];
+    if (f.want === size) return f.loading;
+    f.want = size;
+    f.loading = loadTexture(artUrl(list[i].id, size)).then(
+      (tex) => {
+        if (f.want !== size) return tex.dispose();
+        for (let k = pendingSwaps.length - 1; k >= 0; k--) {
+          if (pendingSwaps[k].f === f) pendingSwaps.splice(k, 1)[0].tex.dispose();
+        }
+        pendingSwaps.push({ f, tex });
+      },
+      (err) => {
+        if (f.want === size) f.want = 0; // may be asked for again
+        onLoadError(err);
+      },
+    );
+    return f.loading;
+  }
+
+  // On a small screen the room makes do with 1024 px textures, but leaning in
+  // to a painting on a phone puts it ~1000 device px wide on screen. The work
+  // you stand at (and the last two you visited) get the 2048 px file instead.
+  const FOCUS_SIZE = 2048;
+  const SHARP_KEEP = 3;
+  const sharpened = []; // most recent last
+  function sharpen(i) {
+    if (FULL_SIZE >= FOCUS_SIZE || !frames[i] || !fullPromise) return; // nothing loads before the first show()
+    request(i, FOCUS_SIZE);
+    const at = sharpened.indexOf(i);
+    if (at >= 0) sharpened.splice(at, 1);
+    sharpened.push(i);
+    while (sharpened.length > SHARP_KEEP) request(sharpened.shift(), FULL_SIZE);
+  }
+
   let thumbsPromise = null;
   let fullPromise = null;
-  let texturesReady = false;
   function loadThumbs() {
     thumbsPromise ??= Promise.all(
       frames.map(async (f, i) => {
         try {
-          setArt(f, await loadTexture(artUrl(list[i].id, 640)));
+          const tex = await loadTexture(artUrl(list[i].id, 640));
+          if (f.material.map !== placeholder) tex.dispose(); // a bigger one already landed
+          else setArt(f, tex);
         } catch (err) {
           onLoadError(err);
         }
@@ -1416,21 +1504,25 @@ export async function createGallery({ root, works, artMeta = {} }) {
     );
     return thumbsPromise;
   }
+  // Full sizes nearest to where you stand first, a few at a time, so the
+  // painting in front of you is not queued behind thirteen others.
   function loadFull() {
-    fullPromise ??= Promise.all(
-      frames.map(async (f, i) => {
-        try {
-          pendingSwaps.push({ f, tex: await loadTexture(artUrl(list[i].id, FULL_SIZE)) });
-        } catch (err) {
-          onLoadError(err);
-        }
-        progress();
-      }),
-    ).then(() => {
-      texturesReady = true;
+    if (fullPromise) return fullPromise;
+    const order = frames.map((_, i) => i).sort((a, b) => Math.abs(a - state.index) - Math.abs(b - state.index));
+    let started;
+    fullPromise = new Promise((resolve) => (started = resolve)).then(() => {
       ui.progressDone();
       emit('ready');
     });
+    sharpen(state.index); // before the workers, so its first load is already the sharp one
+    const worker = async () => {
+      while (order.length) {
+        const i = order.shift();
+        await request(i, Math.max(frames[i].want || 0, FULL_SIZE));
+        progress();
+      }
+    };
+    Promise.all(Array.from({ length: 4 }, worker)).then(started);
     return fullPromise;
   }
 
@@ -1521,7 +1613,8 @@ export async function createGallery({ root, works, artMeta = {} }) {
 
     await loadThumbs();
     if (!shown) return; // hide() was called while the thumbs were loading
-    if (!texturesReady) loadFull();
+    if (!fullPromise) loadFull();
+    else sharpen(state.index);
 
     // First frame right away, then the loop takes over
     updateRig(0);

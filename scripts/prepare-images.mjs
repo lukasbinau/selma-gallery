@@ -1,10 +1,10 @@
 // Turns the source photos into the images the site uses. Run: npm run images
 //
-//   source/originals/*.jpg   Lukas's first photos (uncropped)
+//   source/originals/*.jpg   photos of the works (uncropped)
 //   source/canva/*           the bitmaps embedded in Selma's Canva design
 //   public/art/<id>-{2048,1024,640}.jpg   every work, straight-on, three sizes
-//   public/studio/*.jpg      atelier photos for PROCESSEN
-//   public/pattern/*.webp    the sidebar tiles (crops of two paintings)
+//   public/studio/*.jpg      atelier photos for OM MIG
+//   public/pattern/*.webp    the sidebar tiles (see TILES below)
 //   public/hero-banner.jpg   the strip under KUNST
 //   src/art-meta.json        pixel size of every work (for aspect-ratio / no layout shift)
 import sharp from 'sharp';
@@ -19,6 +19,9 @@ const SIZES = [2048, 1024, 640];
 //   file:    source photo
 //   crop:    [left, top, right, bottom] as fractions, for photos that are already straight
 //   corners: four corner points (px, clockwise from top-left) for photos taken at an angle
+//   edges:   with corners: extra points along edges that bow (curled paper), see rectify.mjs
+//   aspect:  with corners: the real width / height, when it is known
+//   inset:   with corners: share cut from every side, so no background shows at the edge
 //   trim:    the Canva cutouts have transparent surroundings; trim them, then inset a little
 //   turn:    rotate the result (degrees)
 const works = {
@@ -30,26 +33,36 @@ const works = {
   },
   'blaa-time': { file: `${ORIG}/c8293f1b-18c0-4c3d-8ac8-44a9998fcb56.jpg` },
   rapsmarker: { file: `${ORIG}/d0b86156-b143-45a8-b40c-73b194be22ed.jpg` },
-  markvej: { file: `${ORIG}/d3aa46a0-aa8d-438c-855a-76e8cc5777e0.jpg` },
   'groent-glas': { file: `${ORIG}/f7a312a5-5ce7-4258-ad72-439b44930927.jpg`, crop: [0.222, 0.114, 0.75, 0.902] },
+  // A4 on a tablecloth; the paper curls, so its top and bottom edges sag. The
+  // edge points were found by scanning for the blue paper against the cloth.
+  'blaa-fliser': {
+    file: `${ORIG}/blaat-moenster-paa-dug.jpg`,
+    corners: [
+      [165, 209],
+      [917, 184],
+      [924, 1231],
+      [145, 1232],
+    ],
+    edges: {
+      top: [[244, 209], [318, 214], [392, 221], [466, 227], [540, 226], [614, 222], [688, 212], [762, 200], [836, 191]],
+      bottom: [[244, 1227], [318, 1224], [392, 1221], [466, 1217], [540, 1213], [614, 1209], [688, 1208], [762, 1210], [836, 1216]],
+      left: [[161, 325], [160, 435], [159, 545], [158, 710], [157, 820], [156, 930], [156, 1040], [151, 1150]],
+      right: [[918, 325], [918, 435], [918, 545], [919, 710], [921, 820], [922, 930], [923, 1040], [924, 1150]],
+    },
+    aspect: 21 / 29.7,
+    inset: 0.006,
+  },
   // From the Canva file (corner points measured on the photos)
   'moenster-lyseroed': {
     file: `${CANVA}/img05.jpg`,
     corners: [
-      [260, 69],
-      [1575, 59],
-      [1537, 1800],
-      [332, 1810],
+      [252, 63],
+      [1577, 63],
+      [1508, 1776],
+      [331, 1788],
     ],
-  },
-  'sol-og-figur': {
-    file: `${CANVA}/img07.jpg`,
-    corners: [
-      [430, 458],
-      [1565, 437],
-      [1544, 1621],
-      [426, 1613],
-    ],
+    inset: 0.004,
   },
   'lilla-skyer': {
     file: `${CANVA}/img08.jpg`,
@@ -71,24 +84,18 @@ const works = {
   },
   ansigt: { file: `${CANVA}/img12.png`, trim: true },
   figur: { file: `${CANVA}/img13.png`, trim: true },
-  'blaa-fliser': {
-    file: `${CANVA}/img15.png`,
-    corners: [
-      [37, 164],
-      [473, 175],
-      [454, 682],
-      [75, 696],
-    ],
-  },
-  'roedt-moenster': {
-    file: `${CANVA}/img15.png`,
-    corners: [
-      [478, 252],
-      [888, 266],
-      [846, 742],
-      [472, 729],
-    ],
-  },
+};
+
+// The sidebar tiles: square crops centred on one motif. To use another
+// pattern, point `from` at a work id (its straightened image, crop in
+// fractions of it) or at a file (crop in pixels), and adjust the crop.
+//   mirror: the right half is the left half flipped, for a motif whose right
+//           side touches its neighbour in the painting
+const TILES = {
+  // One blue quatrefoil from "Lyserødt mønster", pink around it, a hint of the green band below
+  firkloever: { from: 'moenster-lyseroed', crop: [0.0786, 0.4873, 0.4466, 0.7549], mirror: true },
+  // The sun from "Sol og figur" (no longer on the site), centred on its dark blue sky
+  sol: { from: `${CANVA}/img07.jpg`, crop: [704, 580, 1024, 900] },
 };
 
 const studio = {
@@ -101,7 +108,7 @@ for (const d of ['public/art', 'public/studio', 'public/pattern']) mkdirSync(d, 
 
 // Straight, full-resolution version of one work
 async function straight(spec) {
-  if (spec.corners) return rectify(spec.file, spec.corners, 2400);
+  if (spec.corners) return rectify(spec.file, spec.corners, 2400, spec);
   let img = sharp(spec.file).rotate();
   if (spec.trim) {
     const buf = await img.trim({ threshold: 10 }).flatten({ background: '#ffffff' }).toBuffer();
@@ -145,23 +152,22 @@ for (const [name, file] of Object.entries(studio)) {
   console.log(name);
 }
 
-// Sidebar tiles: the quatrefoil from "Mønster lyserød", the sun from "Sol og figur".
-// Fractions of the straightened painting; tiles are square-ish like in the design.
-async function tile(id, [l, t, r, b], out) {
-  const { width, height } = await sharp(master[id]).metadata();
-  await sharp(master[id])
-    .extract({
-      left: Math.round(l * width),
-      top: Math.round(t * height),
-      width: Math.round((r - l) * width),
-      height: Math.round((b - t) * height),
-    })
+for (const [name, { from, crop, mirror }] of Object.entries(TILES)) {
+  const input = master[from] || from;
+  const { width, height } = await sharp(input).metadata();
+  const px = master[from] ? [crop[0] * width, crop[1] * height, crop[2] * width, crop[3] * height] : crop;
+  const [l, t, r, b] = px.map(Math.round);
+  let tile = await sharp(input)
+    .extract({ left: l, top: t, width: r - l, height: b - t })
     .resize({ width: 240, height: 240, fit: 'cover' })
-    .webp({ quality: 82 })
-    .toFile(`public/pattern/${out}.webp`);
+    .toBuffer();
+  if (mirror) {
+    const half = await sharp(tile).extract({ left: 0, top: 0, width: 120, height: 240 }).flop().toBuffer();
+    tile = await sharp(tile).composite([{ input: half, left: 120, top: 0 }]).toBuffer();
+  }
+  await sharp(tile).webp({ quality: 82 }).toFile(`public/pattern/${name}.webp`);
+  console.log('tile', name);
 }
-await tile('moenster-lyseroed', [0.22, 0.49, 0.66, 0.76], 'firkloever');
-await tile('sol-og-figur', [0.28, 0.08, 0.58, 0.38], 'sol');
 
 // Banner under KUNST: the upper part of the pattern painting, wide
 {
