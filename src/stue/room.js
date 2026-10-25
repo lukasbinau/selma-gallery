@@ -18,36 +18,36 @@ export const ROOM = { x0: -2.9, x1: 2.9, z0: -4.6, z1: 4.6, h: 2.8 };
 const WALL_T = 0.25;
 
 // ------------------------------------------------------------------ views
-// subject: the part of the room that must be in the picture (metres, on the
-// painting's wall plane): the work, its furniture and a little air.
+// Both walls meet the glazing (x = x0) at a corner, and the work hangs close
+// to that corner. The camera is placed like an interior photographer's: off to
+// the side, `bearing` degrees off the wall's normal (away from the glass), so
+// the painted wall runs into depth on one side of the picture and the glazing
+// with the garden fills the other. How far back it stands depends on the work
+// (see cameraFor): small works get a closer camera and a slightly longer lens.
 export const VIEWS = [
   {
     id: 'stue',
     name: 'Stue',
     wallZ: ROOM.z0,
     facing: 1, // the wall faces +z
-    artX: 0.55,
+    artX: -1.72,
     furnitureTop: 0.84, // top of the sofa's back cushions
     maxW: 1.9,
     maxH: 1.4,
-    camera: new THREE.Vector3(1.3, 1.22, 0.9),
-    aimX: 0.15,
+    bearing: 40,
     windowSide: -1, // the glazing is to the left in the picture
-    subject: (art) => ({ x0: -0.7, x1: 1.85, y0: 0.3, y1: Math.max(art.top + 0.28, 1.9) }),
   },
   {
     id: 'spise',
     name: 'Spisestue',
     wallZ: ROOM.z1,
     facing: -1,
-    artX: 0.4,
+    artX: -2.1,
     furnitureTop: 0.72, // the sideboard's top
-    maxW: 1.35,
+    maxW: 1.2,
     maxH: 1.15,
-    camera: new THREE.Vector3(1.05, 1.22, -0.6),
-    aimX: 0.0,
+    bearing: 40,
     windowSide: 1, // glazing to the right
-    subject: (art) => ({ x0: -0.55, x1: 1.35, y0: 0.3, y1: Math.max(art.top + 0.28, 1.8) }),
   },
 ];
 export const viewById = (id) => VIEWS.find((v) => v.id === id) || VIEWS[0];
@@ -71,6 +71,8 @@ function hangCentre(view, outer) {
 
 // ------------------------------------------------------------------ times of day
 // sun: direction towards the sun (the glazing faces -x), colour, strength.
+// It comes in nearly square to the glazing, so its patches land on the floor
+// and the far wall, never as glare on the two walls the works hang on.
 // sky: gradient for the sky dome. skyLight: daylight entering through the
 // glazing. lamps: 0..1 interior lamps. env: strength of the room's bounce light
 // (kept below 1: the room is captured from itself, so more would feed back).
@@ -78,34 +80,37 @@ export const TIMES = [
   {
     id: 'morgen',
     name: 'Morgen',
-    sun: { dir: [-0.62, 0.3, 0.72], colour: '#ffd2a1', intensity: 10.5 },
+    sun: { dir: [-0.9, 0.32, 0.12], colour: '#ffd2a1', intensity: 10.5 },
     sky: { zenith: '#86a9d4', horizon: '#f1dcc6', ground: '#5d5a48', cloud: '#fff0e2', cover: 0.38, intensity: 1.5 },
     skyLight: { colour: '#c3d3ec', intensity: 4.4 },
     lamps: 0,
     env: 0.85,
     exposure: 3.6,
+    glass: 0.55, // see mats.glassTint
     fog: '#e6dccf',
   },
   {
     id: 'dag',
     name: 'Dag',
-    sun: { dir: [-0.5, 0.75, 0.42], colour: '#fff3e2', intensity: 13.0 },
+    sun: { dir: [-0.45, 0.85, 0.22], colour: '#fff3e2', intensity: 13.0 },
     sky: { zenith: '#5f90cf', horizon: '#dde7f0', ground: '#5f5d4a', cloud: '#ffffff', cover: 0.32, intensity: 2.1 },
     skyLight: { colour: '#d0def2', intensity: 5.6 },
     lamps: 0,
     env: 0.85,
     exposure: 4.0,
+    glass: 0.5, // see mats.glassTint
     fog: '#dfe6ec',
   },
   {
     id: 'aften',
     name: 'Aften',
-    sun: { dir: [-0.78, 0.1, -0.62], colour: '#ffa868', intensity: 5.5 },
+    sun: { dir: [-0.85, 0.1, -0.3], colour: '#ffa868', intensity: 5.5 },
     sky: { zenith: '#4b5b8c', horizon: '#f5a26a', ground: '#3d3730', cloud: '#f6b089', cover: 0.45, intensity: 1.1 },
     skyLight: { colour: '#9fb0dc', intensity: 2.6 },
     lamps: 0.4,
     env: 0.75,
     exposure: 1.9,
+    glass: 0.8, // see mats.glassTint
     fog: '#c99a7e',
   },
   {
@@ -117,6 +122,7 @@ export const TIMES = [
     lamps: 1,
     env: 0.55,
     exposure: 1.4,
+    glass: 1, // see mats.glassTint
     fog: '#0b1020',
   },
 ];
@@ -273,7 +279,10 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     ceiling: std({ color: '#f4f2ee', roughness: 0.95, map: plasterMap }),
     floor: std({ map: floorMap, roughnessMap: floorRough, normalMap: floorNormal, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.95, color: '#ffffff' }),
     windowFrame: std({ color: '#2b2b2a', roughness: 0.45, metalness: 0.5 }),
-    glassTint: std({ color: '#cfdad6', roughness: 0.05, transparent: true, opacity: 0.06, depthWrite: false }),
+    // Solar-control glazing: multiplies the view out by a cool grey (set per
+    // time of day), so the garden keeps its colour beside a well-lit painting
+    // instead of burning out, as a photographer's window exposure would
+    glassTint: new THREE.MeshBasicMaterial({ color: '#ffffff', fog: false, transparent: true, depthWrite: false, blending: THREE.CustomBlending, blendSrc: THREE.ZeroFactor, blendDst: THREE.SrcColorFactor }),
     glassReflect: std({ color: '#151515', roughness: 0.03, metalness: 1, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }),
     sofa: new THREE.MeshPhysicalMaterial({ color: '#d6cfc2', map: boucleMap, normalMap: boucleNormal, roughness: 0.96, sheen: 0.6, sheenRoughness: 0.75, sheenColor: '#fff8ee' }),
     accentFabric: [0, 1, 2].map(() => new THREE.MeshPhysicalMaterial({ color: '#c98f6b', map: linenMap, normalMap: linenNormal, roughness: 0.92, sheen: 0.4, sheenRoughness: 0.8, sheenColor: '#ffffff' })),
@@ -373,8 +382,8 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   // recessed downlights in the ceiling
   const dlGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.01, 24);
   const downlights = [
-    [0.55, z0 + 0.95],
-    [0.4, z1 - 0.95],
+    [VIEWS[0].artX, z0 + 0.95],
+    [VIEWS[1].artX, z1 - 0.95],
     [-1.3, 0.2],
     [1.4, 0.2],
     [1.4, 2.4],
@@ -386,7 +395,8 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     arch.add(m);
   });
 
-  // sheer linen curtains gathered at both ends of the glazing
+  // sheer linen curtains, stacked at the middle mullion: the corners, where
+  // the works hang, keep a clear view of the garden
   function curtain(zc, width) {
     const geo = new THREE.PlaneGeometry(width, h - 0.08, 64, 8);
     const p = geo.attributes.position;
@@ -404,8 +414,8 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     m.receiveShadow = true;
     return m;
   }
-  arch.add(curtain(gz0 + 0.3, 0.55));
-  arch.add(curtain(gz1 - 0.3, 0.55));
+  arch.add(curtain(-0.32, 0.55));
+  arch.add(curtain(0.32, 0.55));
   // the curtain track
   arch.add(worldBox(x0 + 0.08, x0 + 0.16, h - 0.03, h, z0, z1, mats.lampWhite, { cast: false }));
 
@@ -428,30 +438,37 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     return obj;
   };
 
-  // living room
-  const sofaW = 2.3;
-  place(F.sofa(mats, null, { width: sofaW }), 0.55, z0 + 0.95 / 2 + 0.05);
-  const rug = new THREE.Mesh(boxUV(new RoundedBoxGeometry(2.6, 0.012, 3.3, 2, 0.005)), mats.rug);
-  rug.position.set(0.45, 0.006, z0 + 1.95);
+  // living room: the sofa centred under the work, close to the glazing; the
+  // lamp, side table and olive tree on its far side, where the wall runs into
+  // the picture
+  const sx = VIEWS[0].artX;
+  place(F.sofa(mats, null, { width: 2.0 }), sx, z0 + 0.95 / 2 + 0.05);
+  const rug = new THREE.Mesh(boxUV(new RoundedBoxGeometry(2.4, 0.012, 3.0, 2, 0.005)), mats.rug);
+  rug.position.set(sx + 0.15, 0.006, z0 + 1.85);
   rug.receiveShadow = true;
   furn.add(rug);
-  place(F.coffeeTable(mats), 0.4, z0 + 2.05);
-  place(F.sideTable(mats), -0.95, z0 + 0.38);
+  place(F.coffeeTable(mats), sx + 0.1, z0 + 2.0);
+  place(F.sideTable(mats), sx + 1.28, z0 + 0.36);
   const lantern = F.floorLantern(mats);
-  place(lantern.group, 2.15, z0 + 0.42);
-  place(F.oliveTree(mats, { quality: Q.leaves }), -2.15, z0 + 0.75);
+  place(lantern.group, sx + 1.9, z0 + 0.4);
+  place(F.oliveTree(mats, { quality: Q.leaves }), sx + 2.85, z0 + 0.6);
 
-  // dining room
-  place(F.sideboard(mats), 0.4, z1 - 0.225 - 0.03, Math.PI);
-  const styling = F.sideboardStyling(mats);
-  styling.position.set(0.4, 0.72, z1 - 0.24);
+  // dining room: the sideboard under the work, the table out in the room
+  const bx = VIEWS[1].artX;
+  const boardW = 1.3;
+  place(F.sideboard(mats, { width: boardW }), bx, z1 - 0.225 - 0.03, Math.PI);
+  // The lamp stands between the work and the glass; the vase (no branches:
+  // from the camera's side they would cross a wide work) at the very end
+  // nearest the camera, framing the picture
+  const styling = F.sideboardStyling(mats, boardW, { vaseIn: 0.12, branches: false });
+  styling.position.set(bx, 0.72, z1 - 0.24);
   styling.rotation.y = Math.PI;
   furn.add(textured(styling));
   const lamp = F.tableLamp(mats);
-  place(lamp.group, 0.4 - 0.62, z1 - 0.26);
+  place(lamp.group, bx - 0.45, z1 - 0.26);
   lamp.group.position.y = 0.72;
   const tableX = -1.4;
-  const tableZ = 2.0;
+  const tableZ = 1.7;
   place(F.diningTable(mats), tableX, tableZ);
   [
     [tableX + 0.62, tableZ - 0.55, -Math.PI / 2],
@@ -462,7 +479,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const pend = F.pendant(mats, 0.95);
   pend.group.position.set(tableX, h, tableZ);
   furn.add(pend.group);
-  place(F.figTree(mats, { quality: Q.leaves }), 2.35, z1 - 0.55);
+  place(F.figTree(mats, { quality: Q.leaves }), bx + 1.45, z1 - 0.45);
 
   // ---------------------------------------------------------------- garden + sky
   const sky = createSky();
@@ -581,56 +598,84 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   // ---------------------------------------------------------------- camera (shift lens)
   // Returns { pos, yaw, tanV, sx, sy } for a view at rest, for the current
   // screen size and insets.
+  //
+  // The work is the hero: the camera stands on a line `bearing` degrees off
+  // the wall's normal through the work's centre, as far back as gives the work
+  // its share of the free band (the screen between the top bar and the panel).
+  // The yaw puts the work to the side away from the glass, so the corner and
+  // the garden take the rest of the picture. The camera stays level; the work
+  // is moved up into the free band by shifting the lens, never by tilting.
   function cameraFor(v, work = state.work) {
-    const pos = v.camera.clone();
-    const aim = new THREE.Vector3(v.aimX, pos.y, v.wallZ);
-    const fwd = aim.clone().sub(pos).normalize();
-    const right = new THREE.Vector3().crossVectors(fwd, UP).normalize();
-    const art = work ? { top: work.centreY + work.outer.h / 2 } : { top: 1.8 };
-    const S = v.subject(art);
-    // project the subject's corners into tangent space
-    let ux0 = Infinity;
-    let ux1 = -Infinity;
-    let uy0 = Infinity;
-    let uy1 = -Infinity;
-    const p = new THREE.Vector3();
-    for (const x of [S.x0, S.x1]) {
-      for (const y of [S.y0, S.y1]) {
-        // the subject sits a little in front of the wall (furniture depth)
-        p.set(x, y, v.wallZ + v.facing * 0.35).sub(pos);
-        const depth = p.dot(fwd);
-        const u = p.dot(right) / depth;
-        const w = (y - pos.y) / depth;
-        ux0 = Math.min(ux0, u);
-        ux1 = Math.max(ux1, u);
-        uy0 = Math.min(uy0, w);
-        uy1 = Math.max(uy1, w);
-      }
-    }
     const W = view.w;
     const H = view.h;
     const aspect = W / H;
+    const portrait = aspect < 1;
     const ins = state.insets;
-    const fx0 = ins.left / W;
-    const fx1 = 1 - ins.right / W;
     const fyTop = ins.top / H;
     const fyBot = 1 - ins.bottom / H;
-    const mx = 0.04;
-    const my = 0.05;
-    const needW = (ux1 - ux0) / (2 * aspect * (fx1 - fx0) * (1 - 2 * mx));
-    const needH = (uy1 - uy0) / (2 * (fyBot - fyTop) * (1 - 2 * my));
-    const tanV = THREE.MathUtils.clamp(Math.max(needW, needH), Math.tan(THREE.MathUtils.degToRad(17)), Math.tan(THREE.MathUtils.degToRad(44)));
-    // horizontal: spare width mostly goes to the window side
-    const freeW = 2 * (fx1 - fx0) * tanV * aspect;
-    const extra = freeW - (ux1 - ux0);
-    const share = extra > 0 ? 0.72 : 0.5;
-    const uLeft = v.windowSide < 0 ? ux0 - extra * share : ux0 - extra * (1 - share);
-    const sx = 2 * fx0 - 1 - uLeft / (tanV * aspect);
-    // vertical: centre the subject in the free band
-    const vMid = (uy0 + uy1) / 2;
-    const sy = 1 - (fyTop + fyBot) - vMid / tanV;
-    const yaw = Math.atan2(-fwd.x, -fwd.z);
-    return { pos, yaw, tanV, sx, sy };
+    const band = Math.max(0.2, fyBot - fyTop);
+    const outer = work ? work.outer : { w: 0.5, h: 0.7 };
+    const cy = work ? work.centreY : 1.4;
+    // 0 for an A4 sheet, 1 for a metre-wide canvas
+    const size = THREE.MathUtils.clamp((Math.max(outer.w, outer.h) - 0.3) / 0.65, 0, 1);
+    const lerp = THREE.MathUtils.lerp;
+    // Lens: a slightly longer one for small works, a wider one on a tall phone
+    // screen, where the width is all there is for the painting and the glass.
+    const halfH = THREE.MathUtils.degToRad(portrait ? lerp(31, 34, size) : lerp(28, 33, size));
+    const tanH = Math.tan(halfH);
+    const tanV = tanH / aspect;
+    // How much of the free band the work fills, and at most of the width
+    const kH = portrait ? lerp(0.4, 0.5, size) : lerp(0.56, 0.66, size);
+    const kW = portrait ? 0.27 : 0.36;
+    // Where it sits: off centre, away from the glass; a little above the
+    // middle of the band, so the furniture under it shows too
+    const xp = -v.windowSide * (portrait ? 0.46 : 0.26);
+    const fy = fyTop + band * 0.45;
+    const eye = THREE.MathUtils.clamp(cy + 0.02, 1.2, 1.45);
+    const b = THREE.MathUtils.degToRad(v.bearing);
+    const dir = new THREE.Vector3(Math.sin(b), 0, v.facing * Math.cos(b)); // from the work out to the camera
+    const C = new THREE.Vector3(v.artX, cy, v.wallZ);
+    // the camera stays 0.3 m inside the room
+    const dMax = Math.min((ROOM.x1 - 0.3 - v.artX) / dir.x, (ROOM.z1 - ROOM.z0 - 0.3) / Math.abs(dir.z));
+    const pos = new THREE.Vector3();
+    const p = new THREE.Vector3();
+    let d = 2.5;
+    let yaw = 0;
+    let sy = 0;
+    for (let iter = 0; iter < 6; iter++) {
+      pos.copy(C).addScaledVector(dir, d);
+      pos.y = eye;
+      // yaw: the work's centre lands at xp
+      const yawP = Math.atan2(-(C.x - pos.x), -(C.z - pos.z));
+      yaw = yawP + Math.atan(xp * tanH);
+      const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+      const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+      // the work's outline in tangent space
+      let u0 = Infinity;
+      let u1 = -Infinity;
+      let w0 = Infinity;
+      let w1 = -Infinity;
+      for (const sx of [-1, 1]) {
+        for (const syy of [-1, 1]) {
+          p.set(C.x + (sx * outer.w) / 2, cy + (syy * outer.h) / 2, C.z).sub(pos);
+          const depth = p.dot(fwd);
+          u0 = Math.min(u0, p.dot(right) / depth);
+          u1 = Math.max(u1, p.dot(right) / depth);
+          w0 = Math.min(w0, p.y / depth);
+          w1 = Math.max(w1, p.y / depth);
+        }
+      }
+      // vertical shift: the work's centre at fy
+      sy = 1 - 2 * fy - (w0 + w1) / 2 / tanV;
+      // share of the screen it fills now; size scales as 1/d
+      const fh = (w1 - w0) / (2 * tanV);
+      const fw = (u1 - u0) / (2 * tanH);
+      const r = Math.max(fh / (kH * band), fw / kW);
+      const next = THREE.MathUtils.clamp(d * r, 0.9, dMax);
+      if (Math.abs(next - d) < 1e-3) break;
+      d = next;
+    }
+    return { pos, yaw, tanV, sx: 0, sy };
   }
 
   const cam = { pos: new THREE.Vector3(), yaw: 0, tanV: 0.4, sx: 0, sy: 0 };
@@ -671,13 +716,17 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     u.uStars.value = t.sky.stars || 0;
     u.uIntensity.value = t.sky.intensity;
     scene.fog.color.set(t.fog);
+    mats.glassTint.color.setRGB(t.glass * 0.96, t.glass, t.glass * 0.99);
     groundDisc.material.color.set(t.id === 'nat' ? '#05070a' : t.id === 'aften' ? '#3a3a24' : '#4c5a36');
     skyLight.color.set(t.skyLight.colour);
     skyLight.intensity = t.skyLight.intensity * K.sky;
     // daylight directions over the sky seen through the glazing
     state.skyDirs = [];
     for (let i = 0; i < 64; i++) {
-      const az = (halton(i + 1, 2) - 0.5) * Math.PI * 0.85; // around -x
+      // around -x, within ±27°: wider, the raking light would print the
+      // window panes on the walls the works hang on (they get the sky's
+      // light as bounce light, from the environment capture, instead)
+      const az = (halton(i + 1, 2) - 0.5) * Math.PI * 0.3;
       const el = THREE.MathUtils.degToRad(8 + halton(i + 1, 3) * 62);
       state.skyDirs.push(new THREE.Vector3(-Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)));
     }
@@ -715,7 +764,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     if (i === 0) {
       jit.x = jit.y = 0;
       sun.position.copy(sun.target.position).addScaledVector(state.sunBase, 25);
-      skyLight.position.copy(skyLight.target.position).addScaledVector(new THREE.Vector3(-0.75, 0.55, 0.1).normalize(), 25);
+      skyLight.position.copy(skyLight.target.position).addScaledVector(new THREE.Vector3(-0.8, 0.6, 0).normalize(), 25);
       skyLight.shadow.radius = 6;
     } else {
       jit.x = ((halton(i, 2) - 0.5) * 2) / size.x;

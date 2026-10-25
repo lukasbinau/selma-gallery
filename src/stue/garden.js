@@ -234,7 +234,7 @@ export function createGarden({ quality = 1, aniso = 8 } = {}) {
     lawn: new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.95 }),
     deck: new THREE.MeshStandardMaterial({ map: deckMap, normalMap: deckNormal, roughness: 0.8, color: '#bfb3a6' }),
     hedge: new THREE.MeshStandardMaterial({ map: ht.map, normalMap: ht.normal, roughness: 0.9 }),
-    birchBark: new THREE.MeshStandardMaterial({ map: barkTex, roughness: 0.8 }),
+    birchBark: new THREE.MeshStandardMaterial({ map: barkTex, color: '#c9c3b8', roughness: 0.8 }),
     bark: new THREE.MeshStandardMaterial({ color: '#4a4038', roughness: 0.9 }),
     birchLeaves: new THREE.MeshStandardMaterial({
       map: clusterSprite({ colours: ['#5d8a33', '#6f9a3c', '#4f7a2b', '#86a94a'], seed: 3 }),
