@@ -2,6 +2,7 @@
 // popover, toast, hint, live region, and the plaque markup. The 3D work lives
 // in gallery.js; this file only knows about the DOM.
 import { settings, setSetting } from '../store.js';
+import { hasPris, formatPris } from '../pris.js';
 
 export const STRINGS = {
   back: '← FORSIDE',
@@ -11,7 +12,9 @@ export const STRINGS = {
   hint: 'Swipe for at gå · tryk på et maleri for at gå tæt på',
   map: 'Kort over rummet',
   scene: '3D-galleri med Selmas malerier',
-  contact: 'Skriv til Selma',
+  contact: 'Køb og kontakt',
+  stue: 'I din stue',
+  stueLabel: (titel) => `Se “${titel}” i din stue`,
   sold: 'Solgt',
   imageFailed: 'Et billede kunne ikke hentes',
   announce: (titel, n, total) => `Galleri: ${titel}, ${n} af ${total}`,
@@ -177,21 +180,25 @@ function createToast(el) {
 
 // ---------------------------------------------------------------- plaques
 // One <article> per work: TITEL, "ÅR · TEKNIK · MÅL" (filled fields only), the
-// OM text, then a SKRIV TIL SELMA button (emits 'contact') or a red dot + SOLGT.
+// OM text, the price, then a KØB OG KONTAKT button (emits 'contact') or a red
+// dot + SOLGT, and beside it I DIN STUE (emits 'stue').
 export function createPlaques(works) {
   return works.map((w) => {
     const el = document.createElement('article');
     el.className = 'galleri-plaque';
     el.setAttribute('aria-label', w.titel ?? '');
     const meta = [w.aar, w.teknik, w.maal].filter(filled).map((v) => esc(String(v).trim())).join(' · ');
-    const foot = w.solgt
+    const buy = w.solgt
       ? `<span class="galleri-plaque__sold">${STRINGS.sold}</span>`
       : `<button type="button" class="galleri-plaque__btn" data-contact="${esc(w.id)}">${STRINGS.contact}</button>`;
+    const stue = `<button type="button" class="galleri-plaque__btn galleri-plaque__btn--stue" data-stue="${esc(w.id)}" aria-label="${esc(STRINGS.stueLabel(w.titel ?? ''))}">${STRINGS.stue}</button>`;
+    const price = !w.solgt && hasPris(w.pris) ? `<p class="galleri-plaque__price">${formatPris(w.pris)}</p>` : '';
     el.innerHTML = `
       <h2 class="galleri-plaque__title">${esc(w.titel ?? '')}</h2>
       ${meta ? `<p class="galleri-plaque__meta">${meta}</p>` : ''}
       ${filled(w.om) ? `<p class="galleri-plaque__om">${esc(w.om.trim())}</p>` : ''}
-      <div class="galleri-plaque__foot">${foot}</div>`;
+      ${price}
+      <div class="galleri-plaque__foot">${buy}${stue}</div>`;
     return el;
   });
 }
