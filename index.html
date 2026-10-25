@@ -16,6 +16,16 @@
     <meta property="og:locale" content="da_DK" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <!-- The banner is the first screen's one big image: fetch it alongside the CSS
+         and JS, not after the inline wordmarks. Browsers without AVIF skip this. -->
+    <link
+      rel="preload"
+      as="image"
+      type="image/avif"
+      imagesrcset="/hero-banner-1200.avif 1200w, /hero-banner.avif 2000w"
+      imagesizes="100vw"
+      fetchpriority="high"
+    />
   </head>
   <body>
     <!-- Menu bar: sticky, takes the colour of the section under it (html[data-section]) -->
@@ -41,15 +51,21 @@
           <p class="hero__tagline">Farverig kunst der får dig til at tænke.</p>
           <p class="hero__cta"><a class="btn" href="#vaerker">Se min kunst</a></p>
           <div class="hero__kunst" aria-hidden="true"><!-- WORDMARK kunst --></div>
-          <img
-            class="hero__banner"
-            src="/hero-banner.jpg"
-            width="2000"
-            height="1041"
-            fetchpriority="high"
-            decoding="async"
-            alt="Udsnit af maleriet Lyserødt mønster: blå firkløvere, lyserøde felter og orange striber"
-          />
+          <picture>
+            <source type="image/avif" srcset="/hero-banner-1200.avif 1200w, /hero-banner.avif 2000w" sizes="100vw" />
+            <source type="image/webp" srcset="/hero-banner-1200.webp 1200w, /hero-banner.webp 2000w" sizes="100vw" />
+            <img
+              class="hero__banner"
+              src="/hero-banner.jpg"
+              srcset="/hero-banner-1200.jpg 1200w, /hero-banner.jpg 2000w"
+              sizes="100vw"
+              width="2000"
+              height="1041"
+              fetchpriority="high"
+              decoding="async"
+              alt="Udsnit af maleriet Lyserødt mønster: blå firkløvere, lyserøde felter og orange striber"
+            />
+          </picture>
         </div>
       </section>
 
@@ -71,17 +87,21 @@
           <div class="strip" aria-hidden="true"></div>
           <h2 class="om-mig__heading"><span class="sr-only">Om mig</span><!-- WORDMARK om-mig --></h2>
           <div class="atelier-top">
-            <img
-              class="atelier-top__photo"
-              src="/studio/atelier-staffeli-800.jpg"
-              srcset="/studio/atelier-staffeli-800.jpg 800w, /studio/atelier-staffeli-1600.jpg 1600w"
-              sizes="(max-width: 760px) 90vw, 30vw"
-              width="800"
-              height="800"
-              loading="lazy"
-              decoding="async"
-              alt="Selmas staffeli i atelieret med et blåt lærred, pensler og maling på bordet"
-            />
+            <picture>
+              <source type="image/avif" srcset="/studio/atelier-staffeli-800.avif 800w, /studio/atelier-staffeli-1600.avif 1600w" sizes="(max-width: 760px) 90vw, 30vw" />
+              <source type="image/webp" srcset="/studio/atelier-staffeli-800.webp 800w, /studio/atelier-staffeli-1600.webp 1600w" sizes="(max-width: 760px) 90vw, 30vw" />
+              <img
+                class="atelier-top__photo"
+                src="/studio/atelier-staffeli-800.jpg"
+                srcset="/studio/atelier-staffeli-800.jpg 800w, /studio/atelier-staffeli-1600.jpg 1600w"
+                sizes="(max-width: 760px) 90vw, 30vw"
+                width="800"
+                height="800"
+                loading="lazy"
+                decoding="async"
+                alt="Selmas staffeli i atelieret med et blåt lærred, pensler og maling på bordet"
+              />
+            </picture>
             <div class="bio">
               <h3 class="bio__name">Selma Frausing Binau</h3>
               <p>
@@ -101,28 +121,36 @@
         <div class="sheet sheet--atelier-b">
           <div class="strip" aria-hidden="true"></div>
           <div class="atelier-row">
-            <img
-              src="/studio/atelier-reol-800.jpg"
-              srcset="/studio/atelier-reol-800.jpg 800w, /studio/atelier-reol-1600.jpg 1600w"
-              sizes="(max-width: 760px) 90vw, 34vw"
-              width="800"
-              height="1067"
-              loading="lazy"
-              decoding="async"
-              alt="Reolen i atelieret: pensler, oliekridt, spraydåser, tape og bøtter med maling"
-            />
+            <picture>
+              <source type="image/avif" srcset="/studio/atelier-reol-800.avif 800w, /studio/atelier-reol-1600.avif 1600w" sizes="(max-width: 760px) 90vw, 34vw" />
+              <source type="image/webp" srcset="/studio/atelier-reol-800.webp 800w, /studio/atelier-reol-1600.webp 1600w" sizes="(max-width: 760px) 90vw, 34vw" />
+              <img
+                src="/studio/atelier-reol-800.jpg"
+                srcset="/studio/atelier-reol-800.jpg 800w, /studio/atelier-reol-1600.jpg 1600w"
+                sizes="(max-width: 760px) 90vw, 34vw"
+                width="800"
+                height="1067"
+                loading="lazy"
+                decoding="async"
+                alt="Reolen i atelieret: pensler, oliekridt, spraydåser, tape og bøtter med maling"
+              />
+            </picture>
             <!-- PLACEHOLDER: Selma writes her own line here -->
             <p class="atelier-row__text">Alt bliver til i mit atelier i den gamle badeanstalt.</p>
-            <img
-              src="/studio/atelier-palet-800.jpg"
-              srcset="/studio/atelier-palet-800.jpg 800w, /studio/atelier-palet-1600.jpg 1600w"
-              sizes="(max-width: 760px) 90vw, 34vw"
-              width="800"
-              height="1067"
-              loading="lazy"
-              decoding="async"
-              alt="Selmas palet fuld af våd maling, omgivet af pensler og tuber"
-            />
+            <picture>
+              <source type="image/avif" srcset="/studio/atelier-palet-800.avif 800w, /studio/atelier-palet-1600.avif 1600w" sizes="(max-width: 760px) 90vw, 34vw" />
+              <source type="image/webp" srcset="/studio/atelier-palet-800.webp 800w, /studio/atelier-palet-1600.webp 1600w" sizes="(max-width: 760px) 90vw, 34vw" />
+              <img
+                src="/studio/atelier-palet-800.jpg"
+                srcset="/studio/atelier-palet-800.jpg 800w, /studio/atelier-palet-1600.jpg 1600w"
+                sizes="(max-width: 760px) 90vw, 34vw"
+                width="800"
+                height="1067"
+                loading="lazy"
+                decoding="async"
+                alt="Selmas palet fuld af våd maling, omgivet af pensler og tuber"
+              />
+            </picture>
           </div>
         </div>
       </section>

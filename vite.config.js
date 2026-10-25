@@ -59,6 +59,10 @@ const esc = (s) =>
 const ARROW =
   '<svg class="arrow" viewBox="0 0 16 10" aria-hidden="true" focusable="false"><path d="M1 5h13M10 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+// The card photos: AVIF, else WebP, else JPEG (all written by npm run images)
+const CARD_SIZES = '(max-width: 760px) 86vw, 30vw';
+const srcset = (id, ext) => `/art/${esc(id)}-640.${ext} 640w, /art/${esc(id)}-1024.${ext} 1024w`;
+
 function placement(id, i, extras) {
   const fixed = LAYOUT[id];
   if (fixed) return fixed;
@@ -108,9 +112,13 @@ function renderWorks(root) {
         <div class="vaerk-cell" style="${style}">
           <a class="vaerk" href="#galleri/${esc(w.id)}" data-id="${esc(w.id)}">
             <span class="vaerk__frame" style="aspect-ratio:${size.w}/${size.h}">
-              <img src="/art/${esc(w.id)}-640.jpg" srcset="/art/${esc(w.id)}-640.jpg 640w, /art/${esc(w.id)}-1024.jpg 1024w"
-                sizes="(max-width: 760px) 86vw, 30vw" width="${size.w}" height="${size.h}"
-                loading="lazy" decoding="async" alt="${alt}">
+              <picture>
+                <source type="image/avif" srcset="${srcset(w.id, 'avif')}" sizes="${CARD_SIZES}">
+                <source type="image/webp" srcset="${srcset(w.id, 'webp')}" sizes="${CARD_SIZES}">
+                <img src="/art/${esc(w.id)}-640.jpg" srcset="${srcset(w.id, 'jpg')}"
+                  sizes="${CARD_SIZES}" width="${size.w}" height="${size.h}"
+                  loading="lazy" decoding="async" alt="${alt}">
+              </picture>
             </span>
             <span class="vaerk__caption">${caption}</span>
           </a>

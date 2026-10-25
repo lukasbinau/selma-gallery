@@ -307,7 +307,7 @@ html[data-view='galleri'] body {
   margin-left: calc((100% - var(--wm-w)) / 2 + 0.7cqw);
   color: var(--yellow);
 }
-.hero .sheet > .hero__banner {
+.hero .sheet .hero__banner {
   flex: 1 1 auto; /* fills whatever is left of the first screen */
   min-height: 0;
   width: calc(100% - var(--strip));
@@ -316,6 +316,12 @@ html[data-view='galleri'] body {
   aspect-ratio: 2000 / 1041;
   object-fit: cover;
   background: var(--pink);
+}
+
+/* <picture> only picks the file (AVIF, WebP or JPEG); the <img> inside is
+   what is laid out and styled, as if the wrapper were not there */
+picture {
+  display: contents;
 }
 
 /* ------------------------------------------------------------------ Works */
@@ -871,7 +877,7 @@ html[data-view='galleri'] body {
   .hero__tagline {
     padding: 0 6%;
   }
-  .hero .sheet > .hero__banner {
+  .hero .sheet .hero__banner {
     width: 100%;
     margin-left: 0;
   }
@@ -1030,6 +1036,8 @@ html[data-view='galleri'] body {
   position: fixed;
   inset: 0;
   z-index: 36;
+  display: grid;
+  place-items: center;
   opacity: 0;
   pointer-events: none;
 }
@@ -1042,4 +1050,17 @@ html[data-view='galleri'] body {
   will-change: transform, opacity;
   pointer-events: none;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+/* The loading line appears on the veil only if the room takes its time */
+.fly-veil.is-loading .wipe__label {
+  opacity: 1;
+}
+.fly-veil.is-light .wipe__label {
+  color: #230a66;
+}
+.fly-veil.is-light .wipe__bar {
+  background: rgba(35, 10, 102, 0.2);
+}
+.fly-veil.is-light .wipe__bar span {
+  background: #230a66;
 }

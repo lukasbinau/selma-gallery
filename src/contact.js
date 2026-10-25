@@ -9,13 +9,13 @@
 import data from './vaerker.json';
 import { toast } from './toast.js';
 import { hasPris, formatPris } from './pris.js';
+import { artUrl } from './art-format.js';
 
 const WORKS = data.vaerker;
 // Assembled at runtime so the address is not sitting in the HTML for scrapers
 const ADDRESS = ['selma' + 'binau', 'gmail.com'].join('@');
 const SITE = 'selmabinaukunst.dk';
 
-const art = (file) => `${import.meta.env.BASE_URL}art/${file}`;
 const deepLink = (id) => `${location.origin}${location.pathname}#galleri/${id}`;
 
 let el = null;
@@ -139,8 +139,10 @@ function fill(id, frame) {
   el.querySelector('.kontakt__title').textContent = work ? `Om “${work.titel}”` : 'Hej Selma Binau';
   workEl.hidden = !work;
   if (work) {
+    // The card's own photo is loaded already (and in the best format); else the 640 px file
     const img = workEl.querySelector('img');
-    img.src = art(`${work.id}-640.jpg`);
+    const card = document.querySelector(`.vaerk[data-id="${CSS.escape(work.id)}"] img`);
+    img.src = card?.currentSrc || artUrl(work.id, 640);
     img.alt = work.titel;
     workEl.querySelector('.kontakt__work-title').textContent = work.titel;
     workEl.querySelector('.kontakt__work-year').textContent = [work.aar, work.solgt ? 'Solgt' : ''].filter(Boolean).join(' · ');
