@@ -71,6 +71,8 @@ function hangCentre(view, outer) {
 
 // ------------------------------------------------------------------ times of day
 // sun: direction towards the sun (the glazing faces -x), colour, strength.
+// It comes in nearly square to the glazing, so its patches land on the floor
+// and the far wall, never as glare on the two walls the works hang on.
 // sky: gradient for the sky dome. skyLight: daylight entering through the
 // glazing. lamps: 0..1 interior lamps. env: strength of the room's bounce light
 // (kept below 1: the room is captured from itself, so more would feed back).
@@ -78,7 +80,7 @@ export const TIMES = [
   {
     id: 'morgen',
     name: 'Morgen',
-    sun: { dir: [-0.62, 0.3, 0.72], colour: '#ffd2a1', intensity: 10.5 },
+    sun: { dir: [-0.9, 0.32, 0.12], colour: '#ffd2a1', intensity: 10.5 },
     sky: { zenith: '#86a9d4', horizon: '#f1dcc6', ground: '#5d5a48', cloud: '#fff0e2', cover: 0.38, intensity: 1.5 },
     skyLight: { colour: '#c3d3ec', intensity: 4.4 },
     lamps: 0,
@@ -90,7 +92,7 @@ export const TIMES = [
   {
     id: 'dag',
     name: 'Dag',
-    sun: { dir: [-0.5, 0.75, 0.42], colour: '#fff3e2', intensity: 13.0 },
+    sun: { dir: [-0.45, 0.85, 0.22], colour: '#fff3e2', intensity: 13.0 },
     sky: { zenith: '#5f90cf', horizon: '#dde7f0', ground: '#5f5d4a', cloud: '#ffffff', cover: 0.32, intensity: 2.1 },
     skyLight: { colour: '#d0def2', intensity: 5.6 },
     lamps: 0,
@@ -102,7 +104,7 @@ export const TIMES = [
   {
     id: 'aften',
     name: 'Aften',
-    sun: { dir: [-0.78, 0.1, -0.62], colour: '#ffa868', intensity: 5.5 },
+    sun: { dir: [-0.85, 0.1, -0.3], colour: '#ffa868', intensity: 5.5 },
     sky: { zenith: '#4b5b8c', horizon: '#f5a26a', ground: '#3d3730', cloud: '#f6b089', cover: 0.45, intensity: 1.1 },
     skyLight: { colour: '#9fb0dc', intensity: 2.6 },
     lamps: 0.4,
@@ -455,8 +457,10 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const bx = VIEWS[1].artX;
   const boardW = 1.3;
   place(F.sideboard(mats, { width: boardW }), bx, z1 - 0.225 - 0.03, Math.PI);
-  // the vase at the far end, so its branches stay clear of a wide work
-  const styling = F.sideboardStyling(mats, boardW, 0.15);
+  // The lamp stands between the work and the glass; the vase (no branches:
+  // from the camera's side they would cross a wide work) at the very end
+  // nearest the camera, framing the picture
+  const styling = F.sideboardStyling(mats, boardW, { vaseIn: 0.12, branches: false });
   styling.position.set(bx, 0.72, z1 - 0.24);
   styling.rotation.y = Math.PI;
   furn.add(textured(styling));
@@ -719,7 +723,10 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     // daylight directions over the sky seen through the glazing
     state.skyDirs = [];
     for (let i = 0; i < 64; i++) {
-      const az = (halton(i + 1, 2) - 0.5) * Math.PI * 0.85; // around -x
+      // around -x, within ±27°: wider, the raking light would print the
+      // window panes on the walls the works hang on (they get the sky's
+      // light as bounce light, from the environment capture, instead)
+      const az = (halton(i + 1, 2) - 0.5) * Math.PI * 0.3;
       const el = THREE.MathUtils.degToRad(8 + halton(i + 1, 3) * 62);
       state.skyDirs.push(new THREE.Vector3(-Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)));
     }
@@ -757,7 +764,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     if (i === 0) {
       jit.x = jit.y = 0;
       sun.position.copy(sun.target.position).addScaledVector(state.sunBase, 25);
-      skyLight.position.copy(skyLight.target.position).addScaledVector(new THREE.Vector3(-0.75, 0.55, 0.1).normalize(), 25);
+      skyLight.position.copy(skyLight.target.position).addScaledVector(new THREE.Vector3(-0.8, 0.6, 0).normalize(), 25);
       skyLight.shadow.radius = 6;
     } else {
       jit.x = ((halton(i, 2) - 0.5) * 2) / size.x;
