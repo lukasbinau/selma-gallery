@@ -744,3 +744,49 @@
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------------ The journey behind Lille stjerne (journey.js) */
+/* While it runs, the room's buttons, plaques and minimap step aside */
+#galleri.is-away :is(.galleri__topbar, .galleri__nav, .galleri__counter, .galleri__hint, .galleri__minimap, .galleri__caption, .galleri__plaques3d, .galleri__popover) {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.6s ease,
+    visibility 0s linear 0.6s;
+}
+/* The light you pass through on the way in and out */
+.galleri__veil {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+.galleri__dream-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(36px, env(safe-area-inset-bottom));
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  text-align: center;
+  pointer-events: none;
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  color: #fff6dc;
+  text-shadow: 0 1px 12px rgba(20, 4, 60, 0.6);
+}
+.galleri__dream-title {
+  font-size: clamp(14px, 2.2vw, 22px);
+  font-weight: 700;
+  letter-spacing: 0.32em;
+}
+.galleri__dream-hint {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  opacity: 0;
+}

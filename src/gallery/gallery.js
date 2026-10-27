@@ -528,11 +528,29 @@ export async function createGallery({ root, works, artMeta = {} }) {
     scene.fog.color.copy(scene.background);
   }
 
+  // A secret that has taken the gallery over (journey.js): it gets every tap
+  // and Esc, may move the camera on and may draw the frame itself
+  let takeover = null;
+  function takeOver(secret) {
+    takeover = secret;
+    drag.active = false;
+    canvas.classList.remove('is-dragging', 'is-pointing', 'is-lean-target');
+  }
+
   // What a painting's secret may reach of the room (secrets.js)
   const room = {
+    root,
+    works: list,
+    renderer,
     mats,
     setMood,
+    setLean: (on) => setLean(on),
+    takeOver,
+    setAway: (on) => root.classList.toggle('is-away', on), // hides the buttons, plaques and minimap
+    reduced,
     loadArt: (id, size) => setupTextures().then(() => loadArt(id, size)),
+    artUrl: (id, size) => setupTextures().then(() => artUrl(id, size, format)),
+    freeTexture: (tex) => freeTexture(tex),
   };
 
   function applyFx() {
@@ -1094,6 +1112,8 @@ export async function createGallery({ root, works, artMeta = {} }) {
       camera.fov = fov;
       camera.updateProjectionMatrix();
     }
+
+    takeover?.camera?.(camera);
   }
 
   // ---------------------------------------------------------------- minimap
@@ -1224,6 +1244,13 @@ export async function createGallery({ root, works, artMeta = {} }) {
   ui.back.addEventListener('click', () => emit('exit'));
 
   function onKey(e) {
+    if (takeover) {
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        takeover.tap(null, { leaned: true });
+      }
+      return;
+    }
     if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
     // Keys belong to whatever dialog the page has open over the room (e.g. the contact sheet)
     const t = e.target;
@@ -1258,6 +1285,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
     'wheel',
     (e) => {
       e.preventDefault();
+      if (takeover) return;
       const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       clearTimeout(wheelIdle);
       wheelIdle = setTimeout(() => {
@@ -1297,7 +1325,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
   }
 
   canvas.addEventListener('pointerdown', (e) => {
-    if (!frames.length) return;
+    if (!frames.length || takeover) return;
     canvas.setPointerCapture(e.pointerId);
     state.intro = false;
     Object.assign(drag, {
@@ -1313,6 +1341,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
   });
 
   canvas.addEventListener('pointermove', (e) => {
+    if (takeover) return;
     if (e.pointerType === 'mouse') {
       state.parallaxGoal.set(((e.clientX - view.left) / view.w) * 2 - 1, -(((e.clientY - view.top) / view.h) * 2 - 1));
     }
@@ -1381,6 +1410,11 @@ export async function createGallery({ root, works, artMeta = {} }) {
     goTo(clamp(nearest, state.index - 1, state.index + 1));
   }
   canvas.addEventListener('pointerup', endDrag);
+  // While a secret has the gallery, a tap anywhere is for it (the tap that
+  // started it lands here too, and is ignored by it)
+  canvas.addEventListener('pointerup', (e) => {
+    if (takeover && e.isPrimary !== false) takeover.tap(null, { leaned: true });
+  });
   canvas.addEventListener('pointercancel', endDrag);
   canvas.addEventListener('pointerleave', () => state.parallaxGoal.set(0, 0));
 
@@ -1435,7 +1469,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
     drainSwaps();
     updateDust(clock.elapsed);
     updateMinimap();
-    render();
+    if (!takeover?.render?.()) render();
     rafId = requestAnimationFrame(frame);
   }
 
@@ -1934,11 +1968,15 @@ export async function createGallery({ root, works, artMeta = {} }) {
     setExposure,
     resize,
     toast: ui.toast,
-    // Console hook for testing: __gallery.tick(2) advances the walk by two seconds
+    // Console hook for testing: __gallery.tick(2) advances the walk (and any
+    // secret that is playing) by two seconds, then draws one frame
     tick(seconds = 1) {
-      for (let i = 0; i < Math.round(seconds * 60); i++) updateRig(1 / 60);
+      for (let i = 0; i < Math.round(seconds * 60); i++) {
+        for (const f of frames) f.secret?.update(1 / 60, { slow: reduced() });
+        updateRig(1 / 60);
+      }
       updateMinimap();
-      render();
+      if (!takeover?.render?.()) render();
     },
     debug: { state, rail, frames, camera, renderer, scene, ROOM, view },
   };
