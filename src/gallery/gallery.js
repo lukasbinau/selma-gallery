@@ -21,6 +21,7 @@ import './gallery.css';
 import { settings } from '../store.js';
 import { buildChrome, createPlaques, measurePlaques, pad, STRINGS } from './chrome.js';
 import { artFormat, artUrl } from '../art-format.js';
+import { TRIPS, createTrip } from './trip.js';
 
 // ---------------------------------------------------------------------------
 // Tunables
@@ -804,6 +805,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
       f.want = 0; // the size it is heading for
       f.thumb = null;
       f.ctrl = null; // AbortController of its download
+      f.trip = TRIPS[work.id] ? createTrip(f.material, { aspect, ...TRIPS[work.id] }) : null;
       f.group.position.copy(f.centre);
       f.group.rotation.y = slot.wall.rotY;
       f.group.traverse((o) => {
@@ -1052,8 +1054,13 @@ export async function createGallery({ root, works, artMeta = {} }) {
     camera.position.copy(_pos);
     camera.lookAt(_look);
 
+    // A trip sways the head and makes the view breathe
+    const trip = reduced() ? null : frames[state.index]?.trip;
+    const tripK = trip ? trip.amount : 0;
+    if (tripK > 0) camera.rotateZ(Math.sin(trip.time * 0.37) * 0.035 * tripK);
+
     // The view widens slightly on the move
-    const fov = FOV + Math.min(speed * 0.8, 3.5);
+    const fov = FOV + Math.min(speed * 0.8, 3.5) + (tripK ? Math.sin(trip.time * 0.53) * 2.2 * tripK : 0);
     if (Math.abs(fov - camera.fov) > 0.01) {
       camera.fov = fov;
       camera.updateProjectionMatrix();
@@ -1146,6 +1153,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
 
   function setLean(on) {
     state.leanGoal = on ? 1 : 0;
+    if (!on) frames.forEach((f) => f.trip?.stop());
     canvas.classList.toggle('is-leaning', on);
     if (reduced()) snapRig();
   }
@@ -1250,10 +1258,12 @@ export async function createGallery({ root, works, artMeta = {} }) {
     return (2 * tanHalf() * state.viewDist * camera.aspect) / view.w;
   }
 
+  let lastHit = null; // the raycast hit behind pick()'s answer
   function pick(clientX, clientY) {
     ndc.set(((clientX - view.left) / view.w) * 2 - 1, -((clientY - view.top) / view.h) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
     const hit = raycaster.intersectObjects(hitTargets, false)[0];
+    lastHit = hit ?? null;
     return hit ? hit.object.userData.index : null;
   }
 
@@ -1323,7 +1333,12 @@ export async function createGallery({ root, works, artMeta = {} }) {
         goTo(i);
         hideHint();
       } else {
-        setLean(!state.leanGoal);
+        // Leaning in to a painting with a trip (trip.js): its secret spot starts
+        // it, and any tap while it runs brings the painting back
+        const trip = frames[i].trip;
+        if (trip?.active) trip.stop();
+        else if (trip && state.leanGoal && trip.hitsSun(lastHit)) trip.start();
+        else setLean(!state.leanGoal);
         hideHint();
       }
       return;
@@ -1390,6 +1405,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
   function frame() {
     if (!running) return;
     const dt = tickClock();
+    for (const f of frames) f.trip?.update(dt, { slow: reduced() });
     updateRig(dt);
     drainSwaps();
     updateDust(clock.elapsed);
@@ -1844,6 +1860,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
     hideHint();
     drag.active = false;
     canvas.classList.remove('is-dragging', 'is-pointing', 'is-lean-target');
+    frames.forEach((f) => f.trip?.reset());
   }
 
   function setExposure(k) {
