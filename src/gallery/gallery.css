@@ -781,9 +781,12 @@
   text-shadow: 0 1px 12px rgba(20, 4, 60, 0.6);
 }
 .galleri__dream-title {
-  font-size: clamp(14px, 2.2vw, 22px);
+  max-width: 34ch;
+  font-size: clamp(15px, 2vw, 21px);
   font-weight: 700;
-  letter-spacing: 0.32em;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 .galleri__dream-hint {
   font-size: 11px;

@@ -1,28 +1,33 @@
-// A hidden feature: tap the star in Lille stjerne's upper doorway (leaned in
-// or not). The star glows, the blue doorway opens as two real doors swinging
-// towards you, a tunnel of light turns behind them, and you dive through
-// into dream.js: a ~50 s journey through all of Selma's paintings. At the end
-// the star rushes at you and you are back in front of the painting, as the
-// doors close. A tap or Esc during the journey brings you back early.
+// A hidden feature: tap the star in Lille stjerne (or its lower door, the one
+// above the stairs; leaned in or not). A brass handle appears on the door,
+// is pulled down, and the door swings open towards you onto a glimpse of a
+// stairwell with a star at the bottom. You dive through into dream.js: a
+// ~75 s story told by Selma's own figures. At the end the painting puts
+// itself back together and you are pulled back out as the door closes.
+// A tap or Esc during the journey brings you back early.
 //
-// The doors are cut to the doorway's exact shape: a mask traced from the
-// photo itself (a flood fill from the star over the blue), so they match
-// whatever photo is on the wall.
+// The door is cut to the doorway's exact shape: a mask traced from the
+// photo itself (a flood fill over the door's blue), so it matches whatever
+// photo is on the wall.
 import * as THREE from 'three';
 
 // Measured on public/art/lille-stjerne-1024.jpg (u from the left, v from the bottom)
-const STAR = [0.5688, 0.8008];
-const STAR_TAP = 0.06; // tap radius (v units): a bit beyond the rays
-const BOX = { u: [0.452, 0.706], v: [0.604, 0.918] }; // the upper doorway, with a margin
-const APEX = 0.565; // where the two doors meet: under the arch's point
-const DOOR_ANGLE = THREE.MathUtils.degToRad(104);
+const STAR = [0.5688, 0.8008]; // the star in the upper window: tap it…
+const STAR_TAP = 0.06;
+const BOX = { u: [0.47, 0.715], v: [0.141, 0.53] }; // …or the lower door, down to the top step
+const SEED = [0.59, 0.36]; // a point on the door's blue
+const HINGE = 0.481; // the door's left edge
+const HANDLE = [0.676, 0.33];
+const FLOOR_STAR = [0.585, 0.18]; // the star lying at the foot of the door
+const DOOR_ANGLE = THREE.MathUtils.degToRad(108);
 const VEIL = '#fff1c2'; // the light you pass through, both ways
 const CAPTION_HINT = 'Tryk for at vende tilbage';
 
 // The way in (seconds after the tap) and out (seconds after the switch back)
-const IN = { open: [0.9, 2.7], portal: [1.0, 2.5], dive: [2.5, 4.1], veil: [3.6, 4.1] };
-const OUT = { back: 2.4, veil: [0.1, 0.8], portal: [1.4, 2.4], close: [1.2, 2.8], done: 3 };
-const EXIT_VEIL = 0.6; // fade to light at the end of the dream (or on a tap)
+const IN = { handle: [0.5, 1.1], press: [1.3, 1.62], release: [1.95, 2.3], open: [1.8, 3.4], portal: [1.9, 3.1], dive: [3.1, 4.7], veil: [4.2, 4.7] };
+const OUT = { back: 2.4, veil: [0.1, 0.8], portal: [1.4, 2.4], close: [1.2, 2.8], handle: [2.8, 3.2], done: 3.3 };
+const EXIT_VEIL = 0.8; // fade to light at the end of the dream (or on a tap)
+const CAST_URL = (name) => `${import.meta.env.BASE_URL}art/dream/${name}.webp`;
 
 const smooth = (x) => {
   const t = Math.min(Math.max(x, 0), 1);
@@ -33,6 +38,11 @@ const easeIn = (x) => {
   return t * t * t;
 };
 const span = (t, [a, b]) => smooth((t - a) / (b - a));
+// A springy pop: 0 → a little over 1 → 1
+const pop = (x) => {
+  const t = Math.min(Math.max(x, 0), 1);
+  return t === 0 ? 0 : 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2;
+};
 
 const GLSL_HEAD = /* glsl */ `
 uniform float uPortal;
@@ -44,17 +54,15 @@ uniform vec2 uCentre;
 uniform float uAspect;
 vec3 journeyGlow = vec3(0.0);
 
+// Behind the door: a stairwell going down into blue, the star waiting at the bottom
 vec3 journeyPortal(vec2 uv) {
   vec2 q = (uv - uCentre) * vec2(uAspect, 1.0);
-  float r = length(q) * 22.0;
-  float a = atan(q.y, q.x);
-  float w = r - uTime * 1.6 + sin(a * 4.0 + uTime) * 0.15;
-  float band = fract(w);
-  float idx = mod(floor(w), 4.0);
-  // yellow, pink, violet, red: the site's colours, linear
-  vec3 c = idx < 1.0 ? vec3(0.97, 0.64, 0.04) : idx < 2.0 ? vec3(0.93, 0.13, 0.65) : idx < 3.0 ? vec3(0.11, 0.01, 0.83) : vec3(1.0, 0.016, 0.035);
-  c *= 0.55 + 0.45 * smoothstep(0.0, 0.5, band) * smoothstep(1.0, 0.5, band);
-  return c + vec3(1.0, 0.95, 0.8) * exp(-r * 1.6) * 1.5; // light at the far end
+  float depth = smoothstep(0.55, 0.12, uv.y);
+  vec3 c = mix(vec3(0.002, 0.004, 0.05), vec3(0.02, 0.06, 0.75), depth);
+  float stepLine = smoothstep(0.08, 0.0, abs(fract(uv.y * 30.0 + uTime * 0.8) - 0.5) - 0.38);
+  c += vec3(0.12, 0.03, 0.4) * stepLine * depth;
+  float star = exp(-length(q) * 16.0);
+  return c + vec3(1.0, 0.8, 0.3) * star * (1.1 + 0.3 * sin(uTime * 3.0));
 }
 `;
 
@@ -64,20 +72,20 @@ const GLSL_MAP = /* glsl */ `
   vec3 jCol = jTexel.rgb;
   vec2 jBox = (vMapUv - uBox.xy) / uBox.zw;
   float jIn = all(greaterThan(jBox, vec2(0.0))) && all(lessThan(jBox, vec2(1.0))) ? texture(uMask, jBox).g : 0.0;
-  // The star wakes up
-  if (uGlow > 0.0 && jIn > 0.5 && jTexel.r > 0.4 && jTexel.b < 0.25) journeyGlow += jTexel.rgb * uGlow * 3.0;
-  // Behind the doors: the tunnel of light
+  // The stars (in the window and at the foot of the door) wake up
+  if (uGlow > 0.0 && jTexel.r > 0.4 && jTexel.g > 0.3 && jTexel.b < 0.2) journeyGlow += jTexel.rgb * uGlow * 2.5;
+  // Behind the door: the way down
   if (uPortal > 0.0 && jIn > 0.0) {
     vec3 p = journeyPortal(vMapUv);
     jCol = mix(jCol, p, uPortal * jIn);
-    journeyGlow += p * uPortal * jIn * 0.45;
+    journeyGlow += p * uPortal * jIn * 0.22;
   }
   diffuseColor *= vec4(jCol, jTexel.a);
 #endif
 `;
 
-// The doorway's shape, traced from the photo: flood fill from the star over
-// the blue (and the star), plus the star's own disc for its dark outlines.
+// The door's shape, traced from the photo: a flood fill over the door's blue
+// (and the star lying in it), inside the door's box.
 async function traceDoorway(url) {
   const res = await fetch(url, { credentials: 'same-origin' });
   if (!res.ok) throw new Error(`${res.status} ${url}`);
@@ -105,8 +113,8 @@ async function traceDoorway(url) {
     return (b > 110 && b > r) || (r > 150 && g > 130 && b < 150);
   };
   const filled = new Uint8Array(w * h);
-  const sx = Math.round(STAR[0] * W) - x0;
-  const sy = Math.round((1 - STAR[1]) * H) - y0;
+  const sx = Math.round(SEED[0] * W) - x0;
+  const sy = Math.round((1 - SEED[1]) * H) - y0;
   const stack = [sy * w + sx];
   filled[stack[0]] = 1;
   let count = 0;
@@ -120,18 +128,15 @@ async function traceDoorway(url) {
     if (y > 0 && !filled[k - w] && ok(k - w)) (filled[k - w] = 1), stack.push(k - w);
     if (y < h - 1 && !filled[k + w] && ok(k + w)) (filled[k + w] = 1), stack.push(k + w);
   }
-  if (count < w * h * 0.25) throw new Error('døråbningen blev ikke fundet');
+  if (count < w * h * 0.3) throw new Error('døren blev ikke fundet');
 
   const out = document.createElement('canvas');
   out.width = w;
   out.height = h;
   const og = out.getContext('2d');
   const img = og.createImageData(w, h);
-  const starR = 0.05 * H;
   for (let i = 0; i < w * h; i++) {
-    const x = i % w;
-    const y = (i / w) | 0;
-    const v = filled[i] || Math.hypot(x - sx, y - sy) < starR ? 255 : 0;
+    const v = filled[i] ? 255 : 0;
     img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
     img.data[i * 4 + 3] = 255;
   }
@@ -152,7 +157,7 @@ export function createJourney({ id, material, aspect, frame, room }) {
     uTime: { value: 0 },
     uMask: { value: blank },
     uBox: { value: new THREE.Vector4(BOX.u[0], BOX.v[0], du, dv) },
-    uCentre: { value: new THREE.Vector2(APEX, (BOX.v[0] + BOX.v[1]) / 2 - 0.02) },
+    uCentre: { value: new THREE.Vector2(...FLOOR_STAR) },
     uAspect: { value: aspect },
   };
 
@@ -168,15 +173,15 @@ export function createJourney({ id, material, aspect, frame, room }) {
   };
   material.customProgramCacheKey = () => 'journey';
 
-  // ---------------------------------------------------------------- the doors
+  // ---------------------------------------------------------------- the door and its handle
   let artMesh = null;
   frame.group.traverse((o) => {
     if (o.material === material) artMesh = o;
   });
-  const doors = { left: null, right: null, material: null, mask: null, tracing: null, failed: false };
+  const doors = { leaf: null, handle: null, lever: null, material: null, tracing: null, failed: false };
 
-  function buildDoors(mask) {
-    mask.repeat.set(1 / du, 1 / dv); // painting uv → doorway uv
+  function buildDoor(mask) {
+    mask.repeat.set(1 / du, 1 / dv); // painting uv → door uv
     mask.offset.set(-BOX.u[0] / du, -BOX.v[0] / dv);
     const mat = new THREE.MeshStandardMaterial({
       map: material.map,
@@ -186,29 +191,37 @@ export function createJourney({ id, material, aspect, frame, room }) {
       side: THREE.DoubleSide,
     });
     const { artW, artH } = frame;
-    const yMid = ((BOX.v[0] + BOX.v[1]) / 2 - 0.5) * artH;
-    const leaf = (u0, u1, hingeU) => {
-      const geo = new THREE.PlaneGeometry((u1 - u0) * artW, dv * artH);
-      const uv = geo.attributes.uv;
-      for (let i = 0; i < uv.count; i++) {
-        uv.setXY(i, u0 + uv.getX(i) * (u1 - u0), BOX.v[0] + uv.getY(i) * dv);
-      }
-      // Hinge on the leaf's outer edge
-      geo.translate(((u0 + u1) / 2 - hingeU) * artW, 0, 0);
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.receiveShadow = true;
-      mesh.castShadow = true;
-      const pivot = new THREE.Group();
-      pivot.position.set((hingeU - 0.5) * artW, yMid, 0.003);
-      pivot.add(mesh);
-      pivot.visible = false;
-      artMesh.add(pivot);
-      return pivot;
-    };
-    doors.left = leaf(BOX.u[0], APEX, BOX.u[0]);
-    doors.right = leaf(APEX, BOX.u[1], BOX.u[1]);
-    doors.material = mat;
-    doors.mask = mask;
+    const vMid = (BOX.v[0] + BOX.v[1]) / 2;
+    const geo = new THREE.PlaneGeometry(du * artW, dv * artH);
+    const uv = geo.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, BOX.u[0] + uv.getX(i) * du, BOX.v[0] + uv.getY(i) * dv);
+    geo.translate(((BOX.u[0] + BOX.u[1]) / 2 - HINGE) * artW, 0, 0); // turns on its left edge
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.receiveShadow = true;
+    mesh.castShadow = true;
+    const leaf = new THREE.Group();
+    leaf.position.set((HINGE - 0.5) * artW, (vMid - 0.5) * artH, 0.003);
+    leaf.add(mesh);
+    leaf.visible = false;
+    artMesh.add(leaf);
+
+    // The handle: a brass rose and a lever pointing towards the hinge
+    const brass = new THREE.MeshStandardMaterial({ color: '#d9a441', metalness: 0.9, roughness: 0.28 });
+    const handle = new THREE.Group();
+    const rose = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.008, 24).rotateX(Math.PI / 2), brass);
+    const lever = new THREE.Group();
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.072, 0.012, 0.012), brass);
+    bar.position.set(-0.03, 0, 0.014);
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.009, 16, 12), brass);
+    knob.position.set(-0.066, 0, 0.014);
+    lever.add(bar, knob);
+    handle.add(rose, lever);
+    handle.position.set((HANDLE[0] - HINGE) * artW, (HANDLE[1] - vMid) * artH, 0.004);
+    handle.traverse((o) => (o.castShadow = true));
+    handle.scale.setScalar(0.0001);
+    leaf.add(handle);
+
+    Object.assign(doors, { leaf, handle, lever, material: mat });
     uniforms.uMask.value = mask;
   }
 
@@ -216,7 +229,7 @@ export function createJourney({ id, material, aspect, frame, room }) {
     doors.tracing ??= room
       .artUrl(id, 1024)
       .then(traceDoorway)
-      .then(buildDoors)
+      .then(buildDoor)
       .catch((err) => {
         doors.tracing = null;
         doors.failed = true;
@@ -225,16 +238,17 @@ export function createJourney({ id, material, aspect, frame, room }) {
     return doors.tracing;
   }
 
-  function setDoors(open) {
-    if (!doors.left) return;
-    const show = open > 0.0005 || state !== 'idle';
-    doors.left.visible = doors.right.visible = show;
-    doors.left.rotation.y = -DOOR_ANGLE * open;
-    doors.right.rotation.y = DOOR_ANGLE * open;
+  // open: 0 shut … 1 wide open; handle: its size (0 … 1); press: the lever down (0 … 1)
+  function setDoor(open, handle = 0, press = 0) {
+    if (!doors.leaf) return;
+    doors.leaf.visible = state !== 'idle';
+    doors.leaf.rotation.y = -DOOR_ANGLE * open;
+    doors.handle.scale.setScalar(Math.max(0.0001, handle));
+    doors.lever.rotation.z = 0.62 * press; // the lever points towards the hinge: turning it this way pulls it down
     if (doors.material.map !== material.map) doors.material.map = material.map; // the photo upgrades as you walk up
   }
 
-  // ---------------------------------------------------------------- overlay: the light, the chapter titles
+  // ---------------------------------------------------------------- overlay: the light, the story
   const veil = document.createElement('div');
   veil.className = 'galleri__veil';
   veil.style.background = VEIL;
@@ -270,31 +284,45 @@ export function createJourney({ id, material, aspect, frame, room }) {
   const _size = new THREE.Vector2();
   function doorway() {
     artMesh.updateMatrixWorld(true);
-    centre.set((APEX - 0.5) * frame.artW, ((BOX.v[0] + BOX.v[1]) / 2 - 0.5) * frame.artH, 0);
+    centre.set(((BOX.u[0] + BOX.u[1]) / 2 - 0.5) * frame.artW, ((BOX.v[0] + BOX.v[1]) / 2 - 0.5) * frame.artH, 0);
     artMesh.localToWorld(centre);
     normal.set(0, 0, 1).transformDirection(artMesh.matrixWorld);
   }
 
+  // The dream, its cast (cutouts) and the paintings it uses whole
+  const castLoader = new THREE.TextureLoader();
+  function loadCutout(name) {
+    return castLoader.loadAsync(CAST_URL(name)).then((tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 4;
+      return tex;
+    });
+  }
+  function freeTextures() {
+    textures.forEach(({ tex, art }) => (art ? room.freeTexture(tex) : tex.dispose()));
+    textures = [];
+  }
   function loadDream() {
-    const works = room.works;
-    dreamLoad = Promise.all([
-      import('./dream.js'),
-      Promise.allSettled(works.map((w) => room.loadArt(w.id, 640))),
-    ]).then(([mod, results]) => {
-      const map = new Map();
-      results.forEach((r, i) => {
-        if (r.status === 'fulfilled') {
-          map.set(works[i].id, r.value);
-          textures.push(r.value);
-        }
+    dreamLoad = import('./dream.js').then(async (mod) => {
+      const [paintings, cutouts] = await Promise.all([
+        Promise.allSettled(mod.PAINTINGS.map((pid) => room.loadArt(pid, 1024))),
+        Promise.allSettled(mod.CUTOUTS.map(loadCutout)),
+      ]);
+      const pmap = new Map();
+      const cmap = new Map();
+      paintings.forEach((r, i) => {
+        if (r.status !== 'fulfilled') return;
+        pmap.set(mod.PAINTINGS[i], r.value);
+        textures.push({ tex: r.value, art: true });
       });
-      if (state === 'idle') {
-        // given up meanwhile
-        textures.forEach((t) => room.freeTexture(t));
-        textures = [];
-        return;
-      }
-      dream = mod.createDream({ works, textures: map, pixelRatio: room.renderer.getPixelRatio(), calm: room.reduced() });
+      cutouts.forEach((r, i) => {
+        if (r.status !== 'fulfilled') return;
+        cmap.set(mod.CUTOUTS[i], r.value);
+        textures.push({ tex: r.value, art: false });
+      });
+      if (state === 'idle') return freeTextures(); // given up meanwhile
+      if (cmap.size < mod.CUTOUTS.length) throw new Error('figurerne kunne ikke hentes');
+      dream = mod.createDream({ cast: cmap, paintings: pmap, pixelRatio: room.renderer.getPixelRatio(), calm: room.reduced() });
       room.renderer.compile(dream.scene, dream.camera);
       ready = true;
     });
@@ -307,8 +335,7 @@ export function createJourney({ id, material, aspect, frame, room }) {
   function cleanupDream() {
     dream?.dispose();
     dream = null;
-    textures.forEach((t) => room.freeTexture(t));
-    textures = [];
+    freeTextures();
     ready = false;
     dreamLoad = null;
   }
@@ -333,7 +360,7 @@ export function createJourney({ id, material, aspect, frame, room }) {
       .catch(() => {});
   }
 
-  // Nothing to dive into (the dream or the doors would not load): back out
+  // Nothing to dive into (the dream or the door would not load): back out
   // the way we came, from as far as the dive got
   function leaveEarly() {
     const p = Math.min(Math.max((clock - IN.dive[0]) / (IN.dive[1] - IN.dive[0]), 0), 1);
@@ -346,7 +373,7 @@ export function createJourney({ id, material, aspect, frame, room }) {
     state = 'idle';
     clock = 0;
     uniforms.uPortal.value = uniforms.uGlow.value = 0;
-    setDoors(0);
+    setDoor(0);
     setVeil(0);
     caption.hidden = true;
     room.setAway(false);
@@ -356,9 +383,12 @@ export function createJourney({ id, material, aspect, frame, room }) {
     cleanupDream();
   }
 
-  const hitsStar = (hit) => {
+  // The star in the window, or the lower door itself
+  const hitsStart = (hit) => {
     if (!hit?.uv || hit.object.material !== material) return false;
-    return Math.hypot((hit.uv.x - STAR[0]) * aspect, hit.uv.y - STAR[1]) < STAR_TAP;
+    const { x, y } = hit.uv;
+    if (Math.hypot((x - STAR[0]) * aspect, y - STAR[1]) < STAR_TAP) return true;
+    return x > BOX.u[0] + 0.02 && x < BOX.u[1] - 0.02 && y > BOX.v[0] + 0.02 && y < BOX.v[1] - 0.06;
   };
 
   function onVisibility() {
@@ -371,7 +401,7 @@ export function createJourney({ id, material, aspect, frame, room }) {
   const api = {
     tap(hit) {
       if (state === 'idle') {
-        if (!hitsStar(hit)) return false;
+        if (!hitsStart(hit)) return false;
         begin();
         return true;
       }
@@ -396,11 +426,13 @@ export function createJourney({ id, material, aspect, frame, room }) {
       uniforms.uTime.value += dt;
 
       if (state === 'in') {
-        uniforms.uGlow.value = smooth(clock / 0.5) * (1 - span(clock, [2.2, 3.2]));
-        // The doors wait for their shape (traced from the photo in the first moments)
+        uniforms.uGlow.value = smooth(clock / 0.5) * (1 - span(clock, [2.6, 3.6]));
+        // The door waits for its shape (traced from the photo in the first moments)
         if (doors.failed) return leaveEarly();
-        if (!doors.left && clock > IN.open[0]) clock = IN.open[0];
-        setDoors(span(clock, IN.open));
+        if (!doors.leaf && clock > IN.handle[0]) clock = IN.handle[0];
+        if (clock - dt < IN.press[0] && clock >= IN.press[0]) sound?.click();
+        const handle = pop((clock - IN.handle[0]) / (IN.handle[1] - IN.handle[0]));
+        setDoor(span(clock, IN.open), handle, span(clock, IN.press) * (1 - span(clock, IN.release)));
         uniforms.uPortal.value = span(clock, IN.portal);
         setVeil(span(clock, IN.veil));
         if (clock >= IN.dive[1]) {
@@ -417,8 +449,9 @@ export function createJourney({ id, material, aspect, frame, room }) {
       if (state === 'dream') {
         dreamT += dt;
         sound?.at(dreamT);
-        room.renderer.getSize(_size);
-        dream.frame(dreamT, dt, _size.x / Math.max(1, _size.y));
+        sound?.cues(dreamT, dream.cues);
+        room.renderer.getDrawingBufferSize(_size);
+        dream.frame(dreamT, dt, _size.x / Math.max(1, _size.y), _size.y);
         if (exitAt < 0 && dreamT >= dream.duration - EXIT_VEIL) {
           exitAt = dreamT;
           sound?.leave();
@@ -427,10 +460,10 @@ export function createJourney({ id, material, aspect, frame, room }) {
         const fadeOut = exitAt >= 0 ? smooth((dreamT - exitAt) / EXIT_VEIL) : 0;
         setVeil(Math.max(fadeIn, fadeOut));
         const c = dream.caption(dreamT);
-        caption.hidden = c.alpha <= 0.001 && dreamT > 5.5;
+        caption.hidden = c.alpha <= 0.001 && (dreamT < 6 || dreamT > 12.5);
         titleEl.textContent = c.text;
         titleEl.style.opacity = String(c.alpha);
-        hintEl.style.opacity = String(smooth((dreamT - 1) / 0.8) * (1 - smooth((dreamT - 4.5) / 1)));
+        hintEl.style.opacity = String(smooth((dreamT - 6.5) / 0.8) * (1 - smooth((dreamT - 11) / 1)));
         if (fadeOut >= 1) {
           state = 'out';
           clock = 0;
@@ -440,10 +473,10 @@ export function createJourney({ id, material, aspect, frame, room }) {
         return;
       }
 
-      // out: back through the doorway, the light fading, the doors closing
+      // out: back through the doorway, the light fading, the door closing
       setVeil(1 - span(clock, OUT.veil));
       uniforms.uPortal.value = 1 - span(clock, OUT.portal);
-      setDoors(1 - span(clock, OUT.close));
+      setDoor(1 - span(clock, OUT.close), 1 - span(clock, OUT.handle));
       if (clock >= OUT.done) finish();
     },
 

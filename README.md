@@ -31,3 +31,7 @@ Mønsterfliserne i siderne (firkløveren og solen) skæres ud i `TILES` øverst 
 ## Rammer i "I din stue"
 
 Rammerne, kunden kan vælge, står i `src/stue/frames.json` (kun kundepriser, aldrig indkøbspriser: filen ligger offentligt). Et værk får kun de rammer at se, der findes i en størrelse, som passer til værkets `maal`. Kilder og licenser for stuen: `src/stue/CREDITS.md`.
+
+## Rejsen bag Lille stjernes dør
+
+Et skjult indslag i galleriet: tryk på stjernen (eller den nederste dør) i Lille stjerne. Figurerne i rejsen er klippet ud af fotoene med `node scripts/dream-cutouts.mjs` (skriver `public/art/dream/*.webp` og `src/gallery/dream-cast.json`); kør det igen, hvis et af de fotos skiftes. Historiens tekster står i `STORY` øverst i `src/gallery/dream.js`.

@@ -1,18 +1,21 @@
 // A soundtrack for the journey behind Lille stjerne (journey.js), made in the
 // browser: no audio files. A soft pad glides from chord to chord with the
-// chapters of dream.js, a little bell sparkles around the star, and filtered
-// noise whooshes on the way in and out. Quiet by design; it fades in and out.
+// scenes of dream.js, bells ring when the faces sing (dream.js CUES), a soft
+// beat plays under the dance, and filtered noise whooshes on the way in and
+// out. Quiet by design; it fades in and out.
 //
 // Must be started from inside a tap (browsers only allow sound after one).
 
 // One chord per chapter: [start in seconds, frequencies (Hz), filter cutoff]
 const CHORDS = [
-  [0, [146.83, 220, 329.63, 369.99], 700], // D add9: the star
-  [6.6, [196, 293.66, 440, 493.88], 2400], // G add9: the journey, bright
-  [19.6, [130.81, 196, 329.63, 493.88], 1500], // C maj7: the sun, warm
-  [31, [110, 164.81, 261.63, 392], 520], // A m7: the blue hour, dark
-  [40, [146.83, 220, 369.99, 554.37], 1800], // D maj7: the wheel, the star again
+  [0, [146.83, 220, 293.66, 349.23], 520], // D m: down the stairs, in the dark
+  [6, [146.83, 220, 329.63, 369.99], 1500], // D add9: morning on the fields
+  [20.4, [196, 293.66, 369.99, 493.88], 2000], // G maj7: the faces in the sky
+  [34, [164.81, 246.94, 329.63, 415.3], 2600], // E: the party
+  [50, [110, 164.81, 261.63, 392], 520], // A m7: the blue hour
+  [62, [146.83, 220, 369.99, 554.37], 1800], // D maj7: home
 ];
+const BEAT = { from: 35.5, to: 50.5, bpm: 112 };
 const VOLUME = 0.16;
 
 export function createDreamSound() {
@@ -116,8 +119,59 @@ export function createDreamSound() {
     o.stop(now + 1.7);
   }
 
+  // A soft kick, low and round
+  function kick(when) {
+    const now = ctx.currentTime + when;
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(120, now);
+    o.frequency.exponentialRampToValueAtTime(42, now + 0.22);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.32, now + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+    o.connect(g).connect(master);
+    o.start(now);
+    o.stop(now + 0.32);
+  }
+  // …and a brush of noise on the off-beat
+  function shaker(when) {
+    const now = ctx.currentTime + when;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer();
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 6000;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+    src.connect(hp).connect(g).connect(master);
+    src.start(now, Math.random());
+    src.stop(now + 0.14);
+  }
+  // Light poured: a sine sliding up, with a shimmer of bells
+  function pour() {
+    const now = ctx.currentTime;
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(330, now);
+    o.frequency.exponentialRampToValueAtTime(1320, now + 3.6);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.06, now + 0.4);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 4);
+    o.connect(g).connect(master);
+    g.connect(delay);
+    o.start(now);
+    o.stop(now + 4.1);
+    for (let i = 0; i < 8; i++) bell(880 * 2 ** (i / 5), 0.4 + i * 0.4);
+  }
+
   let chord = 0;
   let nextBell = 0;
+  let nextBeat = BEAT.from;
+  let cue = 0;
   let stopped = false;
 
   return {
@@ -143,12 +197,54 @@ export function createDreamSound() {
         filter.frequency.setTargetAtTime(cutoff, now, 0.8);
       }
       // The star sparkles: bells from the chord, high up
-      const starry = t < 6.4 || t > 44;
+      const starry = (t > 3 && t < 7) || (t > 62.5 && t < 74);
       if (starry && t >= nextBell) {
         const notes = CHORDS[chord][1];
         bell(notes[Math.floor(Math.random() * notes.length)] * 4);
         nextBell = t + 0.28 + Math.random() * 0.35;
       }
+      // The dance: scheduled a beat ahead, so it keeps time between frames
+      const step = 60 / BEAT.bpm / 2;
+      while (nextBeat < BEAT.to && nextBeat < t + 0.15) {
+        if (nextBeat >= t - 0.05) {
+          const beat = Math.round((nextBeat - BEAT.from) / step);
+          if (beat % 2 === 0) kick(nextBeat - t);
+          else shaker(nextBeat - t);
+        }
+        nextBeat += step;
+      }
+    },
+    // dream.js CUES, in order: bells as the faces sing, the pour, the swooshes
+    cues(t, list) {
+      if (stopped) return;
+      while (cue < list.length && list[cue].t <= t) {
+        const c = list[cue++];
+        if (t - c.t > 0.5) continue; // long past (a slow frame): skip, do not pile up
+        if (c.kind === 'bell') bell(c.f);
+        else if (c.kind === 'shine') for (let i = 0; i < 6; i++) bell(CHORDS[chord][1][i % 4] * 4, i * 0.12);
+        else if (c.kind === 'swoosh') whoosh(1.8, true);
+        else if (c.kind === 'pop') [0, 1, 2, 3].forEach((i) => bell(523.25 * 2 ** (i / 3), i * 0.09));
+        else if (c.kind === 'pour') pour();
+      }
+    },
+    // The door handle: a small metal click and a low knock
+    click() {
+      if (stopped) return;
+      const now = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = noiseBuffer();
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 3400;
+      bp.Q.value = 6;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.6, now + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+      src.connect(bp).connect(g).connect(master);
+      src.start(now, 0.3);
+      src.stop(now + 0.06);
+      kick(0.03);
     },
     // The way out
     leave() {
