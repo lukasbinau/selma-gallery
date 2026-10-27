@@ -10,7 +10,7 @@ import * as THREE from 'three';
 
 // Which works have a trip, and where their trigger sits in texture space
 // (u from the left, v from the bottom; measured on public/art/<id>-1024.jpg)
-export const TRIPS = {
+const TRIPS = {
   'lilla-skyer': { sun: [0.2541, 0.5129], radius: [0.0426, 0.0337], horizon: 0.458 },
 };
 
@@ -96,7 +96,8 @@ vec4 tripSample(vec2 uv0) {
 }
 `;
 
-export function createTrip(material, { aspect, sun, radius, horizon }) {
+export function createTrip({ id, material, aspect }) {
+  const { sun, radius, horizon } = TRIPS[id];
   const uniforms = {
     uTrip: { value: 0 },
     uTime: { value: 0 },
@@ -109,10 +110,7 @@ export function createTrip(material, { aspect, sun, radius, horizon }) {
     Object.assign(shader.uniforms, uniforms);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <map_pars_fragment>', `#include <map_pars_fragment>\n#ifdef USE_MAP\n${GLSL_HEAD}\n#endif`)
-      .replace(
-        '#include <map_fragment>',
-        '#ifdef USE_MAP\n  diffuseColor *= tripSample( vMapUv );\n#endif',
-      )
+      .replace('#include <map_fragment>', '#ifdef USE_MAP\n  diffuseColor *= tripSample( vMapUv );\n#endif')
       .replace(
         '#include <emissivemap_fragment>',
         '#include <emissivemap_fragment>\n#ifdef USE_MAP\n  totalEmissiveRadiance += tripGlow;\n#endif',
@@ -124,33 +122,38 @@ export function createTrip(material, { aspect, sun, radius, horizon }) {
   let goal = 0;
   let k = 0;
 
+  // A raycast hit on the art plane: is it on (or near) the sun?
+  const hitsSun = (hit) => {
+    if (!hit?.uv || hit.object.material !== material) return false;
+    const du = (hit.uv.x - sun[0]) / radius[0];
+    const dv = (hit.uv.y - sun[1]) / radius[1];
+    return du * du + dv * dv <= TAP_SLACK * TAP_SLACK;
+  };
+
   return {
-    get active() {
-      return goal === 1;
+    // Any tap while it runs brings the painting back; leaning in and tapping the sun starts it
+    tap(hit, { leaned }) {
+      if (goal) {
+        goal = 0;
+        return true;
+      }
+      if (leaned && hitsSun(hit)) {
+        goal = 1;
+        return true;
+      }
+      return false;
     },
-    // How far in (0..1), for the camera sway
-    get amount() {
-      return k * k * (3 - 2 * k);
-    },
-    get time() {
-      return uniforms.uTime.value;
-    },
-    start() {
-      goal = 1;
-    },
-    stop() {
+    // Stepping back from the painting ends it
+    leave() {
       goal = 0;
     },
     reset() {
       goal = k = 0;
       uniforms.uTrip.value = 0;
     },
-    // A raycast hit on the art plane: is it on (or near) the sun?
-    hitsSun(hit) {
-      if (!hit?.uv || hit.object.material !== material) return false;
-      const du = (hit.uv.x - sun[0]) / radius[0];
-      const dv = (hit.uv.y - sun[1]) / radius[1];
-      return du * du + dv * dv <= TAP_SLACK * TAP_SLACK;
+    // How far in (0..1) and the trip's clock, for the camera sway
+    get sway() {
+      return k > 0 ? { amount: k * k * (3 - 2 * k), time: uniforms.uTime.value } : null;
     },
     update(dt, { slow = false } = {}) {
       if (goal === 0 && k === 0) return;

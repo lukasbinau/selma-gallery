@@ -21,7 +21,7 @@ import './gallery.css';
 import { settings } from '../store.js';
 import { buildChrome, createPlaques, measurePlaques, pad, STRINGS } from './chrome.js';
 import { artFormat, artUrl } from '../art-format.js';
-import { TRIPS, createTrip } from './trip.js';
+import { SECRETS } from './secrets.js';
 
 // ---------------------------------------------------------------------------
 // Tunables
@@ -506,6 +506,35 @@ export async function createGallery({ root, works, artMeta = {} }) {
     renderer.shadowMap.needsUpdate = true;
   }
 
+  // Sunset and night over the room (sunset.js): 0, 0 is the theme exactly
+  const MOOD = {
+    spot: new THREE.Color('#fff4ec'), // the picture spots' own colour
+    beam: new THREE.Color('#ffe2bf'),
+    dusk: new THREE.Color('#ff6a2b'),
+    night: new THREE.Color('#3a4bff'),
+    nightBg: new THREE.Color('#07031a'),
+  };
+  const _mood = new THREE.Color();
+  function setMood(dusk = 0, night = 0) {
+    const t = currentTheme();
+    _mood.copy(MOOD.spot).lerp(MOOD.dusk, dusk * 0.85).lerp(MOOD.night, night * 0.7);
+    spots.forEach((s) => {
+      s.color.copy(_mood);
+      s.intensity = t.spot * (1 + 0.15 * dusk) * (1 - 0.65 * night);
+    });
+    mats.beam.color.copy(MOOD.beam).lerp(MOOD.dusk, dusk * 0.8).lerp(MOOD.night, night * 0.6);
+    hemi.intensity = t.hemi * (1 - 0.75 * night);
+    scene.background.set(t.bg).lerp(MOOD.nightBg, night * 0.8);
+    scene.fog.color.copy(scene.background);
+  }
+
+  // What a painting's secret may reach of the room (secrets.js)
+  const room = {
+    mats,
+    setMood,
+    loadArt: (id, size) => setupTextures().then(() => loadArt(id, size)),
+  };
+
   function applyFx() {
     const on = settings.fx !== 'off';
     root.dataset.fx = on ? 'on' : 'off';
@@ -805,7 +834,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
       f.want = 0; // the size it is heading for
       f.thumb = null;
       f.ctrl = null; // AbortController of its download
-      f.trip = TRIPS[work.id] ? createTrip(f.material, { aspect, ...TRIPS[work.id] }) : null;
+      f.secret = SECRETS[work.id]?.({ id: work.id, material: f.material, aspect, frame: f, room }) ?? null;
       f.group.position.copy(f.centre);
       f.group.rotation.y = slot.wall.rotY;
       f.group.traverse((o) => {
@@ -1054,13 +1083,13 @@ export async function createGallery({ root, works, artMeta = {} }) {
     camera.position.copy(_pos);
     camera.lookAt(_look);
 
-    // A trip sways the head and makes the view breathe
-    const trip = reduced() ? null : frames[state.index]?.trip;
-    const tripK = trip ? trip.amount : 0;
-    if (tripK > 0) camera.rotateZ(Math.sin(trip.time * 0.37) * 0.035 * tripK);
+    // A secret may sway the head and make the view breathe (trip.js)
+    const sway = reduced() ? null : frames[state.index]?.secret?.sway;
+    const tripK = sway ? sway.amount : 0;
+    if (tripK > 0) camera.rotateZ(Math.sin(sway.time * 0.37) * 0.035 * tripK);
 
     // The view widens slightly on the move
-    const fov = FOV + Math.min(speed * 0.8, 3.5) + (tripK ? Math.sin(trip.time * 0.53) * 2.2 * tripK : 0);
+    const fov = FOV + Math.min(speed * 0.8, 3.5) + (tripK ? Math.sin(sway.time * 0.53) * 2.2 * tripK : 0);
     if (Math.abs(fov - camera.fov) > 0.01) {
       camera.fov = fov;
       camera.updateProjectionMatrix();
@@ -1153,7 +1182,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
 
   function setLean(on) {
     state.leanGoal = on ? 1 : 0;
-    if (!on) frames.forEach((f) => f.trip?.stop());
+    if (!on) frames.forEach((f) => f.secret?.leave?.());
     canvas.classList.toggle('is-leaning', on);
     if (reduced()) snapRig();
   }
@@ -1333,12 +1362,8 @@ export async function createGallery({ root, works, artMeta = {} }) {
         goTo(i);
         hideHint();
       } else {
-        // Leaning in to a painting with a trip (trip.js): its secret spot starts
-        // it, and any tap while it runs brings the painting back
-        const trip = frames[i].trip;
-        if (trip?.active) trip.stop();
-        else if (trip && state.leanGoal && trip.hitsSun(lastHit)) trip.start();
-        else setLean(!state.leanGoal);
+        // A painting with a secret (secrets.js) may take the tap for itself
+        if (!frames[i].secret?.tap(lastHit, { leaned: state.leanGoal === 1 })) setLean(!state.leanGoal);
         hideHint();
       }
       return;
@@ -1405,7 +1430,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
   function frame() {
     if (!running) return;
     const dt = tickClock();
-    for (const f of frames) f.trip?.update(dt, { slow: reduced() });
+    for (const f of frames) f.secret?.update(dt, { slow: reduced() });
     updateRig(dt);
     drainSwaps();
     updateDust(clock.elapsed);
@@ -1860,7 +1885,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
     hideHint();
     drag.active = false;
     canvas.classList.remove('is-dragging', 'is-pointing', 'is-lean-target');
-    frames.forEach((f) => f.trip?.reset());
+    frames.forEach((f) => f.secret?.reset());
   }
 
   function setExposure(k) {
