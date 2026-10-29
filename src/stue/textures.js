@@ -262,23 +262,6 @@ export function plaster(size = 256, seed = 12) {
   return { map, normal: normalFromHeight(height, size, 0.8) };
 }
 
-// ------------------------------------------------------------------ garden
-// A lawn seen from a few metres: blades, clover patches, mowing stripes.
-export function lawn(size = 512, seed = 21) {
-  const dark = [62, 92, 40];
-  const mid = [96, 128, 56];
-  const dry = [146, 150, 84];
-  return paint(size, (u, v, o) => {
-    const patch = fbm(u, v, 4, 4, seed);
-    const blades = pnoise(u * 180, v * 90, 180, 90, seed + 1);
-    const fine = pnoise(u * 256, v * 256, 256, 256, seed + 2);
-    const k = clamp01(patch * 0.8 + blades * 0.25 + fine * 0.15 - 0.15);
-    mix3(o, dark, mid, k);
-    const dryness = clamp01((fbm(u, v, 2, 3, seed + 5) - 0.62) * 3);
-    mix3(o, o.slice(), dry, dryness * 0.5);
-  });
-}
-
 // One leaf on a transparent card (u = along the leaf). Shapes: 'olive' narrow
 // lance, 'birch' small toothed oval, 'fig' broad.
 export function leafSprite(kind = 'olive', size = 128) {
@@ -321,21 +304,6 @@ export function leafSprite(kind = 'olive', size = 128) {
   t.generateMipmaps = false;
   t.minFilter = THREE.LinearFilter;
   return t;
-}
-
-// White birch bark with dark lenticels and knots (u around, v up)
-export function birchBark(size = 256, seed = 31) {
-  return paint(size, (u, v, o) => {
-    const base = 0.9 + (fbm(u, v, 4, 3, seed) - 0.5) * 0.15;
-    const lent = pnoise(u * 6, v * 70, 6, 70, seed + 1);
-    const knot = fbm(u, v, 3, 3, seed + 2);
-    let k = base;
-    if (lent > 0.78) k *= 0.35;
-    if (knot > 0.72) k *= 0.25;
-    o[0] = clamp01(k) * 238;
-    o[1] = clamp01(k) * 234;
-    o[2] = clamp01(k) * 224;
-  });
 }
 
 // Soft radial falloff for contact shadows and lamp glows
