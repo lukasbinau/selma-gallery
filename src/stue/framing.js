@@ -108,6 +108,20 @@ function box(w, h, d, material, x = 0, y = 0, z = 0) {
 }
 
 /**
+ * The outer size (m) the work would have in `offer`, without building it:
+ * the same sums as buildWork below.
+ */
+export function outerOf(size, offer) {
+  const aw = size.w / 100;
+  const ah = size.h / 100;
+  const frame = offer?.frame;
+  if (!frame || frame.none) return { w: aw, h: ah };
+  const pw = (frame.profileWidthMm || 13) * MM;
+  if ((frame.style || 'plakat') === 'svaever') return { w: aw + 0.014 + pw * 2, h: ah + 0.014 + pw * 2 };
+  return { w: offer.inner.w / 100 + pw * 2, h: offer.inner.h / 100 + pw * 2 };
+}
+
+/**
  * Builds the work as it will hang. `size` is the work in cm ({ w, h }), `offer`
  * the chosen frame offer from catalogue.offersFor (frame.none for none),
  * `medium` paper | canvas | board, `bare` true when the photo already shows a

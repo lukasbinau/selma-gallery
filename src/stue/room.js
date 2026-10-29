@@ -614,7 +614,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     const fyTop = ins.top / H;
     const fyBot = 1 - ins.bottom / H;
     const band = Math.max(0.2, fyBot - fyTop);
-    const outer = work ? work.outer : { w: 0.5, h: 0.7 };
+    const outer = work ? work.ref : { w: 0.5, h: 0.7 };
     const cy = work ? work.centreY : 1.4;
     // 0 for an A4 sheet, 1 for a metre-wide canvas
     const size = THREE.MathUtils.clamp((Math.max(outer.w, outer.h) - 0.3) / 0.65, 0, 1);
@@ -829,8 +829,10 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   })();
 
   /**
-   * Hang a work. `spec` = { size (cm), medium, bare, offer }. Returns the
-   * outer size in metres.
+   * Hang a work. `spec` = { size (cm), medium, bare, offer, ref }. `ref` is
+   * the outer size (m) the room is staged for: the largest of the work's
+   * frames, so changing frame never moves the camera or the hanging height.
+   * Returns that staging size.
    */
   function hang(spec) {
     if (state.work) {
@@ -855,17 +857,17 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     sh.position.set(0, -0.012, 0.0015);
     sh.scale.setScalar(1);
     root.add(sh);
-    state.work = { root, group: built.group, outer: built.outer, art: built.art, depth: built.depth, frameMat, spec, centreY: 0 };
+    state.work = { root, group: built.group, outer: built.outer, ref: spec.ref || built.outer, art: built.art, depth: built.depth, frameMat, spec, centreY: 0 };
     furn.add(root);
     positionWork();
-    return built.outer;
+    return state.work.ref;
   }
 
   function positionWork() {
     const w = state.work;
     if (!w) return;
     const v = state.view;
-    w.centreY = hangCentre(v, w.outer);
+    w.centreY = hangCentre(v, w.ref);
     w.root.position.set(v.artX, w.centreY, v.wallZ);
     w.root.rotation.y = v.facing > 0 ? 0 : Math.PI;
     w.root.updateMatrixWorld(true);

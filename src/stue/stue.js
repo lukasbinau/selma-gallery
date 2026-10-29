@@ -15,6 +15,7 @@ import { createRoom, viewsFor, VIEWS, TIMES, viewById } from './room.js';
 import { WALLS, wallpaperSwatch } from './wallpapers.js';
 import { offersFor, workSize, mediumOf, priceOf, formatKr, sizeLabel, NONE } from './catalogue.js';
 import { samplePalette } from './palette.js';
+import { outerOf } from './framing.js';
 import { openContact, isContactOpen } from '../contact.js';
 import { buildChrome, fillRail, markRail, centreInRail, STRINGS, TIME_ICONS, viewIcon, esc } from './chrome.js';
 
@@ -185,7 +186,15 @@ export async function createStue({ root, works, artMeta = {} }) {
     const meta = artMeta[work.id];
     const size = workSize(work, meta);
     const offers = offersFor(work, meta);
-    return { index, work, size, offers, medium: mediumOf(work), bare: work.ramme === 'bare' };
+    // The room is staged for the work's largest frame (see room.hang)
+    const ref = offers.reduce(
+      (m, o) => {
+        const s = outerOf(size, o);
+        return { w: Math.max(m.w, s.w), h: Math.max(m.h, s.h) };
+      },
+      { w: 0, h: 0 },
+    );
+    return { index, work, size, offers, ref, medium: mediumOf(work), bare: work.ramme === 'bare' };
   }
 
   let loadToken = 0;
@@ -220,7 +229,7 @@ export async function createStue({ root, works, artMeta = {} }) {
       room.setPalette(samplePalette(tex.image));
       room.setCanvasEdge(edgeColour(tex.image));
     }
-    const outer = room.hang({ size: spec.size, medium: spec.medium, bare: spec.bare, offer: state.offer });
+    const outer = room.hang({ size: spec.size, medium: spec.medium, bare: spec.bare, offer: state.offer, ref: spec.ref });
     pickView(outer, keepView);
     renderAll();
   }
@@ -274,7 +283,7 @@ export async function createStue({ root, works, artMeta = {} }) {
     const spec = specFor(state.id);
     const prevView = state.viewId;
     await room.change(() => {
-      const outer = room.hang({ size: spec.size, medium: spec.medium, bare: spec.bare, offer });
+      const outer = room.hang({ size: spec.size, medium: spec.medium, bare: spec.bare, offer, ref: spec.ref });
       pickView(outer, true);
       if (state.viewId !== prevView) room.setViewInstant(state.viewId);
       renderViews();
