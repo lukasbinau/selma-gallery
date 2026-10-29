@@ -1,67 +1,84 @@
-// Cuts the garden seen through the glazing in I din stue out of a panorama.
-// Run: node scripts/garden-photo.mjs <panorama.jpg>
+// Makes the garden seen through the glazing in I din stue from two backplates.
+// Run: node scripts/garden-photo.mjs <DSC08786.jpg> <DSC08774.jpg>
 //
-// The panorama is Poly Haven's "Noon Grass" (CC0), its tonemapped 8K JPEG:
-//   https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/noon_grass.jpg
-// (8192 × 4096, not kept in the repo). Out comes the sector garden.js projects:
-// 160° across, centred on column CENTRE (the view straight out of the glazing),
-// from 40° above the horizon to 45° below, in two sizes (desktop, phone) and
-// two formats, and the sky's mask:
-//   src/stue/photos/have-{3200,1600}.{avif,webp}, have-himmel.webp
+// The photos are backplates from Poly Haven's "Lythwood Field" (CC0), shot
+// with a 24 mm lens on full frame (7360 × 4912), the "jpg_pretty" versions:
+//   https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Backplates/lythwood_field/jpg_pretty/DSC08786.jpg
+//   https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Backplates/lythwood_field/jpg_pretty/DSC08774.jpg
+// (25 MB each, not kept in the repo). One photo per room: the stue looks out
+// one way along the glazing, the spisestue the other (see garden.js VIEWS).
+//
+// Out, for each room, in src/stue/photos/:
+//   have-<room>-{768,1600,3072,5120}.avif   first picture, phone, desktop, desktop 2×
+//   have-<room>-{768,1600,3072}.webp         for browsers without AVIF
+//   have-<room>-himmel.webp                  the sky's mask (white = sky)
+// Widths follow texel density: 5120 px across the 74° frame is ~60 px/deg,
+// about what a 1440-wide screen at DPR 2 shows through the glass; 3072 covers
+// DPR 1, and 1600 a phone (it renders at 1.5×, ~12 px/deg).
 import sharp from 'sharp';
 import { mkdirSync } from 'node:fs';
 
 const OUT = 'src/stue/photos';
-const CENTRE = 4796; // open lawn and a distant tree line straight out
-const SECTOR = { az: 160, top: 40, bottom: -45 }; // keep in step with garden.js
-const SIZES = { 3200: { avif: 55, webp: 78 }, 1600: { avif: 55, webp: 78 } };
+const ROOMS = ['stue', 'spise'];
+const WIDTHS = { 768: { avif: 50, webp: 72 }, 1600: { avif: 52, webp: 76 }, 3072: { avif: 52, webp: 76 }, 5120: { avif: 50 } };
 
-const src = process.argv[2];
-if (!src) throw new Error('usage: node scripts/garden-photo.mjs <panorama.jpg>');
-const { data, info } = await sharp(src, { limitInputPixels: false }).raw().toBuffer({ resolveWithObject: true });
-const W = info.width;
-const H = info.height;
-const half = Math.round((SECTOR.az / 2 / 360) * W);
-const top = Math.round((0.5 - SECTOR.top / 180) * H);
-const height = Math.round((0.5 - SECTOR.bottom / 180) * H) - top;
-const width = 2 * half;
-
-// the sector may run across the panorama's seam: cut it in one or two pieces
-const x0 = (((CENTRE - half) % W) + W) % W;
-const pieces = x0 + width <= W ? [{ left: x0, width, at: 0 }] : [{ left: x0, width: W - x0, at: 0 }, { left: 0, width: width - (W - x0), at: W - x0 }];
-const raw = () => sharp(data, { raw: info, limitInputPixels: false });
-const parts = await Promise.all(pieces.map(async (p) => ({ input: await raw().extract({ left: p.left, top, width: p.width, height }).png().toBuffer(), left: p.at, top: 0 })));
-const sector = await sharp({ create: { width, height, channels: 3, background: '#000' }, limitInputPixels: false }).composite(parts).png().toBuffer();
-
+const srcs = process.argv.slice(2);
+if (srcs.length !== 2) throw new Error('usage: node scripts/garden-photo.mjs <stue photo> <spise photo>');
 mkdirSync(OUT, { recursive: true });
-for (const [w, q] of Object.entries(SIZES)) {
-  const img = sharp(sector, { limitInputPixels: false }).resize(+w);
-  const [a, b] = await Promise.all([
-    img.clone().avif({ quality: q.avif, effort: 6 }).toFile(`${OUT}/have-${w}.avif`),
-    img.clone().webp({ quality: q.webp }).toFile(`${OUT}/have-${w}.webp`),
-  ]);
-  console.log(`have-${w}: ${a.width}×${a.height}, avif ${Math.round(a.size / 1024)} KB, webp ${Math.round(b.size / 1024)} KB`);
-}
 
-// The sky mask (white = sky), for where garden.js lets the procedural sky show
-// through: the evening's glow and the stars at night. The sky in this photo is
-// clear, so it is the pixels clearly bluer than they are red or green, above
-// the horizon (pale near the horizon, deep blue overhead), softened a little.
-{
-  const w = 1600;
-  const { data: px, info: m } = await sharp(sector, { limitInputPixels: false }).resize(w).raw().toBuffer({ resolveWithObject: true });
-  const horizon = Math.round((SECTOR.top / (SECTOR.top - SECTOR.bottom)) * m.height);
-  const mask = Buffer.alloc(m.width * m.height);
-  for (let y = 0; y < horizon; y++) {
-    for (let x = 0; x < m.width; x++) {
-      const i = (y * m.width + x) * m.channels;
-      const [r, g, b] = [px[i], px[i + 1], px[i + 2]];
-      if (b > 150 && b - r > 40 && b - g > 25) mask[y * m.width + x] = 255;
+for (const [k, room] of ROOMS.entries()) {
+  const src = sharp(srcs[k], { limitInputPixels: false });
+  for (const [w, q] of Object.entries(WIDTHS)) {
+    const img = src.clone().resize(+w);
+    const sizes = [];
+    const a = await img.clone().avif({ quality: q.avif, effort: 6 }).toFile(`${OUT}/have-${room}-${w}.avif`);
+    sizes.push(`avif ${Math.round(a.size / 1024)} KB`);
+    if (q.webp) {
+      const b = await img.clone().webp({ quality: q.webp }).toFile(`${OUT}/have-${room}-${w}.webp`);
+      sizes.push(`webp ${Math.round(b.size / 1024)} KB`);
+    }
+    console.log(`have-${room}-${w}: ${a.width}×${a.height}, ${sizes.join(', ')}`);
+  }
+
+  // The sky: overcast, so bright and grey. Pixels like that joined to the top
+  // edge through others like them, so the white gazebo and house stay garden.
+  const { data: px, info: m } = await src.clone().resize(1024).raw().toBuffer({ resolveWithObject: true });
+  const W = m.width;
+  const H = m.height;
+  const skyish = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    const r = px[i * m.channels];
+    const g = px[i * m.channels + 1];
+    const b = px[i * m.channels + 2];
+    const hi = Math.max(r, g, b);
+    if (hi > 175 && hi - Math.min(r, g, b) < 34) skyish[i] = 1;
+  }
+  const mask = Buffer.alloc(W * H);
+  const stack = [];
+  for (let x = 0; x < W; x++) if (skyish[x]) stack.push(x);
+  while (stack.length) {
+    const i = stack.pop();
+    if (mask[i]) continue;
+    mask[i] = 255;
+    const x = i % W;
+    const y = (i - x) / W;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+      const j = ny * W + nx;
+      if (skyish[j] && !mask[j]) stack.push(j);
     }
   }
-  const out = await sharp(mask, { raw: { width: m.width, height: m.height, channels: 1 } })
-    .blur(1)
-    .webp({ quality: 90 })
-    .toFile(`${OUT}/have-himmel.webp`);
-  console.log(`have-himmel: ${out.width}×${out.height}, webp ${Math.round(out.size / 1024)} KB`);
+  const out = await sharp(mask, { raw: { width: W, height: H, channels: 1 } }).blur(0.8).webp({ quality: 90 }).toFile(`${OUT}/have-${room}-himmel.webp`);
+  // the sky's average colour, for above the top of the frame (garden.js VIEWS)
+  let n = 0;
+  const sum = [0, 0, 0];
+  for (let i = 0; i < W * H; i++) {
+    if (!mask[i]) continue;
+    n++;
+    for (let c = 0; c < 3; c++) sum[c] += px[i * m.channels + c];
+  }
+  const hex = '#' + sum.map((s) => Math.round(s / Math.max(1, n)).toString(16).padStart(2, '0')).join('');
+  console.log(`have-${room}-himmel: ${out.width}×${out.height}, webp ${Math.round(out.size / 1024)} KB, sky ${hex}`);
 }

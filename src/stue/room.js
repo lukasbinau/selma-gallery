@@ -85,7 +85,7 @@ export const TIMES = [
     sun: { dir: [-0.9, 0.32, 0.12], colour: '#ffd2a1', intensity: 10.5 },
     sky: { zenith: '#86a9d4', horizon: '#f1dcc6', ground: '#5d5a48', cloud: '#fff0e2', cover: 0.38, intensity: 1.5 },
     skyLight: { colour: '#c3d3ec', intensity: 4.4 },
-    garden: { gain: 0.85, tint: '#ffe9d2', sat: 0.9, sky: 0.35, skyTint: '#ffffff' },
+    garden: { gain: 0.8, tint: '#ffe9d2', sat: 0.82, sky: 0.35, skyTint: '#ffffff' },
     lamps: 0,
     env: 0.85,
     exposure: 3.6,
@@ -98,7 +98,7 @@ export const TIMES = [
     sun: { dir: [-0.45, 0.85, 0.22], colour: '#fff3e2', intensity: 13.0 },
     sky: { zenith: '#5f90cf', horizon: '#dde7f0', ground: '#5f5d4a', cloud: '#ffffff', cover: 0.32, intensity: 2.1 },
     skyLight: { colour: '#d0def2', intensity: 5.6 },
-    garden: { gain: 1, tint: '#ffffff', sat: 1, sky: 1 },
+    garden: { gain: 0.92, tint: '#ffffff', sat: 0.88, sky: 1 },
     lamps: 0,
     env: 0.85,
     exposure: 4.0,
@@ -124,7 +124,7 @@ export const TIMES = [
     sun: { dir: [-0.4, 0.55, 0.3], colour: '#8fa6d8', intensity: 0.3 },
     sky: { zenith: '#04060d', horizon: '#121a2c', ground: '#05060a', cloud: '#1a2236', cover: 0.25, intensity: 1, stars: 1.4 },
     skyLight: { colour: '#5c6d99', intensity: 0.12 },
-    garden: { gain: 0.05, tint: '#7d93c8', sat: 0.25, sky: 0 },
+    garden: { gain: 0.08, tint: '#7d93c8', sat: 0.25, sky: 0 },
     lamps: 1,
     env: 0.55,
     exposure: 1.4,
@@ -722,6 +722,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     garden.follow(camera.position);
   }
   function snapCamera() {
+    garden.setView(state.view.id); // each room looks out on its own photo
     Object.assign(cam, cameraFor(state.view));
     applyCamera();
   }
@@ -1072,14 +1073,14 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     }
   }
 
-  // The garden photo arrives after the first picture: crossfade it in (a
-  // plain swap while the camera is moving), and let the room's bounce light see it
-  garden.ready.then(
-    () => change(() => {
-      garden.showPhoto();
+  // The garden photo arrives after the first picture, and a sharper one after
+  // that: crossfade each in (a plain swap while the camera is moving), and let
+  // the room's bounce light see it
+  garden.onUpdate((apply) =>
+    change(() => {
+      apply();
       envDirty = 2;
     }, { fade: tweens.size === 0 }),
-    () => {}, // no photo: the procedural sky alone, over the deck
   );
 
   // ---------------------------------------------------------------- listeners
