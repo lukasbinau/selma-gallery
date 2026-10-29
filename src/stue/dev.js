@@ -71,3 +71,16 @@ window.__frameCheck = async (id) => {
   }
   return `${id}: ${keys.length} frames, camera still=${keys.every((k) => k === keys[0])}`;
 };
+// __layoutCheck(): controls that run off the screen, or are under 38px tall
+window.__layoutCheck = () => {
+  const bad = [];
+  for (const s of ['.stue__cta', '.stue__tab', '.stue__handle', '.stue__angle', '.stue__back', '.stue__total', '.stue__title']) {
+    for (const el of root.querySelectorAll(s)) {
+      if (!el.offsetParent) continue;
+      const r = el.getBoundingClientRect();
+      if (r.left < 0 || r.right > innerWidth + 0.5) bad.push(`${s} off-screen`);
+      if (/cta|tab|angle|back/.test(s) && r.height < 38) bad.push(`${s} ${Math.round(r.height)}px`);
+    }
+  }
+  return `${innerWidth}x${innerHeight}: ${bad.join('; ') || 'controls ok'}`;
+};

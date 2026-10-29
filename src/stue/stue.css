@@ -130,7 +130,7 @@
 #stue .stue__angle {
   position: absolute;
   top: calc(var(--band-bottom, 60%) - 16px);
-  right: var(--s-gutter);
+  right: calc(var(--band-right, 0px) + var(--s-gutter));
   z-index: 2;
   display: flex;
   align-items: center;
@@ -331,7 +331,10 @@
 #stue .stue__tab {
   position: relative;
   flex: none;
-  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
   padding: 0 10px;
   font-size: 11px;
   letter-spacing: 0.16em;
@@ -348,7 +351,7 @@
   position: absolute;
   left: 10px;
   right: 10px;
-  bottom: 3px;
+  bottom: 5px;
   height: 2px;
   border-radius: 2px;
   background: var(--s-violet);
@@ -357,6 +360,21 @@
 }
 .stue__tab[aria-selected='true']::after {
   transform: scaleX(1);
+}
+
+#stue .stue__tab svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* the sheet's grip: phones only */
+#stue .stue__handle {
+  display: none;
 }
 
 /* rails: smooth horizontal scroll-snap strips */
@@ -526,8 +544,262 @@
   white-space: nowrap;
 }
 
-/* ------------------------------------------------------------------ phones */
+/* ------------------------------------------------------------------ wide screens
+   Three looks for the panel while Selma picks one (#stue[data-panel], set by
+   ?panel=a|b|c). All three: a floating card, the choices centred, a clear
+   line between choosing and buying. */
+@media (min-width: 900px) {
+  /* a: one centred card. Tabs as a segmented control on top, the choices
+     centred under them, and the checkout line along the bottom. */
+  #stue[data-panel='a'] .stue__panel {
+    width: min(920px, calc(100% - 48px));
+    gap: 10px;
+    padding: 14px 0 0;
+    grid-template-areas: 'tabs' 'rails' 'summary';
+  }
+  #stue[data-panel='a'] .stue__tabs {
+    grid-area: tabs;
+    justify-self: center;
+    gap: 2px;
+    padding: 4px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(35, 10, 102, 0.06);
+  }
+  #stue[data-panel='a'] .stue__tab {
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 999px;
+    transition:
+      color 0.2s,
+      background 0.25s var(--s-ease),
+      box-shadow 0.25s var(--s-ease);
+  }
+  #stue[data-panel='a'] .stue__tab::after {
+    display: none;
+  }
+  #stue[data-panel='a'] .stue__tab[aria-selected='true'] {
+    background: var(--s-paper-solid);
+    box-shadow: 0 1px 4px rgba(35, 10, 102, 0.14);
+  }
+  #stue[data-panel='a'] .stue__rails {
+    grid-area: rails;
+  }
+  #stue[data-panel='a'] .stue__rail {
+    justify-content: safe center;
+  }
+  #stue[data-panel='a'] .stue__summary {
+    grid-area: summary;
+    padding: 12px 22px;
+    border-top: 1px solid var(--s-line);
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 0 0 18px 18px;
+  }
+
+  /* b: two columns. What you buy on the left (name, lines, price, a full-width
+     buy button), the choices on the right. Low, so the room keeps the screen. */
+  #stue[data-panel='b'] .stue__panel {
+    width: min(1060px, calc(100% - 48px));
+    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-areas: 'summary tabs' 'summary rails';
+    gap: 6px 0;
+    padding: 16px 0 12px;
+  }
+  #stue[data-panel='b'] .stue__summary {
+    grid-area: summary;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 0 22px;
+    border-right: 1px solid var(--s-line);
+  }
+  #stue[data-panel='b'] .stue__title {
+    white-space: normal;
+  }
+  #stue[data-panel='b'] .stue__buy {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  #stue[data-panel='b'] .stue__total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 18px;
+  }
+  #stue[data-panel='b'] .stue__tabs {
+    grid-area: tabs;
+    border: 0;
+    padding: 0 12px;
+  }
+  #stue[data-panel='b'] .stue__rails {
+    grid-area: rails;
+  }
+
+  /* c: a side panel, like a shop's product page. No tabs: every choice is a
+     section of its own, stacked; the price and the buy button stay at the
+     bottom. The room frames the work in the space beside it. */
+  #stue[data-panel='c'] .stue__panel {
+    left: auto;
+    right: 18px;
+    top: 18px;
+    bottom: 18px;
+    width: 380px;
+    transform: none;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'what' 'rails' 'buy';
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  #stue[data-panel='c'] .stue__summary {
+    display: contents;
+  }
+  #stue[data-panel='c'] .stue__what {
+    grid-area: what;
+    padding: 20px 22px 14px;
+    border-bottom: 1px solid var(--s-line);
+  }
+  #stue[data-panel='c'] .stue__title {
+    font-size: 16px;
+    white-space: normal;
+  }
+  #stue[data-panel='c'] .stue__buy {
+    grid-area: buy;
+    justify-content: space-between;
+    padding: 14px 22px;
+    border-top: 1px solid var(--s-line);
+    background: rgba(255, 255, 255, 0.55);
+  }
+  #stue[data-panel='c'] .stue__total {
+    justify-items: start;
+    font-size: 18px;
+  }
+  #stue[data-panel='c'] .stue__tabs {
+    display: none;
+  }
+  #stue[data-panel='c'] .stue__rails {
+    grid-area: rails;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 6px 0 14px;
+    scrollbar-width: thin;
+  }
+  #stue[data-panel='c'] .stue__rail,
+  #stue[data-panel='c'] .stue__rail[hidden] {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 12px 8px;
+    overflow: visible;
+    padding: 12px 22px 8px;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  #stue[data-panel='c'] .stue__rail::before {
+    content: attr(aria-label);
+    grid-column: 1 / -1;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--s-ink-dim);
+  }
+  #stue[data-panel='c'] .stue__rail + .stue__rail {
+    border-top: 1px solid var(--s-line);
+  }
+  #stue[data-panel='c'] .stue__opt {
+    width: auto;
+  }
+  #stue[data-panel='c'] [data-rail='frame'] {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}
+
+/* ------------------------------------------------------------------ phones
+   The panel is a bottom sheet: a grip on top, what you buy, the choices, and
+   a tab bar with icons along the bottom, where the thumb is. Folded, only the
+   grip, the summary and the tab bar remain. */
 @media (max-width: 640px) {
+  .stue__panel {
+    grid-template-areas: 'handle' 'summary' 'rails' 'tabs';
+    padding-top: 0 !important;
+    padding-bottom: 0;
+    gap: 0 !important;
+  }
+  #stue .stue__handle {
+    grid-area: handle;
+    display: grid;
+    place-items: center;
+    height: 30px;
+    width: 100%;
+    touch-action: none;
+  }
+  #stue .stue__handle i {
+    width: 40px;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(35, 10, 102, 0.22);
+  }
+  .stue__summary {
+    grid-area: summary;
+    padding-bottom: 10px;
+  }
+  /* one height for every tab (the frames' row is the tallest), so switching
+     tabs never resizes the sheet or moves the room */
+  .stue__rails {
+    grid-area: rails;
+    display: grid;
+    align-items: center;
+    height: 156px;
+    border-top: 1px solid var(--s-line);
+    padding-top: 4px;
+  }
+  .stue__panel.is-folded .stue__rails {
+    display: none;
+  }
+  .stue__rail {
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+  }
+  #stue .stue__opt {
+    scroll-snap-align: center;
+  }
+  .stue__tabs {
+    grid-area: tabs;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    padding: 0 4px env(safe-area-inset-bottom);
+    border-top: 1px solid var(--s-line);
+    background: rgba(255, 255, 255, 0.45);
+  }
+  #stue .stue__tab {
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    height: 56px;
+    padding: 0;
+    font-size: 9.5px !important;
+    letter-spacing: 0.1em !important;
+  }
+  #stue .stue__tab svg {
+    width: 22px;
+    height: 22px;
+  }
+  .stue__tab::after {
+    top: 0;
+    bottom: auto;
+    left: 28%;
+    right: 28%;
+  }
+  .stue__panel.is-folded .stue__tab::after {
+    transform: scaleX(0);
+  }
+  .stue__panel.is-folded .stue__tab[aria-selected='true'] {
+    color: var(--s-ink-dim);
+    font-weight: 400;
+  }
+
   #stue {
     --s-gutter: 14px;
   }

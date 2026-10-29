@@ -619,6 +619,11 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     const fyTop = ins.top / H;
     const fyBot = 1 - ins.bottom / H;
     const band = Math.max(0.2, fyBot - fyTop);
+    // the free band across: a side panel takes the right of the screen
+    const fxL = ins.left / W;
+    const fxR = 1 - ins.right / W;
+    const bandW = Math.max(0.3, fxR - fxL);
+    const cx = fxL + fxR - 1; // its centre, -1..1 across the screen
     const outer = work ? work.ref : { w: 0.5, h: 0.7 };
     const cy = work ? work.centreY : 1.4;
     // 0 for an A4 sheet, 1 for a metre-wide canvas
@@ -636,10 +641,10 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     // On a tall phone the width is the limit: the work gets about half of it
     // at the angle (the glass and garden the rest), most of it straight on.
     const kH = front ? (portrait ? 0.6 : lerp(0.6, 0.68, size)) : portrait ? lerp(0.46, 0.54, size) : lerp(0.56, 0.66, size);
-    const kW = front ? (portrait ? 0.74 : 0.6) : portrait ? 0.42 : 0.36;
+    const kW = (front ? (portrait ? 0.74 : 0.6) : portrait ? 0.42 : 0.36) * bandW;
     // Where it sits: off centre, away from the glass (centred straight on);
     // a little above the middle of the band, so the furniture under it shows too
-    const xp = front ? 0 : -v.windowSide * (portrait ? 0.3 : 0.26);
+    const xp = cx + (front ? 0 : -v.windowSide * (portrait ? 0.3 : 0.26)) * bandW;
     const fy = fyTop + band * (front ? 0.47 : 0.45);
     const eye = THREE.MathUtils.clamp(cy + 0.02, 1.2, 1.45);
     // a phone's narrow picture turns a little more towards the wall

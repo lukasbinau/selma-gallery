@@ -464,9 +464,42 @@ export async function createStue({ root, works, artMeta = {} }) {
   }
   ui.tabs.forEach((t) =>
     t.addEventListener('click', () => {
+      // on a phone, a tab of a folded sheet opens it on that tab
+      if (!state.sheetOpen) setSheet(true);
       selectTab(t.dataset.tab);
     }),
   );
+
+  // ---- phones: the panel is a bottom sheet. Folded, it keeps the work's name,
+  // the price, the buy button and the tab bar; open, the choices too. The
+  // handle (or a flick up/down on the sheet's top) folds and opens it.
+  const phone = matchMedia('(max-width: 640px)');
+  state.sheetOpen = true;
+  function setSheet(open) {
+    state.sheetOpen = open;
+    ui.panel.classList.toggle('is-folded', !open);
+    ui.handle.setAttribute('aria-expanded', String(open));
+  }
+  ui.handle.addEventListener('click', () => setSheet(!state.sheetOpen));
+  const flick = { id: null, y: 0 };
+  ui.panel.addEventListener('pointerdown', (e) => {
+    if (!phone.matches || e.target.closest('.stue__rail, button:not(.stue__handle)')) return;
+    Object.assign(flick, { id: e.pointerId, y: e.clientY });
+  });
+  ui.panel.addEventListener('pointerup', (e) => {
+    if (e.pointerId !== flick.id) return;
+    flick.id = null;
+    const dy = e.clientY - flick.y;
+    if (Math.abs(dy) > 30) setSheet(dy < 0);
+  });
+  phone.addEventListener?.('change', () => {
+    if (!phone.matches) setSheet(true);
+  });
+
+  // ---- the panel's look on wide screens, while Selma chooses one:
+  // ?panel=a (centred card), b (two columns), c (side panel)
+  const variant = new URLSearchParams(location.search).get('panel');
+  root.dataset.panel = ['a', 'b', 'c'].includes(variant) ? variant : 'a';
   ui.tabs[0].parentElement.addEventListener('keydown', (e) => {
     const visible = ui.tabs.filter((t) => !t.hidden);
     const i = visible.findIndex((t) => t.dataset.tab === state.tab);
@@ -582,11 +615,21 @@ export async function createStue({ root, works, artMeta = {} }) {
     const panel = ui.panel.getBoundingClientRect();
     const top = ui.top.getBoundingClientRect();
     const visible = !root.hidden && panel.height > 0;
-    const bottom = visible ? Math.max(0, r.bottom - panel.top) : Math.min(300, h * 0.36);
+    let bottom = visible ? Math.max(0, r.bottom - panel.top) : Math.min(300, h * 0.36);
+    let right = 0;
+    // a side panel (variant c) takes width, not height
+    if (visible && panel.left > r.left + w / 2) {
+      right = Math.max(0, r.right - panel.left + 12);
+      bottom = Math.round(h * 0.2); // frame it as if a panel were below: the sofa keeps its place
+    }
+    // a folded sheet frames the room as if open, so folding never moves it
+    if (visible && !state.sheetOpen && state.openBottom) bottom = state.openBottom;
+    else if (visible) state.openBottom = bottom;
     const insetTop = visible ? top.bottom - r.top : 56;
-    room.setInsets({ top: insetTop, bottom, left: 0, right: 0 });
+    room.setInsets({ top: insetTop, bottom, left: 0, right });
     // the angle button sits in a bottom corner of the free band, clear of the work
-    root.style.setProperty('--band-bottom', `${Math.round(h - bottom)}px`);
+    root.style.setProperty('--band-bottom', `${Math.round(h - (right ? 18 : bottom))}px`);
+    root.style.setProperty('--band-right', `${Math.round(right)}px`);
     return { w, h };
   }
   function resize() {
