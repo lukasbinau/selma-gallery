@@ -736,6 +736,7 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
     garden.follow(camera.position);
   }
   function snapCamera() {
+    stopCamera();
     garden.setView(state.view.id); // each room looks out on its own photo
     Object.assign(cam, cameraFor(state.view));
     applyCamera();
@@ -977,20 +978,43 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
   let raf = 0;
   const tweens = new Set();
   function tween(ms, fn) {
-    return new Promise((resolve) => {
-      const t0 = performance.now();
-      const tw = { t0, ms, fn, resolve };
-      tweens.add(tw);
-      kick();
-      // a background tab stalls rAF: finish on a timer regardless
-      setTimeout(() => {
-        if (tweens.has(tw)) {
-          tweens.delete(tw);
-          fn(1);
-          resolve();
-          kick();
-        }
-      }, ms + 400);
+    let tw;
+    const done = new Promise((resolve) => {
+      tw = { t0: performance.now(), ms, fn, resolve };
+    });
+    tweens.add(tw);
+    kick();
+    // a background tab stalls rAF: finish on a timer regardless
+    setTimeout(() => {
+      if (tweens.has(tw)) {
+        tweens.delete(tw);
+        fn(1);
+        tw.resolve();
+        kick();
+      }
+    }, ms + 400);
+    done.tw = tw;
+    return done;
+  }
+
+  // One camera move at a time. A new move or a snap stops the last one, which
+  // would otherwise keep steering the camera to its own target, worked out for
+  // the room and angle of before (tapping Skråt/Forfra, then a room, left the
+  // camera facing the glass). Resolves true if the move ran to its end.
+  let camTween = null;
+  function stopCamera() {
+    const tw = camTween;
+    camTween = null;
+    if (tw && tweens.delete(tw)) tw.resolve();
+  }
+  function cameraTween(ms, fn) {
+    stopCamera();
+    const done = tween(ms, fn);
+    const tw = (camTween = done.tw);
+    return done.then(() => {
+      if (camTween !== tw) return false;
+      camTween = null;
+      return true;
     });
   }
 
@@ -1178,7 +1202,7 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
       // a gentle push in: start a little further back and drift into place
       const to = { ...cam, pos: cam.pos.clone() };
       const back = new THREE.Vector3(Math.sin(to.yaw), 0, Math.cos(to.yaw)).multiplyScalar(0.35);
-      await tween(900, (k) => {
+      await cameraTween(900, (k) => {
         cam.pos.copy(to.pos).addScaledVector(back, 1 - k);
         cam.tanV = to.tanV;
         applyCamera();
@@ -1255,24 +1279,25 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
     async setAngle(angle, { animate = true } = {}) {
       if (angle === state.angle) return;
       state.angle = angle;
-      const from = { ...cam, pos: cam.pos.clone() };
-      const to = cameraFor(state.view);
       if (!animate) {
-        Object.assign(cam, to);
-        applyCamera();
+        snapCamera();
         invalidate();
         return;
       }
+      stopCamera(); // glide on from wherever the last move had got to
+      const from = { ...cam, pos: cam.pos.clone() };
+      const to = cameraFor(state.view);
       // shortest way round for the yaw
       let dy = to.yaw - from.yaw;
       dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-      await tween(650, (k) => {
+      const ran = await cameraTween(650, (k) => {
         cam.pos.lerpVectors(from.pos, to.pos, k);
         cam.yaw = from.yaw + dy * k;
         cam.tanV = THREE.MathUtils.lerp(from.tanV, to.tanV, k);
         cam.sy = THREE.MathUtils.lerp(from.sy, to.sy, k);
         applyCamera();
       });
+      if (!ran) return; // a newer move took over
       Object.assign(cam, to);
       applyCamera();
     },
