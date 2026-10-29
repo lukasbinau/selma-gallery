@@ -525,8 +525,43 @@ export async function createStue({ root, works, artMeta = {} }) {
   });
   ui.back.addEventListener('click', () => emit('exit'));
 
+  // ---- angled view ⇄ straight on: swipe the room, the edge button, ← →
+  function setAngle(angle) {
+    if (angle === room.angle) return;
+    room.setAngle(angle);
+    renderAngle();
+    announce(STRINGS.angleLabel[angle]);
+  }
+  function renderAngle() {
+    const to = room.angle === 'forfra' ? 'vinkel' : 'forfra';
+    ui.angle.dataset.to = to;
+    ui.angle.setAttribute('aria-label', STRINGS.angleLabel[to]);
+    ui.angle.querySelector('.stue__angle-label').textContent = STRINGS.angle[to];
+  }
+  ui.angle.addEventListener('click', () => setAngle(ui.angle.dataset.to));
+  const swipe = { id: null, x: 0, y: 0, t: 0 };
+  ui.canvas.addEventListener('pointerdown', (e) => {
+    if (!e.isPrimary) return;
+    Object.assign(swipe, { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() });
+  });
+  ui.canvas.addEventListener('pointerup', (e) => {
+    if (e.pointerId !== swipe.id) return;
+    swipe.id = null;
+    const dx = e.clientX - swipe.x;
+    const dy = e.clientY - swipe.y;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5 || performance.now() - swipe.t > 900) return;
+    // the finger pulls the next view in from the side the button is on
+    setAngle(dx < 0 ? 'forfra' : 'vinkel');
+  });
+  ui.canvas.addEventListener('pointercancel', () => (swipe.id = null));
+
   function onKey(e) {
     if (!state.shown || isContactOpen()) return;
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.target.closest?.('.stue__rail, .stue__tabs')) {
+      e.preventDefault();
+      setAngle(e.key === 'ArrowRight' ? 'forfra' : 'vinkel');
+      return;
+    }
     if (e.key !== 'Escape') return;
     const t = e.target;
     if (t && t !== document.body && t !== document.documentElement && !root.contains(t)) return;
@@ -548,7 +583,10 @@ export async function createStue({ root, works, artMeta = {} }) {
     const top = ui.top.getBoundingClientRect();
     const visible = !root.hidden && panel.height > 0;
     const bottom = visible ? Math.max(0, r.bottom - panel.top) : Math.min(300, h * 0.36);
-    room.setInsets({ top: visible ? top.bottom - r.top : 56, bottom, left: 0, right: 0 });
+    const insetTop = visible ? top.bottom - r.top : 56;
+    room.setInsets({ top: insetTop, bottom, left: 0, right: 0 });
+    // the angle button sits in a bottom corner of the free band, clear of the work
+    root.style.setProperty('--band-bottom', `${Math.round(h - bottom)}px`);
     return { w, h };
   }
   function resize() {

@@ -26,7 +26,12 @@ export const STRINGS = {
   loading: 'Indretter stuen',
   scene: 'Selmas maleri hængt op i en stue',
   failed: 'Billedet kunne ikke hentes',
+  // the two ways of looking at the work; the button names the other one
+  angle: { vinkel: 'Skråt', forfra: 'Forfra' },
+  angleLabel: { vinkel: 'Se værket skråt fra siden', forfra: 'Se værket lige forfra' },
 };
+
+const ARROW = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg>';
 
 const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -57,6 +62,9 @@ export function buildChrome(root) {
       <p class="stue__eyebrow">${STRINGS.eyebrow}</p>
       <p class="stue__note" hidden>${STRINGS.estimated}</p>
     </header>
+    <button type="button" class="stue__angle" data-to="forfra" aria-label="${STRINGS.angleLabel.forfra}">
+      <span class="stue__angle-label">${STRINGS.angle.forfra}</span>${ARROW}
+    </button>
     <section class="stue__panel" aria-label="Indstillinger for stuen">
       <div class="stue__summary">
         <div class="stue__what">
@@ -94,6 +102,7 @@ export function buildChrome(root) {
     back: $('.stue__back'),
     note: $('.stue__note'),
     panel: $('.stue__panel'),
+    angle: $('.stue__angle'),
     top: $('.stue__top'),
     title: $('.stue__title'),
     lines: $('.stue__lines'),

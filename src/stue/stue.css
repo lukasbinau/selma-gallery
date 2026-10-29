@@ -124,6 +124,57 @@
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
 }
 
+/* ------------------------------------------------------------------ angle */
+/* Skråt ⇄ Forfra: a pill at the bottom corner of the free band, on the side the next
+   view comes from (right in the angled view, left straight on) */
+#stue .stue__angle {
+  position: absolute;
+  top: calc(var(--band-bottom, 60%) - 16px);
+  right: var(--s-gutter);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px 0 16px;
+  border-radius: 999px;
+  background: var(--s-paper);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--s-ink);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 18px rgba(20, 10, 40, 0.18);
+  transform: translateY(-100%);
+  transition: transform 0.25s var(--s-ease), box-shadow 0.25s var(--s-ease);
+}
+#stue .stue__angle svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.25s var(--s-ease);
+}
+#stue .stue__angle:hover svg {
+  transform: translateX(3px);
+}
+#stue .stue__angle[data-to='vinkel'] {
+  right: auto;
+  left: var(--s-gutter);
+  flex-direction: row-reverse;
+  padding: 0 16px 0 14px;
+}
+#stue .stue__angle[data-to='vinkel'] svg {
+  transform: scaleX(-1);
+}
+#stue .stue__angle[data-to='vinkel']:hover svg {
+  transform: scaleX(-1) translateX(3px);
+}
+
 /* ------------------------------------------------------------------ panel */
 .stue__panel {
   position: absolute;

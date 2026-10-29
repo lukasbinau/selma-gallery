@@ -589,6 +589,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     wall: null,
     work: null, // { group, outer, art, size }
     insets: { top: 0, right: 0, bottom: 0, left: 0 },
+    angle: 'vinkel', // vinkel: the photographer's angle | forfra: straight on
     exposureK: 1,
     sunBase: new THREE.Vector3(),
     skyDirs: [],
@@ -605,7 +606,11 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   // The yaw puts the work to the side away from the glass, so the corner and
   // the garden take the rest of the picture. The camera stays level; the work
   // is moved up into the free band by shifting the lens, never by tilting.
-  function cameraFor(v, work = state.work) {
+  //
+  // Straight on ('forfra'), the camera stands on the wall's normal and the work
+  // sits centred in the band, larger: the view for judging the work itself.
+  function cameraFor(v, work = state.work, angle = state.angle) {
+    const front = angle === 'forfra';
     const W = view.w;
     const H = view.h;
     const aspect = W / H;
@@ -621,22 +626,31 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     const lerp = THREE.MathUtils.lerp;
     // Lens: a slightly longer one for small works, a wider one on a tall phone
     // screen, where the width is all there is for the painting and the glass.
-    const halfH = THREE.MathUtils.degToRad(portrait ? lerp(31, 34, size) : lerp(28, 33, size));
+    // Straight on, a longer lens: the camera can stand back, the work stays flat.
+    const halfH = THREE.MathUtils.degToRad(
+      front ? (portrait ? 22 : lerp(22, 26, size)) : portrait ? lerp(31, 34, size) : lerp(28, 33, size),
+    );
     const tanH = Math.tan(halfH);
     const tanV = tanH / aspect;
-    // How much of the free band the work fills, and at most of the width
-    const kH = portrait ? lerp(0.4, 0.5, size) : lerp(0.56, 0.66, size);
-    const kW = portrait ? 0.27 : 0.36;
-    // Where it sits: off centre, away from the glass; a little above the
-    // middle of the band, so the furniture under it shows too
-    const xp = -v.windowSide * (portrait ? 0.46 : 0.26);
-    const fy = fyTop + band * 0.45;
+    // How much of the free band the work fills, and at most of the width.
+    // On a tall phone the width is the limit: the work gets about half of it
+    // at the angle (the glass and garden the rest), most of it straight on.
+    const kH = front ? (portrait ? 0.6 : lerp(0.6, 0.68, size)) : portrait ? lerp(0.46, 0.54, size) : lerp(0.56, 0.66, size);
+    const kW = front ? (portrait ? 0.74 : 0.6) : portrait ? 0.42 : 0.36;
+    // Where it sits: off centre, away from the glass (centred straight on);
+    // a little above the middle of the band, so the furniture under it shows too
+    const xp = front ? 0 : -v.windowSide * (portrait ? 0.3 : 0.26);
+    const fy = fyTop + band * (front ? 0.47 : 0.45);
     const eye = THREE.MathUtils.clamp(cy + 0.02, 1.2, 1.45);
-    const b = THREE.MathUtils.degToRad(v.bearing);
+    // a phone's narrow picture turns a little more towards the wall
+    const b = front ? 0 : THREE.MathUtils.degToRad(portrait ? v.bearing - 8 : v.bearing);
     const dir = new THREE.Vector3(Math.sin(b), 0, v.facing * Math.cos(b)); // from the work out to the camera
     const C = new THREE.Vector3(v.artX, cy, v.wallZ);
     // the camera stays 0.3 m inside the room
-    const dMax = Math.min((ROOM.x1 - 0.3 - v.artX) / dir.x, (ROOM.z1 - ROOM.z0 - 0.3) / Math.abs(dir.z));
+    const dMax = Math.min(
+      dir.x > 1e-6 ? (ROOM.x1 - 0.3 - v.artX) / dir.x : Infinity,
+      (ROOM.z1 - ROOM.z0 - 0.3) / Math.abs(dir.z),
+    );
     const pos = new THREE.Vector3();
     const p = new THREE.Vector3();
     let d = 2.5;
@@ -671,7 +685,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
       const fh = (w1 - w0) / (2 * tanV);
       const fw = (u1 - u0) / (2 * tanH);
       const r = Math.max(fh / (kH * band), fw / kW);
-      const next = THREE.MathUtils.clamp(d * r, 0.9, dMax);
+      const next = THREE.MathUtils.clamp(d * r, front ? 0.5 : 0.65, dMax);
       if (Math.abs(next - d) < 1e-3) break;
       d = next;
     }
@@ -1177,6 +1191,34 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     setWall,
     setTime,
     setView,
+    get angle() {
+      return state.angle;
+    },
+    /** Switch between the angled view and straight on, with a glide. */
+    async setAngle(angle, { animate = true } = {}) {
+      if (angle === state.angle) return;
+      state.angle = angle;
+      const from = { ...cam, pos: cam.pos.clone() };
+      const to = cameraFor(state.view);
+      if (!animate) {
+        Object.assign(cam, to);
+        applyCamera();
+        invalidate();
+        return;
+      }
+      // shortest way round for the yaw
+      let dy = to.yaw - from.yaw;
+      dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+      await tween(650, (k) => {
+        cam.pos.lerpVectors(from.pos, to.pos, k);
+        cam.yaw = from.yaw + dy * k;
+        cam.tanV = THREE.MathUtils.lerp(from.tanV, to.tanV, k);
+        cam.sy = THREE.MathUtils.lerp(from.sy, to.sy, k);
+        applyCamera();
+      });
+      Object.assign(cam, to);
+      applyCamera();
+    },
     setViewInstant(id) {
       state.view = viewById(id);
       positionWork();
