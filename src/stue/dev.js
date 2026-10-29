@@ -87,3 +87,23 @@ window.__layoutCheck = () => {
   }
   return `${innerWidth}x${innerHeight}: ${bad.join('; ') || 'controls ok'}`;
 };
+// __angleCheck(): walks through every work, in both angles, and reports any
+// whose camera after the switch differs from a fresh Forfra ⇄ Skråt round trip
+window.__angleCheck = async () => {
+  const room = stue.debug.room;
+  const cam = () => [...room.camera.position.toArray(), room.camera.rotation.y].map((v) => v.toFixed(3)).join();
+  const bad = [];
+  for (const angle of ['vinkel', 'forfra']) {
+    await room.setAngle(angle, { animate: false });
+    for (const w of data.vaerker) {
+      await pick(w.id);
+      const after = cam();
+      const other = angle === 'vinkel' ? 'forfra' : 'vinkel';
+      await room.setAngle(other, { animate: false });
+      await room.setAngle(angle, { animate: false });
+      if (cam() !== after) bad.push(`${w.id} (${angle})`);
+    }
+  }
+  await room.setAngle('vinkel', { animate: false });
+  return `${innerWidth}x${innerHeight}: ${bad.length ? 'camera off after switching to ' + bad.join(', ') : 'every work, both angles: camera right after switching'}`;
+};

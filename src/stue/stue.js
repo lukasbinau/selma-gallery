@@ -262,10 +262,11 @@ export async function createStue({ root, works, artMeta = {} }) {
         return;
       }
       root.classList.remove('is-busy');
-      const prevView = state.viewId;
       await room.change(() => {
         applySpec(spec, tex, { keepView: true });
-        if (state.viewId !== prevView) room.setViewInstant(state.viewId);
+        // a new work gets its own camera (under the crossfade), in the current
+        // angle; keeping the last work's camera framed it wrongly
+        room.setViewInstant(state.viewId);
       });
       if (!silent) emit('work', { id: state.id, index: state.index });
       announce(`${spec.work.titel}`);
