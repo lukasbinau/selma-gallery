@@ -43,8 +43,11 @@ function measureNow() {
   const t = root.querySelector('.stue__top').getBoundingClientRect();
   const b = root.querySelector('.stue__angle').getBoundingClientRect();
   const covers = !(b.right <= r.x || b.left >= r.x + r.width || b.bottom <= r.y || b.top >= r.y + r.height);
-  const inside = r.x >= 0 && r.x + r.width <= innerWidth && r.y >= t.bottom && r.y + r.height <= p.top;
-  return `${stue.id} ${stue.debug.room.angle}: w ${Math.round((r.width / innerWidth) * 100)}% h ${Math.round((r.height / (p.top - t.bottom)) * 100)}% inside=${inside} button-covers=${covers}`;
+  // the free area: above a bottom panel, or beside a side panel
+  const side = root.classList.contains('is-side');
+  const free = side ? { right: p.left, bottom: innerHeight } : { right: innerWidth, bottom: p.top };
+  const inside = r.x >= 0 && r.x + r.width <= free.right && r.y >= t.bottom && r.y + r.height <= free.bottom;
+  return `${stue.id} ${stue.debug.room.angle}: w ${Math.round((r.width / free.right) * 100)}% h ${Math.round((r.height / (free.bottom - t.bottom)) * 100)}% inside=${inside} button-covers=${covers}`;
 }
 window.__stueCheck = async (ids = data.vaerker.map((w) => w.id)) => {
   const out = [`${innerWidth}x${innerHeight}`];

@@ -637,81 +637,103 @@
     grid-area: rails;
   }
 
-  /* c: a side panel, like a shop's product page. No tabs: every choice is a
-     section of its own, stacked; the price and the buy button stay at the
-     bottom. The room frames the work in the space beside it. */
-  #stue[data-panel='c'] .stue__panel {
-    left: auto;
-    right: 18px;
-    top: 18px;
-    bottom: 18px;
-    width: 380px;
-    transform: none;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    grid-template-areas: 'what' 'rails' 'buy';
-    gap: 0;
-    padding: 0;
-    overflow: hidden;
+}
+
+/* c, and every short landscape screen (a phone on its side): a side panel,
+ like a shop's product page. No tabs: every choice is a section of its own,
+ stacked; the price and the buy button stay at the bottom. The room frames
+ the work in the space beside it. #stue.is-side is set by stue.js. */
+#stue.is-side .stue__panel {
+  left: auto;
+  right: 18px;
+  top: 18px;
+  bottom: 18px;
+  width: 380px;
+  transform: none;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'what' 'rails' 'buy';
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+#stue.is-side .stue__summary {
+  display: contents;
+}
+#stue.is-side .stue__what {
+  grid-area: what;
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--s-line);
+}
+#stue.is-side .stue__title {
+  font-size: 16px;
+  white-space: normal;
+}
+#stue.is-side .stue__buy {
+  grid-area: buy;
+  justify-content: space-between;
+  padding: 14px 22px;
+  border-top: 1px solid var(--s-line);
+  background: rgba(255, 255, 255, 0.55);
+}
+#stue.is-side .stue__total {
+  justify-items: start;
+  font-size: 18px;
+}
+#stue.is-side .stue__tabs {
+  display: none;
+}
+#stue.is-side .stue__rails {
+  grid-area: rails;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 0 14px;
+  scrollbar-width: thin;
+}
+#stue.is-side .stue__rail,
+#stue.is-side .stue__rail[hidden] {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 12px 8px;
+  overflow: visible;
+  padding: 12px 22px 8px;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+#stue.is-side .stue__rail::before {
+  content: attr(aria-label);
+  grid-column: 1 / -1;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--s-ink-dim);
+}
+#stue.is-side .stue__rail + .stue__rail {
+  border-top: 1px solid var(--s-line);
+}
+#stue.is-side .stue__opt {
+  width: auto;
+}
+#stue.is-side [data-rail='frame'] {
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+}
+#stue.is-side .stue__handle {
+  display: none;
+}
+@media (max-height: 500px) {
+  #stue.is-side .stue__panel {
+    top: 10px;
+    bottom: 10px;
+    right: 10px;
+    width: min(340px, 44vw);
   }
-  #stue[data-panel='c'] .stue__summary {
-    display: contents;
+  #stue.is-side .stue__what {
+    padding: 12px 16px 8px;
   }
-  #stue[data-panel='c'] .stue__what {
-    grid-area: what;
-    padding: 20px 22px 14px;
-    border-bottom: 1px solid var(--s-line);
+  #stue.is-side .stue__rail {
+    padding: 10px 16px 6px;
   }
-  #stue[data-panel='c'] .stue__title {
-    font-size: 16px;
-    white-space: normal;
-  }
-  #stue[data-panel='c'] .stue__buy {
-    grid-area: buy;
-    justify-content: space-between;
-    padding: 14px 22px;
-    border-top: 1px solid var(--s-line);
-    background: rgba(255, 255, 255, 0.55);
-  }
-  #stue[data-panel='c'] .stue__total {
-    justify-items: start;
-    font-size: 18px;
-  }
-  #stue[data-panel='c'] .stue__tabs {
-    display: none;
-  }
-  #stue[data-panel='c'] .stue__rails {
-    grid-area: rails;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding: 6px 0 14px;
-    scrollbar-width: thin;
-  }
-  #stue[data-panel='c'] .stue__rail,
-  #stue[data-panel='c'] .stue__rail[hidden] {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-    gap: 12px 8px;
-    overflow: visible;
-    padding: 12px 22px 8px;
-    mask-image: none;
-    -webkit-mask-image: none;
-  }
-  #stue[data-panel='c'] .stue__rail::before {
-    content: attr(aria-label);
-    grid-column: 1 / -1;
-    font-size: 10px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--s-ink-dim);
-  }
-  #stue[data-panel='c'] .stue__rail + .stue__rail {
-    border-top: 1px solid var(--s-line);
-  }
-  #stue[data-panel='c'] .stue__opt {
-    width: auto;
-  }
-  #stue[data-panel='c'] [data-rail='frame'] {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  #stue.is-side .stue__buy {
+    padding: 10px 16px;
   }
 }
 
@@ -719,7 +741,7 @@
    The panel is a bottom sheet: a grip on top, what you buy, the choices, and
    a tab bar with icons along the bottom, where the thumb is. Folded, only the
    grip, the summary and the tab bar remain. */
-@media (max-width: 640px) {
+@media (max-width: 640px) and (min-height: 501px) {
   .stue__panel {
     grid-template-areas: 'handle' 'summary' 'rails' 'tabs';
     padding-top: 0 !important;

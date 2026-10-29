@@ -729,6 +729,15 @@
   background: #ff2234;
   box-shadow: 0 0.6px 0.8px rgba(120, 30, 110, 0.35);
 }
+/* Touch screens: the plaque is seen small on a phone, so its keys are taller
+   (pointer, not width: turning the phone must not change the measured plaque) */
+@media (pointer: coarse) {
+  .galleri-plaque__btn {
+    height: 48px;
+    border-radius: 12px;
+    font-size: 11px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .galleri-plaque__btn {
     transition: none;

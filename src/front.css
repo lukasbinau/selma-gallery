@@ -412,8 +412,8 @@ picture {
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
-  min-height: 38px;
-  padding: 0 1em;
+  min-height: 44px;
+  padding: 0 1.1em;
   border-radius: 999px;
   font-size: inherit;
   letter-spacing: 0.08em;
@@ -577,9 +577,29 @@ picture {
   margin: 0 auto;
 }
 .foot__link {
+  position: relative;
   color: var(--yellow);
   text-decoration: underline;
   text-underline-offset: 0.25em;
+}
+
+/* Small links and tabs keep their look but take a 44px-tall tap: an invisible
+   hit area around them (the menu bar and footer have the room for it) */
+.bar__tab,
+.bar__pill,
+.foot__link {
+  position: relative;
+}
+.bar__tab::before,
+.bar__pill::before,
+.foot__link::before {
+  content: '';
+  position: absolute;
+  inset: 0 -6px;
+  inset-block: min(0px, calc((100% - 44px) / 2)); /* grows to 44px tall */
+}
+.bar__brand {
+  min-height: 44px;
 }
 
 /* ------------------------------------------------------------------ Transition */

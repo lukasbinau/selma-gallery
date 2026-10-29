@@ -473,7 +473,7 @@ export async function createStue({ root, works, artMeta = {} }) {
   // ---- phones: the panel is a bottom sheet. Folded, it keeps the work's name,
   // the price, the buy button and the tab bar; open, the choices too. The
   // handle (or a flick up/down on the sheet's top) folds and opens it.
-  const phone = matchMedia('(max-width: 640px)');
+  const phone = matchMedia('(max-width: 640px) and (min-height: 501px)');
   state.sheetOpen = true;
   function setSheet(open) {
     state.sheetOpen = open;
@@ -500,6 +500,14 @@ export async function createStue({ root, works, artMeta = {} }) {
   // ?panel=a (centred card), b (two columns), c (side panel)
   const variant = new URLSearchParams(location.search).get('panel');
   root.dataset.panel = ['a', 'b', 'c'].includes(variant) ? variant : 'a';
+  // the side panel: variant c on a wide screen, and any short landscape screen
+  // (a phone on its side), where a panel along the bottom would hide the room
+  const wideSide = matchMedia('(min-width: 900px)');
+  const shortSide = matchMedia('(max-height: 500px) and (orientation: landscape)');
+  const placePanel = () => root.classList.toggle('is-side', (root.dataset.panel === 'c' && wideSide.matches) || shortSide.matches);
+  placePanel();
+  wideSide.addEventListener?.('change', placePanel);
+  shortSide.addEventListener?.('change', placePanel);
   ui.tabs[0].parentElement.addEventListener('keydown', (e) => {
     const visible = ui.tabs.filter((t) => !t.hidden);
     const i = visible.findIndex((t) => t.dataset.tab === state.tab);
@@ -633,6 +641,7 @@ export async function createStue({ root, works, artMeta = {} }) {
     return { w, h };
   }
   function resize() {
+    placePanel();
     const { w, h } = measure();
     room.resize(w, h);
   }
