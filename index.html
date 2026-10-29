@@ -9,13 +9,40 @@
       name="description"
       content="Farverig kunst der får dig til at tænke. Originale malerier af Selma Frausing Binau i olie, oliekridt og akvarel – og et 3D-galleri, du kan gå rundt i."
     />
+    <link rel="canonical" href="https://selmabinaukunst.dk/" />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://selmabinaukunst.dk/" />
     <meta property="og:title" content="Selma Frausing Binau · Kunst" />
     <meta property="og:description" content="Farverig kunst der får dig til at tænke. Se Selmas originale værker og gå en tur i galleriet." />
     <meta property="og:image" content="https://selmabinaukunst.dk/og.jpg" />
     <meta property="og:locale" content="da_DK" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <!-- For search engines: who the site is about, so a search for her name finds it -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://selmabinaukunst.dk/#site",
+            "url": "https://selmabinaukunst.dk/",
+            "name": "Selma Binau Kunst",
+            "inLanguage": "da",
+            "about": { "@id": "https://selmabinaukunst.dk/#selma" }
+          },
+          {
+            "@type": "Person",
+            "@id": "https://selmabinaukunst.dk/#selma",
+            "name": "Selma Frausing Binau",
+            "alternateName": "Selma Binau",
+            "jobTitle": "Kunstner",
+            "url": "https://selmabinaukunst.dk/",
+            "image": "https://selmabinaukunst.dk/og.jpg"
+          }
+        ]
+      }
+    </script>
     <!-- The banner is the first screen's one big image: fetch it alongside the CSS
          and JS, not after the inline wordmarks. Browsers without AVIF skip this. -->
     <link
