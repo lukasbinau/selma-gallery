@@ -28,6 +28,10 @@ Tekster på forsiden (bio m.m.) rettes direkte i `index.html`. De store ordmærk
 
 Mønsterfliserne i siderne (firkløveren og solen) skæres ud i `TILES` øverst i `scripts/prepare-images.mjs`; skift kilde eller udsnit dér og kør `npm run images`.
 
+## Stuens teksturer
+
+Gulv, træ, stoffer, puds og tapeter i "I din stue" tegnes af kode i `src/stue/textures.js` og `src/stue/wallpapers.js`, men de er bagt på forhånd til små billedfiler i `public/stue-tex/`, så browseren ikke skal tegne dem (gulvet alene tog over 3 sekunder). Har du ændret en tekstur, så kør `node scripts/bake-textures.mjs` (kræver Chrome). Listen over bagte teksturer står i `RECIPES` i `src/stue/baked.js`.
+
 ## Rammer i "I din stue"
 
 Rammerne, kunden kan vælge, står i `src/stue/frames.json` (kun kundepriser, aldrig indkøbspriser: filen ligger offentligt). Et værk får kun de rammer at se, der findes i en størrelse, som passer til værkets `maal`. Kilder og licenser for stuen: `src/stue/CREDITS.md`.

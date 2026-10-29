@@ -11,7 +11,8 @@ import { createSky } from './sky.js';
 import { createGarden } from './garden.js';
 import * as F from './furniture.js';
 import { buildWork } from './framing.js';
-import { oakFloor, oakGrain, fabric, wool, plaster, toTexture, leafSprite, boxShadowSprite, makeCanvas, pnoise } from './textures.js';
+import { toTexture, leafSprite, boxShadowSprite, makeCanvas, pnoise } from './textures.js';
+import { make, wallKey } from './baked.js';
 import { wallpaperTextures } from './wallpapers.js';
 
 export const ROOM = { x0: -2.9, x1: 2.9, z0: -4.6, z1: 4.6, h: 2.8 };
@@ -175,9 +176,16 @@ const white1 = (() => {
 })();
 
 // ------------------------------------------------------------------ createRoom
-export function createRoom({ canvas, overlay, mobile = false }) {
+/** Pixel size of the room's material textures (and of their baked files). */
+export const texSize = (mobile) => (mobile ? 512 : 1024);
+
+// Hand the main thread back to the browser between the heavy steps of building
+// the room, so it can be built in the background without freezing the page
+const pause = () => (globalThis.scheduler?.yield ? scheduler.yield() : new Promise((r) => setTimeout(r, 0)));
+
+export async function createRoom({ canvas, overlay, mobile = false }) {
   const Q = {
-    tex: mobile ? 512 : 1024,
+    tex: texSize(mobile),
     shadow: mobile ? 1024 : 2048,
     samples: mobile ? 20 : 48,
     msaa: mobile ? 0 : 4,
@@ -205,7 +213,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 400);
 
   // ---------------------------------------------------------------- textures
-  const floorT = oakFloor(Q.tex);
+  const floorT = make(`floor-${Q.tex}`);
   const tex = (c, srgb = true, repeat = 1) => {
     const t = toTexture(c, { srgb, aniso });
     t.repeat.set(repeat, repeat);
@@ -214,23 +222,23 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const floorMap = tex(floorT.map, true, 1 / 2.4);
   const floorRough = tex(floorT.rough, false, 1 / 2.4);
   const floorNormal = tex(floorT.normal, false, 1 / 2.4);
-  const oak = tex(oakGrain(512), true, 1);
+  const oak = tex(make('oak'), true, 1);
   oak.repeat.set(1.2, 2.4);
-  const oakDark = tex(oakGrain(512, { light: [150, 112, 80], dark: [92, 64, 44], seed: 4 }), true, 1);
+  const oakDark = tex(make('oak-dark'), true, 1);
   oakDark.repeat.set(1.2, 2.4);
-  const boucle = fabric(256, { boucle: true });
-  const linen = fabric(256, { boucle: false, seed: 9 });
+  const boucle = make('boucle');
+  const linen = make('linen');
   const boucleMap = tex(boucle.map, true, 1 / 0.22);
   const boucleNormal = tex(boucle.normal, false, 1 / 0.22);
   const linenMap = tex(linen.map, true, 1 / 0.18);
   const linenNormal = tex(linen.normal, false, 1 / 0.18);
-  const woolT = wool(256);
+  const woolT = make('wool');
   const woolMap = tex(woolT.map, true, 1 / 0.35);
   const woolNormal = tex(woolT.normal, false, 1 / 0.35);
-  const plasterT = plaster(256);
+  const plasterT = make('plaster');
   const plasterMap = tex(plasterT.map, true, 1 / 1.6);
   const plasterNormal = tex(plasterT.normal, false, 1 / 1.6);
-  const canvasWeave = tex(fabric(128, { seed: 3 }).normal, false, 1 / 0.04);
+  const canvasWeave = tex(make('weave').normal, false, 1 / 0.04);
   const contactShadow = boxShadowSprite(128, 0.35);
 
   // Fluted door fronts: vertical half-round grooves every 2 cm
@@ -272,6 +280,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   })();
 
   // ---------------------------------------------------------------- materials
+  await pause();
   const std = (o) => new THREE.MeshStandardMaterial(o);
   const mats = {
     wall: std({ color: '#eeebe4', map: plasterMap, normalMap: plasterNormal, normalScale: new THREE.Vector2(0.5, 0.5), roughnessMap: white1, roughness: 0.92 }),
@@ -482,12 +491,14 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   place(F.figTree(mats, { quality: Q.leaves }), bx + 1.45, z1 - 0.45);
 
   // ---------------------------------------------------------------- garden + sky
+  await pause();
   const sky = createSky();
   scene.add(sky);
   const garden = createGarden({ quality: Q.leaves, aniso });
   scene.add(garden.group);
 
   // ---------------------------------------------------------------- lights
+  await pause();
   const hemi = new THREE.HemisphereLight('#ffffff', '#8a7a68', 0.0);
   scene.add(hemi);
 
@@ -546,7 +557,12 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const cubeRT = new THREE.WebGLCubeRenderTarget(Q.env, { type: THREE.HalfFloatType });
   const cubeCam = new THREE.CubeCamera(0.05, 400, cubeRT);
   cubeCam.position.set(0.2, 1.4, 0);
-  let roomEnv = null;
+  // A dark stand-in until the first capture: with an environment of the right
+  // size from the start, the captures and the picture share one set of shaders
+  // (an empty one would compile a second set just for the first capture)
+  let roomEnv = pmrem.fromCubemap(cubeRT.texture);
+  scene.environment = roomEnv.texture;
+  await pause();
   let skyEnv = null;
   const skyScene = new THREE.Scene();
   const skyClone = new THREE.Mesh(sky.geometry, sky.material);
@@ -900,7 +916,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   function wallpaper(wall) {
     let t = wallpaperCache.get(wall.id);
     if (!t) {
-      t = wallpaperTextures(wall, Q.tex);
+      t = wallpaperTextures(wall, Q.tex, make(wallKey(wall, Q.tex)));
       for (const k of ['map', 'rough', 'normal']) {
         t[k].anisotropy = aniso;
         t[k].repeat.set(1 / t.width, 1 / t.height);
@@ -1016,6 +1032,20 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   }
 
   // Render one plain frame right now (also used before a snapshot)
+  // Compile every shader the first picture needs before it is drawn, on the
+  // browser's background threads where it can (KHR_parallel_shader_compile).
+  // Compiled against the render target the room is drawn into, with the sky's
+  // environment in place, so these are the variants that will be used: the
+  // first frame no longer freezes the page while dozens of shaders compile.
+  async function warm() {
+    captureSky();
+    const prev = renderer.getRenderTarget();
+    renderer.setRenderTarget(pipeline.targets.frame); // three picks variants by the bound target
+    const done = renderer.compileAsync(scene, camera);
+    renderer.setRenderTarget(prev);
+    await done;
+  }
+
   function renderNow() {
     if (envDirty > 0) {
       if (envDirty >= 2) captureSky();
@@ -1241,6 +1271,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     change,
     invalidate,
     renderNow,
+    warm,
     resize,
     artRect,
     setExposure,

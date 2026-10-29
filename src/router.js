@@ -171,6 +171,49 @@ if (vaerker) {
   });
   io.observe(vaerker);
 }
+// "I din stue" is two clicks away (a work, then I DIN STUE) and takes seconds
+// to build, so it is prepared in the background once the front page has
+// settled. On a computer the whole room is built: in short steps (room.js
+// yields between them), shaders compiled on the browser's background threads,
+// and only after the visitor has been still for a moment, so a remaining
+// hiccup lands while they read. On phones and tablets building would stall the
+// page for seconds, so only the code and textures are fetched; the room is
+// built on the first touch of a work or I DIN STUE (onIntent, below).
+// Nothing is preloaded when the visitor saves data or is on a slow connection.
+function preloadStue() {
+  const c = navigator.connection;
+  if (c?.saveData || /(^|-)2g$/.test(c?.effectiveType || '')) return;
+  if (!hasWebGL() || !stueRoot) return;
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    whenStill(() => {
+      if (view === 'front') ensureStue().catch(() => {});
+    });
+  } else {
+    loadStueChunk()
+      .then((m) => m.prefetch())
+      .catch(() => {});
+  }
+}
+// Run fn once there has been no scrolling, clicking or typing for `ms`
+function whenStill(fn, ms = 1500) {
+  const events = ['scroll', 'wheel', 'pointerdown', 'keydown', 'touchstart'];
+  let timer;
+  const done = () => {
+    events.forEach((e) => removeEventListener(e, wait, true));
+    fn();
+  };
+  const wait = () => {
+    clearTimeout(timer);
+    timer = setTimeout(done, ms);
+  };
+  events.forEach((e) => addEventListener(e, wait, { capture: true, passive: true }));
+  wait();
+}
+addEventListener('load', () => {
+  const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1200));
+  setTimeout(() => idle(preloadStue, { timeout: 5000 }), 2500);
+});
+
 const onIntent = (e) => {
   const t = e.target.closest?.('.vaerk, .vaerk__stue, [data-galleri]');
   if (!t) return;

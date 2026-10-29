@@ -1,0 +1,78 @@
+{
+  "floor-1024": [
+    "map",
+    "rough",
+    "normal"
+  ],
+  "floor-512": [
+    "map",
+    "rough",
+    "normal"
+  ],
+  "oak": [
+    ""
+  ],
+  "oak-dark": [
+    ""
+  ],
+  "boucle": [
+    "map",
+    "normal"
+  ],
+  "linen": [
+    "map",
+    "normal"
+  ],
+  "wool": [
+    "map",
+    "normal"
+  ],
+  "plaster": [
+    "map",
+    "normal"
+  ],
+  "weave": [
+    "map",
+    "normal"
+  ],
+  "wall-tulipan-512": [
+    "map",
+    "rough",
+    "normal"
+  ],
+  "wall-tulipan-1024": [
+    "map",
+    "rough",
+    "normal"
+  ],
+  "wall-rosenhave-512": [
+    "map",
+    "rough",
+    "normal"
+  ],
+  "wall-rosenhave-1024": [
+    "map",
+    "rough",
+    "normal"
+  ],
+  "wall-smalle-striber-512": [
+    "map",
+    "rough",
+    "normal"
+  ],
+  "wall-smalle-striber-1024": [
+    "map",
+    "rough",
+    "normal"
+  ],
+  "wall-brede-striber-512": [
+    "map",
+    "rough",
+    "normal"
+  ],
+  "wall-brede-striber-1024": [
+    "map",
+    "rough",
+    "normal"
+  ]
+}

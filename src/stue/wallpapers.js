@@ -477,7 +477,8 @@ const DRAW = { tulipan: drawTulipan, rosenhave: drawRosenhave, smalle: drawSmall
  * Textures for a wallpaper: { map, normal, rough, width, height } where width
  * and height are the real-world size of one tile in metres.
  */
-export function wallpaperTextures(wall, px = 1024) {
+/** The paper's colour, roughness and relief as canvases (baked by baked.js). */
+export function wallpaperCanvases(wall, px = 1024) {
   const W = px;
   const H = Math.round((px * wall.repeatH) / ROLL);
   const c = makeCanvas(W, H);
@@ -524,10 +525,15 @@ export function wallpaperTextures(wall, px = 1024) {
   }
   const normal = normalFromHeight(height, NW, 1.2, NH);
 
+  return { map: c, rough: rc, normal };
+}
+
+/** Textures for one drop of paper; `canvases` from wallpaperCanvases or baked. */
+export function wallpaperTextures(wall, px = 1024, canvases = wallpaperCanvases(wall, px)) {
   return {
-    map: toTexture(c),
-    rough: toTexture(rc, { srgb: false }),
-    normal: toTexture(normal, { srgb: false }),
+    map: toTexture(canvases.map),
+    rough: toTexture(canvases.rough, { srgb: false }),
+    normal: toTexture(canvases.normal, { srgb: false }),
     width: ROLL,
     height: wall.repeatH,
   };

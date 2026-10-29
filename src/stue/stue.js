@@ -11,7 +11,8 @@
 // rectAtRest(index), currentRect(), setExposure(k), show(), hide().
 import * as THREE from 'three';
 import './stue.css';
-import { createRoom, viewsFor, VIEWS, TIMES, viewById } from './room.js';
+import { createRoom, viewsFor, VIEWS, TIMES, viewById, texSize } from './room.js';
+import { loadBaked, startKeys, wallKey } from './baked.js';
 import { WALLS, wallpaperSwatch } from './wallpapers.js';
 import { offersFor, workSize, mediumOf, priceOf, formatKr, sizeLabel, NONE } from './catalogue.js';
 import { samplePalette } from './palette.js';
@@ -62,6 +63,20 @@ function noWebglStue({ on, off }) {
   };
 }
 
+// Phones (and ?quality=mobile) get the lighter room: smaller textures and
+// shadow maps, fewer samples
+function isMobile() {
+  const q = new URLSearchParams(location.search).get('quality');
+  return q ? q === 'mobile' : matchMedia('(pointer: coarse)').matches || Math.min(screen.width || 0, screen.height || 0) < 700;
+}
+
+/** Download and decode the textures the room starts with (the router calls it early). */
+export function prefetch() {
+  const px = texSize(isMobile());
+  const wall = WALLS.find((w) => w.id === readPrefs().wall) || WALLS[0];
+  return loadBaked([...startKeys(px), wallKey(wall, px)]);
+}
+
 export async function createStue({ root, works, artMeta = {} }) {
   if (!root) throw new Error('createStue: root mangler');
   const list = Array.isArray(works) ? works : [];
@@ -79,12 +94,17 @@ export async function createStue({ root, works, artMeta = {} }) {
     });
 
   const ui = buildChrome(root);
-  const q = new URLSearchParams(location.search).get('quality');
-  const mobile = q ? q === 'mobile' : matchMedia('(pointer: coarse)').matches || Math.min(screen.width || 0, screen.height || 0) < 700;
+  const mobile = isMobile();
+
+  // The room's textures come as baked image files (baked.js), decoded off the
+  // main thread; the visitor's last wallpaper with them
+  const px = texSize(mobile);
+  const prefs = readPrefs();
+  await prefetch();
 
   let room;
   try {
-    room = createRoom({ canvas: ui.canvas, overlay: ui.fade, mobile });
+    room = await createRoom({ canvas: ui.canvas, overlay: ui.fade, mobile });
   } catch (err) {
     console.warn('stue', err);
     root.replaceChildren();
@@ -92,7 +112,6 @@ export async function createStue({ root, works, artMeta = {} }) {
   }
 
   // ---------------------------------------------------------------- state
-  const prefs = readPrefs();
   const state = {
     id: null,
     index: 0,
@@ -298,6 +317,8 @@ export async function createStue({ root, works, artMeta = {} }) {
     state.wallId = id;
     savePrefs();
     markRail(ui.rails.wall, id);
+    await loadBaked([wallKey(wall, px)]);
+    if (state.wallId !== id) return; // another wall was chosen meanwhile
     await room.change(() => room.setWall(wall));
     announce(wall.name);
   }
@@ -701,9 +722,10 @@ export async function createStue({ root, works, artMeta = {} }) {
     prewarmed = true;
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 300));
     const queue = WALLS.filter((w) => w.kind === 'paper');
-    const next = () => {
+    const next = async () => {
       const w = queue.shift();
       if (!w) return;
+      await loadBaked([wallKey(w, px)]);
       room.prewarmWall?.(w);
       idle(next);
     };
@@ -717,7 +739,7 @@ export async function createStue({ root, works, artMeta = {} }) {
   root.dataset.time = state.timeId;
   // compile every shader now, off the critical path where the browser allows it
   try {
-    await room.renderer.compileAsync(room.scene, room.camera);
+    await room.warm();
   } catch {
     /* compileAsync is an optimisation only */
   }
