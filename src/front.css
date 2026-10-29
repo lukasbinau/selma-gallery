@@ -123,34 +123,28 @@ html[data-view='galleri'] body {
   transition: background 0.45s;
 }
 /* SELMA BINAU KUNST from the hero's own glyphs (scripts/compose-wordmarks.mjs):
-   one line on wide screens, stacked in three where the nav needs the room */
+   always on one line. It takes the room the nav leaves, up to 20px tall, and
+   shrinks with it; the nav and GALLERI never move for it. */
 .bar__brand {
-  flex: none;
-  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
   color: var(--pink);
   border-radius: 4px;
 }
 .bar__brand .wm {
-  width: auto;
-  height: 20px;
-}
-.bar__brand .wm--brand-stack {
-  display: none;
-  height: 40px;
+  display: block;
+  width: 100%;
+  max-width: 383px; /* 20px tall */
+  height: auto;
 }
 .bar__brand .b3 {
   color: var(--yellow);
   fill: var(--yellow);
 }
-@media (max-width: 960px) {
-  .bar__brand .wm--brand {
-    display: none;
-  }
-  .bar__brand .wm--brand-stack {
-    display: block;
-  }
-}
 .bar__nav {
+  flex: none;
   display: flex;
   align-items: center;
   gap: clamp(12px, 2.2vw, 28px);
@@ -968,9 +962,9 @@ picture {
   }
 }
 
-/* Phones: two rows, so every tab stays in sight. Brand and GALLERI on top,
-   the four tabs share the row below in equal columns. */
-@media (max-width: 640px) {
+/* Phones and small tablets: two rows, so every tab stays in sight. Brand and
+   GALLERI on top, the four tabs share the row below in equal columns. */
+@media (max-width: 760px) {
   :root {
     --bar-h: 96px;
   }
@@ -985,13 +979,13 @@ picture {
   .bar__nav {
     display: contents;
   }
+  /* the whole top row, less GALLERI's place at its right end */
   .bar__brand {
-    grid-column: 1 / 3;
+    grid-column: 1 / -1;
     grid-row: 1;
     justify-self: start;
-  }
-  .bar__brand .wm--brand-stack {
-    height: 38px;
+    align-self: center;
+    width: calc(100% - 110px);
   }
   .bar__pill {
     grid-column: 3 / 5;
@@ -1011,6 +1005,8 @@ picture {
   .bar__tab.is-active {
     border-bottom-width: 2px;
   }
+}
+@media (max-width: 640px) {
   .kontakt {
     padding: 0;
     place-items: end stretch;
