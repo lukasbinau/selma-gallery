@@ -496,17 +496,11 @@ export async function createStue({ root, works, artMeta = {} }) {
     if (!phone.matches) setSheet(true);
   });
 
-  // ---- the panel's look on wide screens, while Selma chooses one:
-  // ?panel=a (centred card), b (two columns), c (side panel)
-  const variant = new URLSearchParams(location.search).get('panel');
-  root.dataset.panel = ['a', 'b', 'c'].includes(variant) ? variant : 'a';
-  // the side panel: variant c on a wide screen, and any short landscape screen
-  // (a phone on its side), where a panel along the bottom would hide the room
-  const wideSide = matchMedia('(min-width: 900px)');
+  // ---- a short landscape screen (a phone on its side) gets the panel at the
+  // side: along the bottom it would hide the room
   const shortSide = matchMedia('(max-height: 500px) and (orientation: landscape)');
-  const placePanel = () => root.classList.toggle('is-side', (root.dataset.panel === 'c' && wideSide.matches) || shortSide.matches);
+  const placePanel = () => root.classList.toggle('is-side', shortSide.matches);
   placePanel();
-  wideSide.addEventListener?.('change', placePanel);
   shortSide.addEventListener?.('change', placePanel);
   ui.tabs[0].parentElement.addEventListener('keydown', (e) => {
     const visible = ui.tabs.filter((t) => !t.hidden);
@@ -625,7 +619,7 @@ export async function createStue({ root, works, artMeta = {} }) {
     const visible = !root.hidden && panel.height > 0;
     let bottom = visible ? Math.max(0, r.bottom - panel.top) : Math.min(300, h * 0.36);
     let right = 0;
-    // a side panel (variant c) takes width, not height
+    // a side panel takes width, not height
     if (visible && panel.left > r.left + w / 2) {
       right = Math.max(0, r.right - panel.left + 12);
       bottom = Math.round(h * 0.2); // frame it as if a panel were below: the sofa keeps its place

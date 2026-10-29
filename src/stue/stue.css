@@ -545,19 +545,16 @@
 }
 
 /* ------------------------------------------------------------------ wide screens
-   Three looks for the panel while Selma picks one (#stue[data-panel], set by
-   ?panel=a|b|c). All three: a floating card, the choices centred, a clear
-   line between choosing and buying. */
+   One centred, floating card: the tabs as a segmented control on top, the
+   choices centred under them, and the checkout line along the bottom. */
 @media (min-width: 900px) {
-  /* a: one centred card. Tabs as a segmented control on top, the choices
-     centred under them, and the checkout line along the bottom. */
-  #stue[data-panel='a'] .stue__panel {
+  #stue .stue__panel {
     width: min(920px, calc(100% - 48px));
     gap: 10px;
     padding: 14px 0 0;
     grid-template-areas: 'tabs' 'rails' 'summary';
   }
-  #stue[data-panel='a'] .stue__tabs {
+  #stue .stue__tabs {
     grid-area: tabs;
     justify-self: center;
     gap: 2px;
@@ -566,7 +563,7 @@
     border-radius: 999px;
     background: rgba(35, 10, 102, 0.06);
   }
-  #stue[data-panel='a'] .stue__tab {
+  #stue .stue__tab {
     height: 38px;
     padding: 0 16px;
     border-radius: 999px;
@@ -575,72 +572,30 @@
       background 0.25s var(--s-ease),
       box-shadow 0.25s var(--s-ease);
   }
-  #stue[data-panel='a'] .stue__tab::after {
+  #stue .stue__tab::after {
     display: none;
   }
-  #stue[data-panel='a'] .stue__tab[aria-selected='true'] {
+  #stue .stue__tab[aria-selected='true'] {
     background: var(--s-paper-solid);
     box-shadow: 0 1px 4px rgba(35, 10, 102, 0.14);
   }
-  #stue[data-panel='a'] .stue__rails {
+  #stue .stue__rails {
     grid-area: rails;
   }
-  #stue[data-panel='a'] .stue__rail {
+  #stue .stue__rail {
     justify-content: safe center;
   }
-  #stue[data-panel='a'] .stue__summary {
+  #stue .stue__summary {
     grid-area: summary;
     padding: 12px 22px;
     border-top: 1px solid var(--s-line);
     background: rgba(255, 255, 255, 0.5);
     border-radius: 0 0 18px 18px;
   }
-
-  /* b: two columns. What you buy on the left (name, lines, price, a full-width
-     buy button), the choices on the right. Low, so the room keeps the screen. */
-  #stue[data-panel='b'] .stue__panel {
-    width: min(1060px, calc(100% - 48px));
-    grid-template-columns: 300px minmax(0, 1fr);
-    grid-template-areas: 'summary tabs' 'summary rails';
-    gap: 6px 0;
-    padding: 16px 0 12px;
-  }
-  #stue[data-panel='b'] .stue__summary {
-    grid-area: summary;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 0 22px;
-    border-right: 1px solid var(--s-line);
-  }
-  #stue[data-panel='b'] .stue__title {
-    white-space: normal;
-  }
-  #stue[data-panel='b'] .stue__buy {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  #stue[data-panel='b'] .stue__total {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-size: 18px;
-  }
-  #stue[data-panel='b'] .stue__tabs {
-    grid-area: tabs;
-    border: 0;
-    padding: 0 12px;
-  }
-  #stue[data-panel='b'] .stue__rails {
-    grid-area: rails;
-  }
-
 }
 
-/* c, and every short landscape screen (a phone on its side): a side panel,
- like a shop's product page. No tabs: every choice is a section of its own,
+/* Short landscape screens (a phone on its side): a side panel, like a shop's
+ product page, since a panel along the bottom would hide the room. No tabs: every choice is a section of its own,
  stacked; the price and the buy button stay at the bottom. The room frames
  the work in the space beside it. #stue.is-side is set by stue.js. */
 #stue.is-side .stue__panel {
