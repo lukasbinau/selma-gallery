@@ -94,14 +94,22 @@ function photoDome() {
   return dome;
 }
 
-// AVIF where the browser has it, WebP otherwise
+// AVIF where the browser has it, WebP otherwise. Decoded off the main thread
+// (createImageBitmap) where the browser can, so the photo never stalls a frame.
 function loadPhoto(urls, { aniso = 1, srgb = true } = {}) {
-  const loader = new THREE.TextureLoader();
+  const bitmaps = typeof createImageBitmap === 'function';
+  const loader = bitmaps ? new THREE.ImageBitmapLoader() : new THREE.TextureLoader();
+  if (bitmaps) loader.setOptions({ imageOrientation: 'flipY', colorSpaceConversion: srgb ? 'default' : 'none' });
   return new Promise((resolve, reject) => {
     const next = (i) =>
       loader.load(
         urls[i],
-        (t) => {
+        (img) => {
+          const t = bitmaps ? new THREE.Texture(img) : img;
+          if (bitmaps) {
+            t.flipY = false; // flipped while decoding
+            t.needsUpdate = true;
+          }
           if (srgb) t.colorSpace = THREE.SRGBColorSpace;
           t.anisotropy = aniso;
           t.minFilter = THREE.LinearMipmapLinearFilter;
@@ -118,7 +126,8 @@ export function createGarden({ aniso = 8, large = true } = {}) {
   const group = new THREE.Group();
   group.name = 'garden';
 
-  const deck = oakFloor(512, { tone: [128, 110, 92], seed: 9 });
+  // 256 px is plenty seen through the glass, and a quarter of the drawing time
+  const deck = oakFloor(256, { tone: [128, 110, 92], seed: 9 });
   const deckMap = toTexture(deck.map, { aniso });
   const deckNormal = toTexture(deck.normal, { srgb: false, aniso });
   deckMap.repeat.set(1 / 2.4, 1 / 2.4);
