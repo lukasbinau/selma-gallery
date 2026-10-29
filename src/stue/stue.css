@@ -125,8 +125,8 @@
 }
 
 /* ------------------------------------------------------------------ angle */
-/* Skråt ⇄ Forfra: a pill at the bottom corner of the free band, on the side the next
-   view comes from (right in the angled view, left straight on) */
+/* Skråt ⇄ Forfra: a pill at the bottom corner of the free band, on the side
+   the next view comes from (data-side, set by stue.js per room) */
 #stue .stue__angle {
   position: absolute;
   top: calc(var(--band-bottom, 60%) - 16px);
@@ -162,16 +162,16 @@
 #stue .stue__angle:hover svg {
   transform: translateX(3px);
 }
-#stue .stue__angle[data-to='vinkel'] {
+#stue .stue__angle[data-side='left'] {
   right: auto;
   left: var(--s-gutter);
   flex-direction: row-reverse;
   padding: 0 16px 0 14px;
 }
-#stue .stue__angle[data-to='vinkel'] svg {
+#stue .stue__angle[data-side='left'] svg {
   transform: scaleX(-1);
 }
-#stue .stue__angle[data-to='vinkel']:hover svg {
+#stue .stue__angle[data-side='left']:hover svg {
   transform: scaleX(-1) translateX(3px);
 }
 

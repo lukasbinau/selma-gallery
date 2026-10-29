@@ -317,6 +317,7 @@ export async function createStue({ root, works, artMeta = {} }) {
     state.viewId = id;
     markRail(ui.rails.view, id);
     await room.setView(id);
+    renderAngle();
     announce(viewById(id).name);
   }
 
@@ -433,6 +434,7 @@ export async function createStue({ root, works, artMeta = {} }) {
     renderSummary();
     renderFrames();
     renderViews();
+    renderAngle();
     markRail(ui.rails.work, state.id, { scroll: false });
   }
 
@@ -568,9 +570,14 @@ export async function createStue({ root, works, artMeta = {} }) {
     renderAngle();
     announce(STRINGS.angleLabel[angle]);
   }
+  // The pill sits on the side the next view comes from. In each room Forfra
+  // is on the side of the glazing: left in the stue, right in the spisestue,
+  // and Skråt on the other side.
   function renderAngle() {
     const to = room.angle === 'forfra' ? 'vinkel' : 'forfra';
+    const forfraSide = viewById(state.viewId).windowSide > 0 ? 'right' : 'left';
     ui.angle.dataset.to = to;
+    ui.angle.dataset.side = to === 'forfra' ? forfraSide : forfraSide === 'right' ? 'left' : 'right';
     ui.angle.setAttribute('aria-label', STRINGS.angleLabel[to]);
     ui.angle.querySelector('.stue__angle-label').textContent = STRINGS.angle[to];
   }
@@ -587,7 +594,7 @@ export async function createStue({ root, works, artMeta = {} }) {
     const dy = e.clientY - swipe.y;
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5 || performance.now() - swipe.t > 900) return;
     // the finger pulls the next view in from the side the button is on
-    setAngle(dx < 0 ? 'forfra' : 'vinkel');
+    if ((dx < 0 ? 'right' : 'left') === ui.angle.dataset.side) setAngle(ui.angle.dataset.to);
   });
   ui.canvas.addEventListener('pointercancel', () => (swipe.id = null));
 
@@ -595,7 +602,7 @@ export async function createStue({ root, works, artMeta = {} }) {
     if (!state.shown || isContactOpen()) return;
     if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.target.closest?.('.stue__rail, .stue__tabs')) {
       e.preventDefault();
-      setAngle(e.key === 'ArrowRight' ? 'forfra' : 'vinkel');
+      if ((e.key === 'ArrowRight' ? 'right' : 'left') === ui.angle.dataset.side) setAngle(ui.angle.dataset.to);
       return;
     }
     if (e.key !== 'Escape') return;
