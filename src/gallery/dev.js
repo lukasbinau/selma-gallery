@@ -89,3 +89,31 @@ if (location.search.includes('debug')) {
     if (e.key === 'r') check();
   });
 }
+
+// Console checks. __leanCheck(): leans in to every painting and reports the
+// share of the screen it fills (! = cut off). __plaqueCheck(): on-screen size
+// of the current plaque, its keys and its price.
+window.__leanCheck = () => {
+  const { state, view } = gallery.debug;
+  const out = [`${view.w}x${view.h}`];
+  for (let i = 0; i < works.length; i++) {
+    gallery.goTo(i);
+    gallery.tick(3);
+    state.leanGoal = 1;
+    gallery.tick(3);
+    const r = gallery.currentRect();
+    const inside = r.x >= view.left - 1 && r.y >= view.top - 1 && r.x + r.width <= view.left + view.w + 1 && r.y + r.height <= view.top + view.h + 1;
+    out.push(`${Math.max(r.width / view.w, r.height / view.h).toFixed(2)}${inside ? '' : '!'}`);
+    state.leanGoal = 0;
+  }
+  gallery.tick(3);
+  return out.join(' ');
+};
+window.__plaqueCheck = () => {
+  const plaque = document.querySelectorAll('#galleri .galleri-plaque')[gallery.index];
+  if (!plaque) return 'no plaque';
+  const px = (r) => `${Math.round(r.width)}x${Math.round(r.height)}`;
+  const keys = [...plaque.querySelectorAll('.galleri-plaque__btn')].map((b) => px(b.getBoundingClientRect()));
+  const price = plaque.querySelector('.galleri-plaque__price');
+  return `${innerWidth}x${innerHeight}: plaque ${px(plaque.getBoundingClientRect())}, keys ${keys.join(' ')}, price ${price ? px(price.getBoundingClientRect()) : '-'}`;
+};

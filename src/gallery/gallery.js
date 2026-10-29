@@ -463,8 +463,8 @@ export async function createGallery({ root, works, artMeta = {} }) {
     plaque: new THREE.MeshPhysicalMaterial({
       map: wood,
       roughness: 0.5,
-      clearcoat: 0.55,
-      clearcoatRoughness: 0.28,
+      clearcoat: 0.85, // a deep lacquer: the lamps leave a soft highlight on it
+      clearcoatRoughness: 0.16,
       emissive: '#ffffff',
       emissiveMap: wood, // a faint self-glow keeps the grain readable in the evening room
       emissiveIntensity: 0.1,
@@ -928,7 +928,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
       const y = EYE - f.height / 2 - PLAQUE_GAP - f.plaqueH / 2;
       const normal = f.slot.wall.normal;
 
-      const slab = new THREE.Mesh(new RoundedBoxGeometry(PLAQUE_W, f.plaqueH, PLAQUE_DEPTH, 5, 0.009), mats.plaque);
+      const slab = new THREE.Mesh(new RoundedBoxGeometry(PLAQUE_W, f.plaqueH, PLAQUE_DEPTH, 6, 0.012), mats.plaque);
       slab.position.copy(f.centre).addScaledVector(normal, PLAQUE_DEPTH / 2 + 0.002);
       slab.position.y = y;
       slab.rotation.y = f.slot.wall.rotY;
@@ -953,7 +953,20 @@ export async function createGallery({ root, works, artMeta = {} }) {
     renderer.shadowMap.needsUpdate = true;
   }
 
-  // KØB OG KONTAKT and I DIN STUE on a plaque
+  // KØB OG KONTAKT and I DIN STUE on a plaque. A finger presses the key in
+  // too (touch screens have no hover, and :active is unreliable on iOS).
+  root.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('.galleri-plaque__btn');
+    if (!b) return;
+    b.classList.add('is-pressed');
+    const up = () => {
+      b.classList.remove('is-pressed');
+      removeEventListener('pointerup', up);
+      removeEventListener('pointercancel', up);
+    };
+    addEventListener('pointerup', up);
+    addEventListener('pointercancel', up);
+  });
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-contact], [data-stue]');
     if (!b) return;
