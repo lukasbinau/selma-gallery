@@ -24,6 +24,9 @@ const id = new URLSearchParams(location.search).get('id') || data.vaerker[0].id;
 stue.on('exit', () => console.log('exit'));
 stue.on('work', (e) => console.log('work', e));
 await stue.show({ id, from: 'front' });
+// ?view=spise&angle=forfra: for screenshots of the other room and angle
+if (q.get('view')) root.querySelector(`[data-rail="view"] [data-id="${q.get('view')}"]`)?.click();
+if (q.get('angle')) await stue.debug.room.setAngle(q.get('angle'), { animate: false });
 console.log('shown');
 
 // Console checks: await __stueCheck(['lilla-skyer', 'blaa-fliser']) measures

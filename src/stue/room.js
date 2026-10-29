@@ -74,7 +74,9 @@ function hangCentre(view, outer) {
 // It comes in nearly square to the glazing, so its patches land on the floor
 // and the far wall, never as glare on the two walls the works hang on.
 // sky: gradient for the sky dome. skyLight: daylight entering through the
-// glazing. lamps: 0..1 interior lamps. env: strength of the room's bounce light
+// glazing. garden: the grade of the garden photo (see garden.js setTime): gain
+// relative to the photo as shot, tint, saturation, and how much of the photo's
+// own sky stays (0: the procedural sky shows through). lamps: 0..1 interior lamps. env: strength of the room's bounce light
 // (kept below 1: the room is captured from itself, so more would feed back).
 export const TIMES = [
   {
@@ -83,6 +85,7 @@ export const TIMES = [
     sun: { dir: [-0.9, 0.32, 0.12], colour: '#ffd2a1', intensity: 10.5 },
     sky: { zenith: '#86a9d4', horizon: '#f1dcc6', ground: '#5d5a48', cloud: '#fff0e2', cover: 0.38, intensity: 1.5 },
     skyLight: { colour: '#c3d3ec', intensity: 4.4 },
+    garden: { gain: 0.85, tint: '#ffe9d2', sat: 0.9, sky: 0.35, skyTint: '#ffffff' },
     lamps: 0,
     env: 0.85,
     exposure: 3.6,
@@ -95,6 +98,7 @@ export const TIMES = [
     sun: { dir: [-0.45, 0.85, 0.22], colour: '#fff3e2', intensity: 13.0 },
     sky: { zenith: '#5f90cf', horizon: '#dde7f0', ground: '#5f5d4a', cloud: '#ffffff', cover: 0.32, intensity: 2.1 },
     skyLight: { colour: '#d0def2', intensity: 5.6 },
+    garden: { gain: 1, tint: '#ffffff', sat: 1, sky: 1 },
     lamps: 0,
     env: 0.85,
     exposure: 4.0,
@@ -107,6 +111,7 @@ export const TIMES = [
     sun: { dir: [-0.85, 0.1, -0.3], colour: '#ffa868', intensity: 5.5 },
     sky: { zenith: '#4b5b8c', horizon: '#f5a26a', ground: '#3d3730', cloud: '#f6b089', cover: 0.45, intensity: 1.1 },
     skyLight: { colour: '#9fb0dc', intensity: 2.6 },
+    garden: { gain: 0.45, tint: '#ffb37c', sat: 0.75, sky: 0 },
     lamps: 0.4,
     env: 0.75,
     exposure: 1.9,
@@ -119,6 +124,7 @@ export const TIMES = [
     sun: { dir: [-0.4, 0.55, 0.3], colour: '#8fa6d8', intensity: 0.3 },
     sky: { zenith: '#04060d', horizon: '#121a2c', ground: '#05060a', cloud: '#1a2236', cover: 0.25, intensity: 1, stars: 1.4 },
     skyLight: { colour: '#5c6d99', intensity: 0.12 },
+    garden: { gain: 0.05, tint: '#7d93c8', sat: 0.25, sky: 0 },
     lamps: 1,
     env: 0.55,
     exposure: 1.4,
@@ -484,7 +490,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   // ---------------------------------------------------------------- garden + sky
   const sky = createSky();
   scene.add(sky);
-  const garden = createGarden({ quality: Q.leaves, aniso });
+  const garden = createGarden({ aniso, large: !mobile });
   scene.add(garden.group);
 
   // ---------------------------------------------------------------- lights
@@ -713,6 +719,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     e[9] -= cam.sy + jit.y;
     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
     camera.updateMatrixWorld(true);
+    garden.follow(camera.position);
   }
   function snapCamera() {
     Object.assign(cam, cameraFor(state.view));
@@ -737,6 +744,8 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     u.uStars.value = t.sky.stars || 0;
     u.uIntensity.value = t.sky.intensity;
     scene.fog.color.set(t.fog);
+    // the garden photo, graded; the room's exposure and glass divided out
+    garden.setTime({ ...t.garden, gain: t.garden.gain / (t.glass * t.exposure * K.exp) });
     mats.glassTint.color.setRGB(t.glass * 0.96, t.glass, t.glass * 0.99);
     groundDisc.material.color.set(t.id === 'nat' ? '#05070a' : t.id === 'aften' ? '#3a3a24' : '#4c5a36');
     skyLight.color.set(t.skyLight.colour);
@@ -1062,6 +1071,16 @@ export function createRoom({ canvas, overlay, mobile = false }) {
       kick();
     }
   }
+
+  // The garden photo arrives after the first picture: crossfade it in (a
+  // plain swap while the camera is moving), and let the room's bounce light see it
+  garden.ready.then(
+    () => change(() => {
+      garden.showPhoto();
+      envDirty = 2;
+    }, { fade: tweens.size === 0 }),
+    () => {}, // no photo: the procedural sky alone, over the deck
+  );
 
   // ---------------------------------------------------------------- listeners
   const listeners = new Map();
