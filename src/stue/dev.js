@@ -28,6 +28,7 @@ await stue.show({ id, from: 'front' });
 if (q.get('view')) root.querySelector(`[data-rail="view"] [data-id="${q.get('view')}"]`)?.click();
 if (q.get('angle')) await stue.debug.room.setAngle(q.get('angle'), { animate: false });
 console.log('shown');
+window.__stue = stue; // console access for measurements
 
 // Console checks: await __stueCheck(['lilla-skyer', 'blaa-fliser']) measures
 // the work at rest in both views (share of the screen width and of the free

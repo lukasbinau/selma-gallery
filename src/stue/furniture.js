@@ -295,24 +295,6 @@ export function floorLantern(mats) {
   return { group: g, light: new THREE.Vector3(0, h + 0.12, 0) };
 }
 
-// A mushroom table lamp (white opal shade on a slim stem)
-export function tableLamp(mats) {
-  const g = new THREE.Group();
-  g.add(at(mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.015, 40), mats.lampWhite), 0, 0.0075, 0));
-  g.add(at(mesh(new THREE.CylinderGeometry(0.012, 0.016, 0.32, 16), mats.lampWhite), 0, 0.17, 0));
-  const pts = [];
-  for (let i = 0; i <= 16; i++) {
-    const a = (i / 16) * (Math.PI / 2);
-    pts.push([Math.max(0.001, Math.sin(a) * 0.2), Math.cos(a) * 0.12]);
-  }
-  pts.reverse();
-  const shade = mesh(lathe(pts, 48), mats.opal, { cast: true });
-  shade.position.y = 0.31;
-  shade.name = 'shade';
-  g.add(shade);
-  return { group: g, light: new THREE.Vector3(0, 0.33, 0) };
-}
-
 // A layered Danish pendant (three stacked shades), hanging from the ceiling
 export function pendant(mats, drop = 0.85) {
   const g = new THREE.Group();
