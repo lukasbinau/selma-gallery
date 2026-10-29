@@ -50,6 +50,11 @@ const PLAQUE_DEPTH = 0.034; // a solid wooden block that stands off the wall
 const BODY = { k: 120, c: 2 * Math.sqrt(120) };
 const LOOK = { k: 240, c: 2 * Math.sqrt(240) };
 const LEAN = { k: 70, c: 2 * Math.sqrt(70) };
+const ZOOM = { k: 160, c: 2 * Math.sqrt(160) }; // pinch zoom and pan follow the fingers closely
+// Leaning in stops where the whole painting fills this share of the screen in
+// its tighter direction, on any screen; pinching goes closer, up to ZOOM_MAX
+const LEAN_FILL = 0.92;
+const ZOOM_MAX = 4;
 const INTRO_SOFTNESS = 0.2; // springs this much softer during the walk-in
 
 // Room colours from Selma's Canva design: a deep violet room with pink plaques
@@ -1015,6 +1020,10 @@ export async function createGallery({ root, works, artMeta = {} }) {
     look: { x: -1, v: 0 },
     lean: { x: 0, v: 0 }, // 0 = standing back, 1 = leaning in to the painting
     leanGoal: 0,
+    zoom: { x: 1, v: 0 }, // pinch magnification on top of the lean (1 = painting fits)
+    zoomGoal: 1,
+    pan: { x: { x: 0, v: 0 }, y: { x: 0, v: 0 } }, // metres across the painting while zoomed
+    panGoal: new THREE.Vector2(),
     intro: false,
     speed: 0, // m/s along the rail, smoothed
     stride: 0, // footstep phase
@@ -1028,6 +1037,27 @@ export async function createGallery({ root, works, artMeta = {} }) {
   const _fwd = new THREE.Vector3(0, 0, -1);
   const _right = new THREE.Vector3(1, 0, 0);
   const _zero2 = new THREE.Vector2();
+  const _leanAt = new THREE.Vector3();
+  const _pan = { x: 0, y: 0 };
+
+  // Distance (from the wall) at which the painting itself, without frame or
+  // passepartout, fills LEAN_FILL of the screen
+  function leanDist(f) {
+    const aspect = camera.aspect > 0 && Number.isFinite(camera.aspect) ? camera.aspect : 16 / 9;
+    const t = tanHalf();
+    return f.artZ + Math.max(f.artH / (LEAN_FILL * 2 * t), f.artW / (LEAN_FILL * 2 * t * aspect));
+  }
+  // While zoomed, the view may wander over the painting but not off its edges
+  function clampPan(f, d, x, y) {
+    const t = tanHalf();
+    const hw = d * t * camera.aspect;
+    const hh = d * t;
+    const mx = Math.max(0, f.artW / 2 - hw * LEAN_FILL);
+    const my = Math.max(0, f.artH / 2 - hh * LEAN_FILL);
+    _pan.x = clamp(x, -mx, mx);
+    _pan.y = clamp(y, -my, my);
+    return _pan;
+  }
 
   function spring(s, goal, { k, c }, dt, soft = 1) {
     const a = -k * soft * (s.x - goal) - c * Math.sqrt(soft) * s.v;
@@ -1039,6 +1069,10 @@ export async function createGallery({ root, works, artMeta = {} }) {
     state.target = state.body.x = state.look.x = state.index;
     state.body.v = state.look.v = state.lean.v = 0;
     state.lean.x = state.leanGoal;
+    state.zoom.x = state.zoomGoal;
+    state.pan.x.x = state.panGoal.x;
+    state.pan.y.x = state.panGoal.y;
+    state.zoom.v = state.pan.x.v = state.pan.y.v = 0;
     state.intro = false;
     state.speed = 0;
     if (rail.curveS) railPoint(state.body.x, rail.curveS, state.prevPos);
@@ -1057,6 +1091,9 @@ export async function createGallery({ root, works, artMeta = {} }) {
         spring(state.body, state.target, BODY, h, soft);
         spring(state.look, state.target, LOOK, h, soft);
         spring(state.lean, state.leanGoal, LEAN, h);
+        spring(state.zoom, state.zoomGoal, ZOOM, h);
+        spring(state.pan.x, state.panGoal.x, ZOOM, h);
+        spring(state.pan.y, state.panGoal.y, ZOOM, h);
       }
       if (state.intro && Math.abs(state.body.x - state.target) < 0.004 && Math.abs(state.body.v) < 0.01) {
         state.intro = false;
@@ -1078,9 +1115,22 @@ export async function createGallery({ root, works, artMeta = {} }) {
     _fwd.normalize();
     _right.crossVectors(_fwd, UP).normalize();
 
-    // Lean in to see the brushwork, eyes on the painting itself (the plaque drops out of view)
-    _pos.addScaledVector(_fwd, state.lean.x * state.viewDist * 0.52);
-    _look.y += state.lean.x * (EYE - _look.y);
+    // Lean in to see the brushwork, eyes on the painting itself (the plaque
+    // drops out of view): square in front of it, as close as lets the whole
+    // painting fit the screen, closer still by the pinch zoom
+    if (state.lean.x > 1e-4 && frames[state.index]) {
+      const f = frames[state.index];
+      const k = state.lean.x;
+      const n = f.slot.wall.normal;
+      const d = f.artZ + (leanDist(f) - f.artZ) / Math.max(1, state.zoom.x);
+      const pan = clampPan(f, d, state.pan.x.x, state.pan.y.x);
+      const r = f.slot.wall.right;
+      _leanAt.set(f.centre.x + r.x * pan.x, EYE + pan.y, f.centre.z + r.z * pan.x);
+      _look.lerp(_leanAt, k);
+      _pos.lerp(_leanAt.addScaledVector(n, d), k);
+      _fwd.subVectors(_look, _pos).normalize();
+      _right.crossVectors(_fwd, UP).normalize();
+    }
     // Step back a touch while walking: reads as moving past the wall
     _pos.addScaledVector(_fwd, -Math.min(speed * 0.1, 0.6));
     // Footsteps: a small bounce per step and a sway side to side
@@ -1202,6 +1252,10 @@ export async function createGallery({ root, works, artMeta = {} }) {
 
   function setLean(on) {
     state.leanGoal = on ? 1 : 0;
+    if (!on) {
+      state.zoomGoal = 1;
+      state.panGoal.set(0, 0);
+    }
     if (!on) frames.forEach((f) => f.secret?.leave?.());
     canvas.classList.toggle('is-leaning', on);
     if (reduced()) snapRig();
@@ -1286,6 +1340,21 @@ export async function createGallery({ root, works, artMeta = {} }) {
     (e) => {
       e.preventDefault();
       if (takeover) return;
+      // Trackpad pinch (and ctrl + wheel): zoom into the painting
+      if (e.ctrlKey && frames.length) {
+        if (!state.leanGoal) {
+          if (e.deltaY >= 0) return;
+          setLean(true);
+          hideHint();
+        }
+        const z = state.zoomGoal * Math.exp(-e.deltaY * 0.01);
+        if (z < 0.9) setLean(false);
+        else {
+          state.zoomGoal = clamp(z, 1, ZOOM_MAX);
+          setPanGoal(state.panGoal.x, state.panGoal.y);
+        }
+        return;
+      }
       const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       clearTimeout(wheelIdle);
       wheelIdle = setTimeout(() => {
@@ -1324,9 +1393,70 @@ export async function createGallery({ root, works, artMeta = {} }) {
     return hit ? hit.object.userData.index : null;
   }
 
+  // ---------------------------------------------------------------- pinch zoom
+  // Two fingers on a painting lean in to it and zoom up to ZOOM_MAX; while
+  // zoomed, one finger pans over the painting instead of walking. Pinching
+  // back past the fitted view stands back up. Ctrl + wheel (a trackpad pinch)
+  // does the same on a computer.
+  const touches = new Map(); // pointerId → { x, y }
+  const pinch = { active: false, dist: 0, zoom: 1, cx: 0, cy: 0, pan: new THREE.Vector2() };
+  const pinchSpan = () => {
+    const [a, b] = [...touches.values()];
+    return { d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+  };
+  // Metres on the painting per screen pixel at the current zoom
+  const paintPerPixel = () => {
+    const f = frames[state.index];
+    return f ? (2 * tanHalf() * (leanDist(f) / Math.max(1, state.zoomGoal))) / view.h : 0;
+  };
+  function startPinch() {
+    const { d, cx, cy } = pinchSpan();
+    Object.assign(pinch, { active: true, dist: Math.max(d, 1), zoom: state.leanGoal ? state.zoomGoal : 1, cx, cy });
+    pinch.pan.copy(state.panGoal);
+    drag.active = false;
+    canvas.classList.remove('is-dragging');
+    hideHint();
+    if (!state.leanGoal) {
+      goTo(Math.round(clamp(state.target, 0, frames.length - 1)));
+      setLean(true);
+    }
+  }
+  function movePinch() {
+    const { d, cx, cy } = pinchSpan();
+    const z = (pinch.zoom * d) / pinch.dist;
+    if (z < 0.8 && pinch.zoom <= 1.05) {
+      // pinched in from the fitted view: stand back
+      pinch.active = false;
+      setLean(false);
+      return;
+    }
+    state.zoomGoal = clamp(z, 1, ZOOM_MAX);
+    const m = paintPerPixel();
+    setPanGoal(pinch.pan.x - (cx - pinch.cx) * m, pinch.pan.y + (cy - pinch.cy) * m);
+  }
+  function setPanGoal(x, y) {
+    const f = frames[state.index];
+    if (!f) return;
+    const p = clampPan(f, leanDist(f) / Math.max(1, state.zoomGoal), x, y);
+    state.panGoal.set(p.x, p.y);
+  }
+  const zoomed = () => state.leanGoal === 1 && state.zoomGoal > 1.02;
+
   canvas.addEventListener('pointerdown', (e) => {
     if (!frames.length || takeover) return;
-    canvas.setPointerCapture(e.pointerId);
+    if (e.pointerType === 'touch') {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2) {
+        startPinch();
+        return;
+      }
+      if (touches.size > 2) return;
+    }
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch {
+      /* a pointer that is already gone */
+    }
     state.intro = false;
     Object.assign(drag, {
       active: true,
@@ -1337,11 +1467,21 @@ export async function createGallery({ root, works, artMeta = {} }) {
       lastT: performance.now(),
       vel: 0,
       moved: 0,
+      startY: e.clientY,
+      startPan: state.panGoal.clone(),
+      panning: zoomed(),
     });
   });
 
   canvas.addEventListener('pointermove', (e) => {
     if (takeover) return;
+    if (touches.has(e.pointerId)) {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch.active) {
+        if (touches.size === 2) movePinch();
+        return;
+      }
+    }
     if (e.pointerType === 'mouse') {
       state.parallaxGoal.set(((e.clientX - view.left) / view.w) * 2 - 1, -(((e.clientY - view.top) / view.h) * 2 - 1));
     }
@@ -1357,6 +1497,14 @@ export async function createGallery({ root, works, artMeta = {} }) {
 
     const now = performance.now();
     const dx = e.clientX - drag.startX;
+    // Zoomed in: one finger (or the mouse) moves over the painting
+    if (drag.panning) {
+      const dy = e.clientY - drag.startY;
+      drag.moved = Math.max(drag.moved, Math.hypot(dx, dy));
+      const m = paintPerPixel();
+      setPanGoal(drag.startPan.x - dx * m, drag.startPan.y + dy * m);
+      return;
+    }
     drag.moved = Math.max(drag.moved, Math.abs(dx));
     const instant = (e.clientX - drag.lastX) / Math.max(now - drag.lastT, 1);
     drag.vel = drag.vel * 0.6 + instant * 0.4; // px / ms, smoothed
@@ -1378,10 +1526,27 @@ export async function createGallery({ root, works, artMeta = {} }) {
     if (reduced()) state.body.x = state.look.x = u;
   });
 
+  function endTouch(e) {
+    if (!touches.delete(e.pointerId)) return;
+    if (pinch.active && touches.size < 2) {
+      pinch.active = false;
+      if (state.zoomGoal < 1.05) state.zoomGoal = 1;
+      // the finger left on the glass carries on panning, not walking
+      const rest = [...touches.entries()][0];
+      if (rest && state.leanGoal) {
+        Object.assign(drag, { active: true, id: rest[0], startX: rest[1].x, startY: rest[1].y, startPan: state.panGoal.clone(), panning: true, moved: 99 });
+      }
+    }
+  }
+  canvas.addEventListener('pointerup', endTouch);
+  canvas.addEventListener('pointercancel', endTouch);
+
   function endDrag(e) {
     if (!drag.active || e.pointerId !== drag.id) return;
     drag.active = false;
     canvas.classList.remove('is-dragging');
+    // a pan ends where it is; a tap while zoomed is a tap like any other
+    if (drag.panning && drag.moved > 4) return;
 
     // A tap, not a swipe: walk to the painting tapped, or lean in to this one
     if (drag.moved <= 4) {
