@@ -36,6 +36,7 @@ export const VIEWS = [
     maxH: 1.4,
     bearing: 40,
     windowSide: -1, // the glazing is to the left in the picture
+    wash: { back: 2.4, side: 0 }, // the ceiling light on the work's wall (see placeLights)
   },
   {
     id: 'spise',
@@ -48,6 +49,9 @@ export const VIEWS = [
     maxH: 1.15,
     bearing: 40,
     windowSide: 1, // glazing to the right
+    // further out, over the dining table's side: the light reaches the wall
+    // from the room, not from right above the work
+    wash: { back: 3.4, side: 0.7 },
   },
 ];
 export const viewById = (id) => VIEWS.find((v) => v.id === id) || VIEWS[0];
@@ -302,7 +306,6 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     blackMetal: std({ color: '#1e1d1c', roughness: 0.38, metalness: 0.6 }),
     paperShade: std({ color: '#ffffff', map: lanternMap, roughness: 0.9, side: THREE.DoubleSide, emissive: '#ffcf96', emissiveMap: lanternMap, emissiveIntensity: 0 }),
     lampWhite: std({ color: '#efede8', roughness: 0.35 }),
-    opal: std({ color: '#f4f1ea', roughness: 0.25, emissive: '#ffd6a0', emissiveIntensity: 0 }),
     pendantShade: std({ color: '#f1efea', roughness: 0.3, emissive: '#ffd09a', emissiveIntensity: 0 }),
     bulb: std({ color: '#fff8ea', emissive: '#ffdcae', emissiveIntensity: 0 }),
     planter: std({ color: '#b8b2a7', roughness: 0.88 }),
@@ -463,16 +466,13 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const bx = VIEWS[1].artX;
   const boardW = 1.3;
   place(F.sideboard(mats, { width: boardW }), bx, z1 - 0.225 - 0.03, Math.PI);
-  // The lamp stands between the work and the glass; the vase (no branches:
-  // from the camera's side they would cross a wide work) at the very end
-  // nearest the camera, framing the picture
+  // The vase (no branches: from the camera's side they would cross a wide
+  // work) at the very end nearest the camera, framing the picture. No lamp:
+  // one beside the work outshone it in the evening
   const styling = F.sideboardStyling(mats, boardW, { vaseIn: 0.12, branches: false });
   styling.position.set(bx, 0.72, z1 - 0.24);
   styling.rotation.y = Math.PI;
   furn.add(textured(styling));
-  const lamp = F.tableLamp(mats);
-  place(lamp.group, bx - 0.45, z1 - 0.26);
-  lamp.group.position.y = 0.72;
   const tableX = -1.4;
   const tableZ = 1.7;
   place(F.diningTable(mats), tableX, tableZ);
@@ -527,9 +527,6 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const lanternLight = new THREE.PointLight('#ffd6a6', 0, 9, 2);
   lanternLight.position.copy(lantern.light).add(lantern.group.position);
   scene.add(lanternLight);
-  const lampLight = new THREE.PointLight('#ffcf94', 0, 7, 2);
-  lampLight.position.copy(lamp.light).add(lamp.group.position);
-  scene.add(lampLight);
   const pendLight = new THREE.SpotLight('#ffd4a0', 0, 7, 1.0, 0.8, 2);
   pendLight.position.set(tableX, h - 0.95 - 0.12, tableZ);
   pendLight.target.position.set(tableX, 0, tableZ);
@@ -599,6 +596,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     insets: { top: 0, right: 0, bottom: 0, left: 0 },
     angle: 'vinkel', // vinkel: the photographer's angle | forfra: straight on
     exposureK: 1,
+    wash: 0, // the wall wash's strength for the time of day (placeLights)
     sunBase: new THREE.Vector3(),
     skyDirs: [],
   };
@@ -763,13 +761,12 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     }
     const L = t.lamps;
     lanternLight.intensity = 5 * L;
-    lampLight.intensity = 3.5 * L;
     pendLight.intensity = 14 * L;
     pendGlow.intensity = 1.5 * L;
     // the wash on the work's wall: barely there by day, the room light at night
-    pictureSpot.intensity = 13 * Math.max(L, 0.05);
+    state.wash = 13 * Math.max(L, 0.05);
+    placeLights();
     mats.paperShade.emissiveIntensity = 1.4 * L;
-    mats.opal.emissiveIntensity = 1.2 * L;
     mats.pendantShade.emissiveIntensity = 0.25 * L;
     mats.bulb.emissiveIntensity = 6 * L;
     mats.downlight.emissiveIntensity = 2.5 * L;
@@ -785,9 +782,12 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     const v = state.view;
     const w = state.work;
     const cy = w ? w.centreY : 1.5;
-    pictureSpot.position.set(v.artX, h - 0.02, v.wallZ + v.facing * 2.4);
+    const { back, side } = v.wash;
+    pictureSpot.position.set(v.artX + side, h - 0.02, v.wallZ + v.facing * back);
     pictureSpot.target.position.set(v.artX, cy - 0.05, v.wallZ);
     pictureSpot.target.updateMatrixWorld();
+    // the same light on the wall from further away
+    pictureSpot.intensity = state.wash * (back / 2.4) ** 2;
   }
 
   // per-sample jitter: camera sub-pixel, sun disc, sky dome, spot position
