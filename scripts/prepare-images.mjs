@@ -111,18 +111,6 @@ const works = {
       [198, 1782],
     ],
   },
-  // The board on a tablecloth, tape over the corners; edges found by scanning
-  // for the board against the cloth
-  'sol-og-figur': {
-    file: `${ORIG}/sol-og-figur-lyseroed.jpg`,
-    corners: [
-      [131, 244],
-      [993, 242],
-      [1018, 1134],
-      [117, 1141],
-    ],
-    inset: 0.008,
-  },
   portraet: { file: `${ORIG}/portraet-blaat-haar.jpg` },
   ansigt: { file: `${CANVA}/img12.png`, trim: true },
   figur: { file: `${CANVA}/img13.png`, trim: true },

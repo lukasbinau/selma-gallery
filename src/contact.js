@@ -65,6 +65,7 @@ function build() {
       <div class="kontakt__addr">
         <span>Skriv selv til</span>
         <b class="kontakt__email"></b>
+        <a class="kontakt__copy kontakt__gmail" href="#" target="_blank" rel="noopener">Åbn i Gmail</a>
         <button type="button" class="kontakt__copy" data-copy="email">Kopiér e-mail</button>
         <button type="button" class="kontakt__copy" data-copy="msg">Kopiér besked</button>
       </div>
@@ -72,6 +73,10 @@ function build() {
         <b>Sådan betaler du</b>
         Det her er en lille forretning uden webshop og betalingsløsning. Når du skriver, svarer Selma selv og sender
         dig oplysningerne, så du kan betale med MobilePay.
+      </p>
+      <p class="kontakt__pay">
+        <b>Levering og afhentning</b>
+        Spørg om leverings- og afhentningsmuligheder, når du skriver.
       </p>
       <p class="kontakt__note">Selma læser og svarer selv – som regel inden for et par dage.</p>
     </div>`;
@@ -124,10 +129,11 @@ function compose(work, frame) {
   const ask = hasPris(work.pris)
     ? `Jeg vil gerne købe ${name}. Er det stadig ledigt?`
     : `Jeg er interesseret i at købe ${name}. Er det til salg?`;
+  const delivery = 'Hvilke muligheder er der for levering eller afhentning?';
   const list = lines.length ? lines.map(([k, v]) => `${k}: ${v}`).join('\n') + '\n\n' : '';
   return {
     subject: `Køb af ${work.titel}`,
-    body: `Hej Selma Binau\n\n${ask}\n\n${list}${link}Mange hilsner\n`,
+    body: `Hej Selma Binau\n\n${ask}\n\n${list}${delivery}\n\n${link}Mange hilsner\n`,
   };
 }
 
@@ -162,6 +168,10 @@ function fill(id, frame) {
   el.querySelector('textarea').value = body;
   el.querySelector('.kontakt__mail').href =
     `mailto:${ADDRESS}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  // For when mailto: goes nowhere: no mail app set up, or the page was opened
+  // inside Messenger's or Instagram's own browser, which ignore mailto: links
+  el.querySelector('.kontakt__gmail').href =
+    `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(ADDRESS)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 async function copyText(what) {

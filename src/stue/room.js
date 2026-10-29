@@ -531,8 +531,10 @@ export function createRoom({ canvas, overlay, mobile = false }) {
   const pendGlow = new THREE.PointLight('#ffd4a0', 0, 5, 2);
   pendGlow.position.set(tableX, h - 0.75, tableZ);
   scene.add(pendGlow);
-  // the picture light: a recessed spot aimed at the work
-  const pictureSpot = new THREE.SpotLight('#fff0d8', 0, 8, 0.42, 0.75, 2);
+  // the room light on the work's wall: a wide, soft wash from the ceiling well
+  // out in the room, so the wall is evenly lit rather than spotlit (Selma: a
+  // living room, not a gallery)
+  const pictureSpot = new THREE.SpotLight('#fff0d8', 0, 12, 1.15, 1, 2);
   pictureSpot.castShadow = true;
   pictureSpot.shadow.mapSize.set(Q.shadow / 2, Q.shadow / 2);
   pictureSpot.shadow.bias = -0.0004;
@@ -754,8 +756,8 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     lampLight.intensity = 3.5 * L;
     pendLight.intensity = 14 * L;
     pendGlow.intensity = 1.5 * L;
-    // a recessed spot on the work: dimmed by day, the main accent at night
-    pictureSpot.intensity = 12 * Math.max(L, 0.1);
+    // the wash on the work's wall: barely there by day, the room light at night
+    pictureSpot.intensity = 13 * Math.max(L, 0.05);
     mats.paperShade.emissiveIntensity = 1.4 * L;
     mats.opal.emissiveIntensity = 1.2 * L;
     mats.pendantShade.emissiveIntensity = 0.25 * L;
@@ -773,7 +775,7 @@ export function createRoom({ canvas, overlay, mobile = false }) {
     const v = state.view;
     const w = state.work;
     const cy = w ? w.centreY : 1.5;
-    pictureSpot.position.set(v.artX, h - 0.02, v.wallZ + v.facing * 0.85);
+    pictureSpot.position.set(v.artX, h - 0.02, v.wallZ + v.facing * 2.4);
     pictureSpot.target.position.set(v.artX, cy - 0.05, v.wallZ);
     pictureSpot.target.updateMatrixWorld();
   }

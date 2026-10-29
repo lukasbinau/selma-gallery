@@ -252,7 +252,10 @@
 }
 .stue__lines {
   display: grid;
-  margin-top: 2px;
+  grid-template-columns: minmax(0, auto) auto;
+  justify-content: start;
+  gap: 1px 14px;
+  margin-top: 3px;
   color: var(--s-ink-dim);
   font-size: 11px;
 }
@@ -260,6 +263,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.stue__lines b {
+  justify-self: end;
+  color: var(--s-ink);
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .stue__buy {
   display: flex;

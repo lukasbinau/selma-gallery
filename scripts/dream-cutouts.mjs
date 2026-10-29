@@ -9,7 +9,7 @@
 // Cirkler's circles a disc each. Points are fractions of the photo: x from
 // the left, y from the top.
 import sharp from 'sharp';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const SRC = (id) => `public/art/${id}-1024.jpg`;
 const OUT = 'public/art/dream';
@@ -27,7 +27,9 @@ const isGreen = ([r, g, b]) => {
 };
 
 const CAST = [
-  // Sol og figur: the red figure lying on her front, one leg in the air
+  // Sol og figur: the red figure lying on her front, one leg in the air. The
+  // painting has left the site (to be repainted), so its photo is gone and the
+  // cutout already made is kept as it is (see below)
   { name: 'figur-sol', id: 'sol-og-figur', kind: 'flood', seed: [0.475, 0.656], test: isRed, close: 3, grow: 9 },
   // Vådt hår: the pink figure with one blue eye
   { name: 'vaadt-haar', id: 'figur', kind: 'flood', seed: [0.47, 0.36], test: isPink, close: 4, grow: 7 },
@@ -236,8 +238,14 @@ async function cut(c) {
 }
 
 mkdirSync(OUT, { recursive: true });
+const before = existsSync('src/gallery/dream-cast.json') ? JSON.parse(readFileSync('src/gallery/dream-cast.json', 'utf8')) : {};
 const meta = {};
 for (const c of CAST) {
+  if (!existsSync(SRC(c.id)) && before[c.name]) {
+    meta[c.name] = before[c.name];
+    console.log(c.name.padEnd(12), 'kept (no photo of', c.id + ')');
+    continue;
+  }
   meta[c.name] = await cut(c);
   console.log(c.name.padEnd(12), meta[c.name].w, '×', meta[c.name].h);
 }

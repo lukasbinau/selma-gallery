@@ -75,14 +75,14 @@ const MAT_MAX = 15; // …and at most this much
  *   { frame, size, price, mat: null | { w, h } (opening of the passepartout, cm),
  *     inner: { w, h } (frame opening, cm), label }
  * "Ingen ramme" is always first. `frame.passepartout` means the frame is sold
- * with a white passepartout: it then only fits paper smaller than its opening. Works whose photo already shows the artist's
- * own frame only get "Ingen ramme".
+ * with a white passepartout: it then only fits flat work (paper or board) smaller than its opening. Works whose photo
+ * already shows the artist's own frame, and thick paintings (`tyk`, framed by a framer, no glass), only get "Ingen ramme".
  */
 export function offersFor(work, meta) {
   const size = workSize(work, meta);
   const medium = mediumOf(work);
   const offers = [{ frame: NONE, size: null, price: 0, mat: null, inner: null, label: NONE.name }];
-  if (/egen ramme/i.test(work?.teknik || '')) return offers;
+  if (/egen ramme/i.test(work?.teknik || '') || work?.tyk) return offers;
 
   for (const frame of FRAMES) {
     if (frame.none) continue;
@@ -107,13 +107,13 @@ function bestSize(frame, size, medium, style) {
     const dw = inner.w - size.w;
     const dh = inner.h - size.h;
     let fit = null;
-    // A frame sold with a passepartout only takes paper with a border around it
+    // A frame sold with a passepartout only takes flat work with a border around it
     if (!frame.passepartout && dw >= -0.6 && dh >= -0.6 && dw <= EXACT && dh <= EXACT) {
       fit = { mat: null, score: dw + dh };
     } else if (
       style === 'plakat' &&
       frame.passepartout &&
-      medium === 'paper' &&
+      medium !== 'canvas' &&
       dw >= MAT_MIN * 2 &&
       dh >= MAT_MIN * 2 &&
       dw <= MAT_MAX * 2 &&

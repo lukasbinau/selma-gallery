@@ -20,7 +20,10 @@ export const STRINGS = {
   priceOnRequest: 'Pris efter aftale',
   total: 'I alt',
   painting: 'Maleri',
+  frame: 'Ramme',
   noFrame: 'Uden ramme',
+  // thick paintings: framed by hand at a framer, without glass
+  framer: 'Ramme laves hos en indrammer – spørg Selma',
   estimated: 'Mål ikke oplyst – vist i anslået størrelse',
   withMat: 'med passepartout',
   loading: 'Indretter stuen',

@@ -350,6 +350,10 @@ export async function createStue({ root, works, artMeta = {} }) {
   }
 
   function renderFrames() {
+    // Nothing to choose (the work has its own frame, or no frame fits it): no tab
+    const tab = ui.tabs.find((t) => t.dataset.tab === 'frame');
+    tab.hidden = state.offers.length < 2;
+    if (tab.hidden && state.tab === 'frame') selectTab('work');
     fillRail(
       ui.rails.frame,
       state.offers.map((o) => ({
@@ -410,18 +414,11 @@ export async function createStue({ root, works, artMeta = {} }) {
     const pris = priceOf(w);
     const o = state.offer;
     const sizeText = `${sizeLabel(state.size)}${state.size.estimated ? ' (anslået)' : ''}`;
-    const lines = [];
-    if (w.solgt) {
-      lines.push(`${STRINGS.painting} ${sizeText}`);
-    } else {
-      lines.push(`${STRINGS.painting} ${sizeText} · ${pris ? formatKr(pris) : STRINGS.priceOnRequest.toLowerCase()}`);
-    }
-    if (o && !o.frame.none) {
-      lines.push(`${offerText(o)} · ${formatKr(o.price)}`);
-    } else {
-      lines.push(STRINGS.noFrame);
-    }
-    ui.lines.innerHTML = lines.map((l) => `<span>${esc(l)}</span>`).join('');
+    // A small receipt: what each part costs, in one column of amounts
+    const rows = [[`${STRINGS.painting}, ${sizeText}`, w.solgt ? '' : pris ? formatKr(pris) : STRINGS.priceOnRequest.toLowerCase()]];
+    if (o && !o.frame.none) rows.push([`${STRINGS.frame}: ${shortName(o.label)}, ${sizeLabel(o.inner)}${o.mat ? ` ${STRINGS.withMat}` : ''}`, `+ ${formatKr(o.price)}`]);
+    else rows.push([w.rammetekst || (w.tyk ? STRINGS.framer : STRINGS.noFrame), '']);
+    ui.lines.innerHTML = rows.map(([k, v]) => `<span>${esc(k)}</span><b>${esc(v)}</b>`).join('');
     ui.cta.hidden = !!w.solgt;
     ui.sold.hidden = !w.solgt;
     if (w.solgt) ui.total.textContent = '';

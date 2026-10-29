@@ -511,7 +511,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
     renderer.shadowMap.needsUpdate = true;
   }
 
-  // Sunset and night over the room (sunset.js): 0, 0 is the theme exactly
+  // Dusk and night over the room, for a secret to set: 0, 0 is the theme exactly
   const MOOD = {
     spot: new THREE.Color('#fff4ec'), // the picture spots' own colour
     beam: new THREE.Color('#ffe2bf'),
