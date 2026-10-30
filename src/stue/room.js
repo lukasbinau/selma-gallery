@@ -610,6 +610,7 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
     wall: null,
     work: null, // { group, outer, art, size }
     insets: { top: 0, right: 0, bottom: 0, left: 0 },
+    fitInsets: null, // { top, bottom } the work is sized for, when not the insets (setInsets)
     angle: 'vinkel', // vinkel: the photographer's angle | forfra: straight on
     exposureK: 1,
     wash: 0, // the wall wash's strength for the time of day (placeLights)
@@ -641,6 +642,11 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
     const fyTop = ins.top / H;
     const fyBot = 1 - ins.bottom / H;
     const band = Math.max(0.2, fyBot - fyTop);
+    // the band the work's size is fitted to: the free band, or (panel hidden)
+    // the band it had with the panel, so hiding the panel shows more of the
+    // room around the work instead of a bigger work
+    const fit = state.fitInsets;
+    const fitBand = fit ? Math.max(0.2, 1 - fit.bottom / H - fit.top / H) : band;
     // the free band across: a side panel takes the right of the screen
     const fxL = ins.left / W;
     const fxR = 1 - ins.right / W;
@@ -655,19 +661,28 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
     // screen, where the width is all there is for the painting and the glass.
     // Straight on, a longer lens: the camera can stand back, the work stays flat.
     const halfH = THREE.MathUtils.degToRad(
-      front ? (portrait ? 22 : lerp(22, 26, size)) : portrait ? lerp(31, 34, size) : lerp(28, 33, size),
+      front ? (portrait ? 24 : lerp(22, 26, size)) : portrait ? lerp(30, 33, size) : lerp(28, 33, size),
     );
     const tanH = Math.tan(halfH);
     const tanV = tanH / aspect;
     // How much of the free band the work fills, and at most of the width.
-    // On a tall phone the width is the limit: the work gets about half of it
-    // at the angle (the glass and garden the rest), most of it straight on.
-    const kH = front ? (portrait ? 0.6 : lerp(0.6, 0.68, size)) : portrait ? lerp(0.46, 0.54, size) : lerp(0.56, 0.66, size);
-    const kW = (front ? (portrait ? 0.74 : 0.6) : portrait ? 0.42 : 0.36) * bandW;
+    let kH = front ? lerp(0.6, 0.68, size) : lerp(0.56, 0.66, size);
+    let kW = (front ? 0.6 : 0.36) * bandW;
+    if (portrait) {
+      // On a tall phone the camera stands back for an overview: the picture
+      // shows about 1.9 m of wall straight on (2.3 m at the angle), so the
+      // sofa or the sideboard and the wall around the work come into view.
+      // A small work still gets at least a quarter of the width (straight on,
+      // the view for judging the work, almost a third).
+      const span = front ? 1.9 : 2.3;
+      kW = THREE.MathUtils.clamp(outer.w / span, front ? 0.3 : 0.24, front ? 0.56 : 0.4) * bandW;
+      kH = front ? 0.5 : 0.44;
+    }
     // Where it sits: off centre, away from the glass (centred straight on);
     // a little above the middle of the band, so the furniture under it shows too
     const xp = cx + (front ? 0 : -v.windowSide * (portrait ? 0.3 : 0.26)) * bandW;
-    const fy = fyTop + band * (front ? 0.47 : 0.45);
+    // (with the panel hidden a little higher, so the sofa or sideboard shows whole)
+    const fy = fyTop + band * (fit ? 0.4 : front ? 0.47 : 0.45);
     const eye = THREE.MathUtils.clamp(cy + 0.02, 1.2, 1.45);
     // a phone's narrow picture turns a little more towards the wall
     const b = front ? 0 : THREE.MathUtils.degToRad(portrait ? v.bearing - 8 : v.bearing);
@@ -711,7 +726,7 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
       // share of the screen it fills now; size scales as 1/d
       const fh = (w1 - w0) / (2 * tanV);
       const fw = (u1 - u0) / (2 * tanH);
-      const r = Math.max(fh / (kH * band), fw / kW);
+      const r = Math.max(fh / (kH * fitBand), fw / kW);
       const next = THREE.MathUtils.clamp(d * r, front ? 0.5 : 0.65, dMax);
       if (Math.abs(next - d) < 1e-3) break;
       d = next;
@@ -843,6 +858,11 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
   function frameMaterial(frame) {
     if (!frame || frame.none) return mats.frame;
     const finish = frame.finish || 'matt';
+    if (/^metal/.test(finish)) {
+      // aluminium: no grain, reflects the room (metal-mat: powder-coated, duller)
+      const satin = finish === 'metal-mat';
+      return std({ color: frame.colour || '#b0b0b0', roughness: satin ? 0.45 : 0.24, metalness: satin ? 0.55 : 1, envMapIntensity: satin ? 1 : 1.4 });
+    }
     const wood = /eg|olie/.test(finish);
     const m = std({
       color: frame.colour || '#222222',
@@ -1016,6 +1036,27 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
       camTween = null;
       return true;
     });
+  }
+
+  // Glide from wherever the camera is (even mid-move) to the view at rest for
+  // the current room, angle and insets
+  async function glideCamera(ms) {
+    stopCamera();
+    const from = { ...cam, pos: cam.pos.clone() };
+    const to = cameraFor(state.view);
+    // shortest way round for the yaw
+    let dy = to.yaw - from.yaw;
+    dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    const ran = await cameraTween(ms, (k) => {
+      cam.pos.lerpVectors(from.pos, to.pos, k);
+      cam.yaw = from.yaw + dy * k;
+      cam.tanV = THREE.MathUtils.lerp(from.tanV, to.tanV, k);
+      cam.sy = THREE.MathUtils.lerp(from.sy, to.sy, k);
+      applyCamera();
+    });
+    if (!ran) return; // a newer move took over
+    Object.assign(cam, to);
+    applyCamera();
   }
 
   function tick() {
@@ -1284,22 +1325,7 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
         invalidate();
         return;
       }
-      stopCamera(); // glide on from wherever the last move had got to
-      const from = { ...cam, pos: cam.pos.clone() };
-      const to = cameraFor(state.view);
-      // shortest way round for the yaw
-      let dy = to.yaw - from.yaw;
-      dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-      const ran = await cameraTween(650, (k) => {
-        cam.pos.lerpVectors(from.pos, to.pos, k);
-        cam.yaw = from.yaw + dy * k;
-        cam.tanV = THREE.MathUtils.lerp(from.tanV, to.tanV, k);
-        cam.sy = THREE.MathUtils.lerp(from.sy, to.sy, k);
-        applyCamera();
-      });
-      if (!ran) return; // a newer move took over
-      Object.assign(cam, to);
-      applyCamera();
+      await glideCamera(650);
     },
     setViewInstant(id) {
       state.view = viewById(id);
@@ -1307,10 +1333,27 @@ export async function createRoom({ canvas, overlay, mobile = false }) {
       snapCamera();
       invalidate();
     },
-    setInsets(ins) {
-      state.insets = { ...state.insets, ...ins };
-      snapCamera();
-      invalidate();
+    /**
+     * The screen edges the room keeps free; `animate` glides the camera there.
+     * `fit` ({ top, bottom }) sizes the work as if those were the insets: with
+     * the panel hidden the work keeps its size and the freed screen shows more
+     * of the room.
+     */
+    async setInsets(ins, { animate = false, fit = null } = {}) {
+      const next = { ...state.insets, ...ins };
+      const prevFit = state.fitInsets;
+      const same =
+        ['top', 'right', 'bottom', 'left'].every((k) => Math.abs(next[k] - state.insets[k]) < 0.5) &&
+        (fit ? !!prevFit && Math.abs(fit.top - prevFit.top) < 0.5 && Math.abs(fit.bottom - prevFit.bottom) < 0.5 : !prevFit);
+      state.insets = next;
+      state.fitInsets = fit ? { top: fit.top, bottom: fit.bottom } : null;
+      if (!animate || same) {
+        // nothing moved: leave a glide that is under way alone
+        if (!same || !camTween) snapCamera();
+        invalidate();
+        return;
+      }
+      await glideCamera(600);
     },
     positionWork,
     change,

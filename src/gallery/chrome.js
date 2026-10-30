@@ -3,6 +3,7 @@
 // in gallery.js; this file only knows about the DOM.
 import { settings, setSetting } from '../store.js';
 import { hasPris, formatPris } from '../pris.js';
+import { skiltFor } from './skilt.js';
 
 export const STRINGS = {
   back: '← FORSIDE',
@@ -17,7 +18,7 @@ export const STRINGS = {
   stueLabel: (titel) => `Se “${titel}” i din stue`,
   sold: 'Solgt',
   imageFailed: 'Et billede kunne ikke hentes',
-  announce: (titel, n, total) => `Galleri: ${titel}, ${n} af ${total}`,
+  announce: (titel, n, total) => `Webgalleri: ${titel}, ${n} af ${total}`,
 };
 
 // Settings keys and values stay as before (localStorage 'selma:settings'), only the labels are Danish
@@ -59,7 +60,7 @@ export function buildChrome(root, { total }) {
   // The room is a modal layer over the page while it is shown
   root.setAttribute('role', 'dialog');
   root.setAttribute('aria-modal', 'true');
-  root.setAttribute('aria-label', 'Galleri');
+  root.setAttribute('aria-label', 'Webgalleri');
   if (!root.hasAttribute('tabindex')) root.tabIndex = -1;
   root.dataset.theme = settings.theme;
   root.dataset.fx = settings.fx === 'off' ? 'off' : 'on';
@@ -182,11 +183,20 @@ function createToast(el) {
 // One <article> per work: TITEL, "ÅR · TEKNIK · MÅL" (filled fields only), the
 // OM text, the price, then a KØB OG KONTAKT button (emits 'contact') or a red
 // dot + SOLGT, and mirrored at the right edge I DIN STUE (emits 'stue').
+// Colours come from skilt.js (vaerker.json "skilt"), as CSS variables.
 export function createPlaques(works) {
   return works.map((w) => {
     const el = document.createElement('article');
     el.className = 'galleri-plaque';
     el.setAttribute('aria-label', w.titel ?? '');
+    // its colours: one flat bund, letters from the painting, two different keys
+    const sk = skiltFor(w);
+    el.style.setProperty('--bund', sk.bund);
+    el.style.setProperty('--letter', sk.tekst);
+    sk.keys.forEach((k, i) => {
+      el.style.setProperty(`--key${i + 1}`, k.bg);
+      el.style.setProperty(`--key${i + 1}-ink`, k.ink);
+    });
     const meta = [w.aar, w.teknik, w.maal].filter(filled).map((v) => esc(String(v).trim())).join(' · ');
     const buy = w.solgt
       ? `<span class="galleri-plaque__sold">${STRINGS.sold}</span>`

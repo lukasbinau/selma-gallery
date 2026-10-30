@@ -34,7 +34,7 @@ Gulv, træ, stoffer, puds og tapeter i "I din stue" tegnes af kode i `src/stue/t
 
 ## Rammer i "I din stue"
 
-Rammerne, kunden kan vælge, står i `src/stue/frames.json` (kun kundepriser, aldrig indkøbspriser: filen ligger offentligt). Et værk får kun de rammer at se, der findes i en størrelse, som passer til værkets `maal`. Kilder og licenser for stuen: `src/stue/CREDITS.md`.
+Rammerne, kunden kan vælge, står i `src/stue/frames.json` (kun kundepriser, aldrig indkøbspriser: filen ligger offentligt). Et værk får kun de rammer at se, der findes i en størrelse, som passer til værkets `maal`, eller som kan laves på mål (feltet `specialmaal`: grundpris plus pris pr. meter omkreds). Mindst én egetræsramme kan altid laves på mål, så alle værker med rammevalg kan få en. Rækkefølgen i filen er rækkefølgen på rammevælgeren. Priserne er anslåede (opdateret 2026-10-30), og den endelige liste over rammer kommer fra Selma. Kilder og licenser for stuen: `src/stue/CREDITS.md`.
 
 ## Rejsen bag Lille stjernes dør
 

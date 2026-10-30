@@ -387,6 +387,102 @@
   display: none;
 }
 
+/* Skjul / Vis valg: wide screens put the card away to see the whole room.
+   "Skjul" sits in the card's top right corner, "Vis valg" at the bottom
+   centre while the card is away (stue.js sets #stue.is-panel-hidden). */
+#stue .stue__hide {
+  display: none;
+}
+#stue .stue__show {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 2;
+  transform: translateX(-50%);
+  box-shadow: 0 8px 26px rgba(20, 10, 40, 0.24);
+  animation: stue-show-in 0.35s var(--s-ease) both;
+}
+#stue .stue__hide,
+#stue .stue__show {
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 14px 0 12px;
+  border-radius: 999px;
+  background: var(--s-paper);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--s-ink);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+#stue .stue__show {
+  display: inline-flex;
+}
+#stue .stue__hide svg,
+#stue .stue__show svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+#stue .stue__hide:hover {
+  background: rgba(35, 10, 102, 0.06);
+}
+#stue .stue__show:hover svg {
+  transform: translateY(-2px);
+}
+@keyframes stue-show-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+}
+@media (min-width: 900px) {
+  #stue:not(.is-side) .stue__hide {
+    display: inline-flex;
+    position: absolute;
+    top: 18px;
+    right: 16px;
+    z-index: 1;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    color: var(--s-ink-dim);
+  }
+  #stue:not(.is-side) .stue__hide:hover {
+    color: var(--s-ink);
+  }
+  #stue .stue__panel {
+    transition:
+      transform 0.45s var(--s-ease),
+      opacity 0.3s ease,
+      visibility 0s;
+  }
+  #stue.is-panel-hidden:not(.is-side) .stue__panel {
+    transform: translate(-50%, calc(100% + 40px));
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      transform 0.45s var(--s-ease),
+      opacity 0.3s ease 0.1s,
+      visibility 0s 0.45s;
+  }
+}
+@media (max-width: 899px) {
+  #stue .stue__show {
+    display: none;
+  }
+}
+#stue.is-side .stue__show {
+  display: none;
+}
+
 /* rails: smooth horizontal scroll-snap strips */
 .stue__rails {
   position: relative;
@@ -407,6 +503,21 @@
 }
 .stue__rail::-webkit-scrollbar {
   display: none;
+}
+/* with a mouse, a long rail (the frames) shows a slim scrollbar to drag */
+@media (hover: hover) and (pointer: fine) {
+  .stue__rail {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(35, 10, 102, 0.28) transparent;
+  }
+  .stue__rail::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+  .stue__rail::-webkit-scrollbar-thumb {
+    border-radius: 6px;
+    background: rgba(35, 10, 102, 0.28);
+  }
 }
 .stue__rail[hidden] {
   display: none;
@@ -509,6 +620,17 @@
 }
 .stue__fp--none {
   border: 0;
+}
+/* metal: a lit edge; wood: a hint of grain; a floater: the dark gap around the work */
+.stue__fp--metal {
+  border-image: linear-gradient(135deg, color-mix(in srgb, var(--fc), #fff 45%), var(--fc) 45%, color-mix(in srgb, var(--fc), #000 35%)) 1;
+}
+.stue__fp--wood {
+  border-image: repeating-linear-gradient(115deg, var(--fc) 0 3px, color-mix(in srgb, var(--fc), #000 14%) 3px 4px, var(--fc) 4px 7px) 1;
+}
+.stue__fp--float {
+  padding: 2px;
+  background: #1a1716;
 }
 .stue__sw {
   width: 100%;

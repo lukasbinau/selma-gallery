@@ -345,7 +345,8 @@ export async function createStue({ root, works, artMeta = {} }) {
   // ---------------------------------------------------------------- UI
   const thumb = (id) => artUrl(id, 640);
   // "Sort ramme, 30 × 40 cm med passepartout" – unless the name already says so
-  const offerText = (o) => `${o.label}, ${sizeLabel(o.inner)}${o.mat && !/passepartout/i.test(o.label) ? ` ${STRINGS.withMat}` : ''}`;
+  const offerText = (o) =>
+    `${o.label}, ${sizeLabel(o.inner)}${o.mat && !/passepartout/i.test(o.label) ? ` ${STRINGS.withMat}` : ''}${o.custom ? `, ${STRINGS.madeToMeasure}` : ''}`;
   // "Sort blanklakeret træramme, smal 13 mm" → "Sort blanklakeret træramme" in the rail
   const shortName = (name) => String(name).split(',')[0];
   function frameVisual(offer) {
@@ -353,8 +354,13 @@ export async function createStue({ root, works, artMeta = {} }) {
     const img = `<img src="${thumb(state.id)}" alt="" loading="lazy" decoding="async">`;
     if (f.none) return `<span class="stue__fp stue__fp--none">${img}</span>`;
     const px = Math.max(2, Math.round((f.profileWidthMm || 13) / 4));
-    const mat = offer.mat ? ' stue__fp--mat' : '';
-    return `<span class="stue__fp${mat}" style="--fc:${esc(f.colour || '#222')};--fw:${px}px">${img}</span>`;
+    const kind = [
+      offer.mat ? 'stue__fp--mat' : '',
+      f.style === 'svaever' ? 'stue__fp--float' : '',
+      /^metal/.test(f.finish || '') ? 'stue__fp--metal' : '',
+      /eg|olie/.test(f.finish || '') ? 'stue__fp--wood' : '',
+    ].filter(Boolean);
+    return `<span class="stue__fp ${kind.join(' ')}" style="--fc:${esc(f.colour || '#222')};--fw:${px}px">${img}</span>`;
   }
 
   function renderWorks() {
@@ -380,7 +386,7 @@ export async function createStue({ root, works, artMeta = {} }) {
       state.offers.map((o) => ({
         id: o.frame.id,
         label: o.frame.none ? STRINGS.noFrame : shortName(o.label),
-        sub: o.frame.none ? '' : `${sizeLabel(o.inner)}${o.mat ? ' + pp.' : ''} · ${formatKr(o.price)}`,
+        sub: o.frame.none ? '' : `${o.custom ? 'På mål' : sizeLabel(o.inner)}${o.mat ? ' + pp.' : ''} · ${formatKr(o.price)}`,
         aria: o.frame.none
           ? STRINGS.noFrame
           : `${offerText(o)}, ${formatKr(o.price)}`,
@@ -437,7 +443,7 @@ export async function createStue({ root, works, artMeta = {} }) {
     const sizeText = `${sizeLabel(state.size)}${state.size.estimated ? ' (anslået)' : ''}`;
     // A small receipt: what each part costs, in one column of amounts
     const rows = [[`${STRINGS.painting}, ${sizeText}`, w.solgt ? '' : pris ? formatKr(pris) : STRINGS.priceOnRequest.toLowerCase()]];
-    if (o && !o.frame.none) rows.push([`${STRINGS.frame}: ${shortName(o.label)}, ${sizeLabel(o.inner)}${o.mat ? ` ${STRINGS.withMat}` : ''}`, `+ ${formatKr(o.price)}`]);
+    if (o && !o.frame.none) rows.push([`${STRINGS.frame}: ${shortName(o.label)}, ${sizeLabel(o.inner)}${o.mat ? ` ${STRINGS.withMat}` : ''}${o.custom ? `, ${STRINGS.madeToMeasure}` : ''}`, `+ ${formatKr(o.price)}`]);
     else rows.push([w.rammetekst || (w.tyk ? STRINGS.framer : STRINGS.noFrame), '']);
     ui.lines.innerHTML = rows.map(([k, v]) => `<span>${esc(k)}</span><b>${esc(v)}</b>`).join('');
     ui.cta.hidden = !!w.solgt;
@@ -520,7 +526,33 @@ export async function createStue({ root, works, artMeta = {} }) {
   // ---- a short landscape screen (a phone on its side) gets the panel at the
   // side: along the bottom it would hide the room
   const shortSide = matchMedia('(max-height: 500px) and (orientation: landscape)');
-  const placePanel = () => root.classList.toggle('is-side', shortSide.matches);
+  const placePanel = () => {
+    root.classList.toggle('is-side', shortSide.matches);
+    // only the floating card of a wide screen can be put away
+    if (state.panelHidden && !canHide()) setPanelHidden(false, { animate: false });
+  };
+
+  // ---- wide screens: the card can be put away (Skjul) to see the whole room
+  // and judge the work's size against the furniture; "Vis valg" brings it back.
+  // The work keeps its size; the camera glides to use the freed screen.
+  const wide = matchMedia('(min-width: 900px)');
+  const canHide = () => wide.matches && !shortSide.matches;
+  state.panelHidden = false;
+  function setPanelHidden(hidden, { animate = true, focus = false } = {}) {
+    if (hidden && !canHide()) hidden = false;
+    if (hidden === state.panelHidden) return;
+    state.panelHidden = hidden;
+    root.classList.toggle('is-panel-hidden', hidden);
+    ui.panel.inert = hidden;
+    ui.hide.setAttribute('aria-expanded', String(!hidden));
+    ui.show.hidden = !hidden;
+    if (focus) (hidden ? ui.show : ui.hide).focus({ preventScroll: true });
+    if (!root.hidden) measure({ animate });
+    announce(hidden ? STRINGS.panelHidden : STRINGS.panelShown);
+  }
+  ui.hide.addEventListener('click', () => setPanelHidden(true, { focus: true }));
+  ui.show.addEventListener('click', () => setPanelHidden(false, { focus: true }));
+  wide.addEventListener?.('change', placePanel);
   placePanel();
   shortSide.addEventListener?.('change', placePanel);
   ui.tabs[0].parentElement.addEventListener('keydown', (e) => {
@@ -636,14 +668,27 @@ export async function createStue({ root, works, artMeta = {} }) {
 
   // ---------------------------------------------------------------- layout
   // The room's framing leaves the top bar and the panel free
-  function measure() {
+  function measure({ animate = false } = {}) {
     const r = root.getBoundingClientRect();
     const w = r.width || innerWidth;
     const h = r.height || innerHeight;
     const panel = ui.panel.getBoundingClientRect();
     const top = ui.top.getBoundingClientRect();
+    if (state.panelHidden && !root.hidden) {
+      // the card is put away: the room takes the screen below the top bar,
+      // the work keeps the size it had with the card (fit)
+      const insetTop = top.bottom - r.top;
+      const fit = state.openFit || { top: insetTop, bottom: Math.min(300, h * 0.36) };
+      room.setInsets({ top: insetTop, bottom: 0, left: 0, right: 0 }, { animate, fit });
+      root.style.setProperty('--band-bottom', `${Math.round(h)}px`);
+      root.style.setProperty('--band-right', '0px');
+      return { w, h };
+    }
     const visible = !root.hidden && panel.height > 0;
-    let bottom = visible ? Math.max(0, r.bottom - panel.top) : Math.min(300, h * 0.36);
+    // the panel's place in the layout, not where a transition has got it to
+    // (it slides back in after "Vis valg")
+    const panelTop = r.top + ui.panel.offsetTop;
+    let bottom = visible ? Math.max(0, r.bottom - panelTop) : Math.min(300, h * 0.36);
     let right = 0;
     // a side panel takes width, not height
     if (visible && panel.left > r.left + w / 2) {
@@ -654,7 +699,8 @@ export async function createStue({ root, works, artMeta = {} }) {
     if (visible && !state.sheetOpen && state.openBottom) bottom = state.openBottom;
     else if (visible) state.openBottom = bottom;
     const insetTop = visible ? top.bottom - r.top : 56;
-    room.setInsets({ top: insetTop, bottom, left: 0, right });
+    if (visible) state.openFit = { top: insetTop, bottom };
+    room.setInsets({ top: insetTop, bottom, left: 0, right }, { animate });
     // the angle button sits in a bottom corner of the free band, clear of the work
     root.style.setProperty('--band-bottom', `${Math.round(h - (right ? 18 : bottom))}px`);
     root.style.setProperty('--band-right', `${Math.round(right)}px`);

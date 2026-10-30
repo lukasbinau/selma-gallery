@@ -1,7 +1,571 @@
 {
-  "_hjaelp": "ANSLÅEDE PRISER – kundepriser beregnet ud fra leverandørernes listepriser, ikke endelige tilbud. Denne fil er det offentlige rammekatalog til hjemmesiden og må kun indeholde kundepriser (aldrig indkøbspriser). Hver ramme har et id (små bogstaver og bindestreger, må ikke ændres når siden bruger det), et dansk navn, leverandør, materiale, farve som hex-kode (anslået ud fra produktfotos, kan justeres), finish, profilbredde og -dybde i mm, og om rammen leveres med passepartout. Under sizes står rammens indvendige mål i cm (bredde x højde), kundeprisen i hele kroner inkl. moms og om størrelsen kan bestilles; sæt available til false for midlertidigt at skjule en størrelse, og slet linjen helt hvis den udgår. Mål der ikke er standard (fx 21x30, 43x51 og 66x53) er specialmål som leverandøren laver på bestilling. Ret feltet opdateret til dagens dato, når du ændrer priser. Valgfrie felter: style ('svaever' = svæveramme om lærred/plade, vises ikke for papirværker). En ramme vises kun ved et værk, hvis den findes i en størrelse, der passer til værkets mål (eller, med passepartout, til et papirværk med en kant omkring). 'Ingen ramme' tilføjes altid af siden selv; den kan omdøbes ved at tilføje {\"id\": \"ingen\", \"name\": \"…\", \"none\": true}.",
-  "opdateret": "2026-10-25",
+  "_hjaelp": "ANSLÅEDE PRISER – kundepriser beregnet ud fra leverandørernes listepriser, ikke endelige tilbud. Denne fil er det offentlige rammekatalog til hjemmesiden og må kun indeholde kundepriser (aldrig indkøbspriser). Hver ramme har et id (små bogstaver og bindestreger, må ikke ændres når siden bruger det), et dansk navn (teksten før første komma vises på rammevælgeren, så hold den kort), leverandør, materiale, farve som hex-kode (anslået ud fra produktfotos, kan justeres), finish ('natur-eg' og 'olie' = træ med synlig åre, 'matt', 'satin' og 'blank' = malet/lakeret, 'metal' = blank metal, 'metal-mat' = mat metal), profilbredde og -dybde i mm, og om rammen leveres med passepartout. Under sizes står rammens indvendige mål i cm (bredde x højde), kundeprisen i hele kroner inkl. moms og om størrelsen kan bestilles; sæt available til false for midlertidigt at skjule en størrelse, og slet linjen helt hvis den udgår. Mål der ikke er standard (fx 21x30, 43x51 og 66x53) er specialmål som leverandøren laver på bestilling. Valgfrit felt specialmaal: rammen laves på mål, når ingen af størrelserne passer – minCm/maxCm er den korteste og længste side, prisen er grundprisDkk + prisPrMeterDkk gange rammens indvendige omkreds i meter (rundet op til en pris der ender på 45 eller 95), og passepartoutKantCm er passepartoutets kant på hver side for rammer med passepartout. Ret feltet opdateret til dagens dato, når du ændrer priser. Valgfrie felter: style ('svaever' = svæveramme om lærred/plade, vises ikke for papirværker). En ramme vises kun ved et værk, hvis den findes i en størrelse, der passer til værkets mål (eller, med passepartout, til et papirværk med en kant omkring), eller kan laves på mål. Mindst én egetræsramme bør altid kunne laves på mål, så alle værker med rammevalg kan få en. Rækkefølgen her er rækkefølgen på rammevælgeren. 'Ingen ramme' tilføjes altid af siden selv; den kan omdøbes ved at tilføje {\"id\": \"ingen\", \"name\": \"…\", \"none\": true}.",
+  "opdateret": "2026-10-30",
   "frames": [
+    {
+      "id": "kraess-massiv-eg-15mm",
+      "name": "Massiv egetræsramme, 15 mm",
+      "supplier": "kraess",
+      "material": "massivt egetræ",
+      "colour": "#C8A271",
+      "finish": "natur-eg",
+      "profileWidthMm": 15,
+      "profileDepthMm": 15,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 43,
+          "innerHcm": 51,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 66,
+          "innerHcm": 53,
+          "priceDkk": 595,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 95,
+        "prisPrMeterDkk": 220
+      }
+    },
+    {
+      "id": "kraess-massiv-eg-15mm-passepartout",
+      "name": "Massiv egetræsramme, 15 mm, med hvidt passepartout",
+      "supplier": "kraess",
+      "material": "massivt egetræ",
+      "colour": "#C8A271",
+      "finish": "natur-eg",
+      "profileWidthMm": 15,
+      "profileDepthMm": 15,
+      "passepartout": true,
+      "sizes": [
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 595,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 145,
+        "prisPrMeterDkk": 230,
+        "passepartoutKantCm": 5
+      }
+    },
+    {
+      "id": "kraess-massiv-eg-30mm",
+      "name": "Bred egetræsramme, 30 mm",
+      "supplier": "kraess",
+      "material": "massivt egetræ",
+      "colour": "#C49A68",
+      "finish": "natur-eg",
+      "profileWidthMm": 30,
+      "profileDepthMm": 24,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 495,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 595,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 645,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 745,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 165,
+        "prisPrMeterDkk": 290
+      }
+    },
+    {
+      "id": "kraess-massiv-eg-30mm-passepartout",
+      "name": "Bred egetræsramme, 30 mm, med hvidt passepartout",
+      "supplier": "kraess",
+      "material": "massivt egetræ",
+      "colour": "#C49A68",
+      "finish": "natur-eg",
+      "profileWidthMm": 30,
+      "profileDepthMm": 24,
+      "passepartout": true,
+      "sizes": [
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 645,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 795,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 215,
+        "prisPrMeterDkk": 300,
+        "passepartoutKantCm": 7
+      }
+    },
+    {
+      "id": "kraess-svaever-eg-35mm",
+      "name": "Svæveramme i egetræ, 35 mm dyb",
+      "supplier": "kraess",
+      "material": "massivt egetræ",
+      "colour": "#C8A271",
+      "finish": "natur-eg",
+      "style": "svaever",
+      "profileWidthMm": 12,
+      "profileDepthMm": 35,
+      "passepartout": false,
+      "sizes": [],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 345,
+        "prisPrMeterDkk": 340
+      }
+    },
+    {
+      "id": "kraess-hvid-trae-20mm",
+      "name": "Hvidmalet træramme, 20 mm",
+      "supplier": "kraess",
+      "material": "træ, hvidmalet",
+      "colour": "#F2F0EA",
+      "finish": "matt",
+      "profileWidthMm": 20,
+      "profileDepthMm": 20,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 275,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 325,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 375,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 425,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 495,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 85,
+        "prisPrMeterDkk": 200
+      }
+    },
+    {
+      "id": "kraess-hvid-trae-20mm-passepartout",
+      "name": "Hvidmalet træramme, 20 mm, med hvidt passepartout",
+      "supplier": "kraess",
+      "material": "træ, hvidmalet",
+      "colour": "#F2F0EA",
+      "finish": "matt",
+      "profileWidthMm": 20,
+      "profileDepthMm": 20,
+      "passepartout": true,
+      "sizes": [
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 375,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 425,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 135,
+        "prisPrMeterDkk": 210,
+        "passepartoutKantCm": 5
+      }
+    },
+    {
+      "id": "kraess-sort-trae-20mm",
+      "name": "Sort mat træramme, 20 mm",
+      "supplier": "kraess",
+      "material": "træ, sortbejdset",
+      "colour": "#1C1B1A",
+      "finish": "matt",
+      "profileWidthMm": 20,
+      "profileDepthMm": 20,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 275,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 325,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 375,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 425,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 495,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 85,
+        "prisPrMeterDkk": 200
+      }
+    },
+    {
+      "id": "kraess-sort-trae-20mm-passepartout",
+      "name": "Sort mat træramme, 20 mm, med hvidt passepartout",
+      "supplier": "kraess",
+      "material": "træ, sortbejdset",
+      "colour": "#1C1B1A",
+      "finish": "matt",
+      "profileWidthMm": 20,
+      "profileDepthMm": 20,
+      "passepartout": true,
+      "sizes": [
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 375,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 425,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 545,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 135,
+        "prisPrMeterDkk": 210,
+        "passepartoutKantCm": 5
+      }
+    },
+    {
+      "id": "kraess-valnoed-20mm",
+      "name": "Valnøddetræsramme, 20 mm",
+      "supplier": "kraess",
+      "material": "massivt valnøddetræ, olieret",
+      "colour": "#80573B",
+      "finish": "olie",
+      "profileWidthMm": 20,
+      "profileDepthMm": 20,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 395,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 445,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 545,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 595,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 695,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 145,
+        "prisPrMeterDkk": 260
+      }
+    },
+    {
+      "id": "plakatkunst-messing-metal-10mm",
+      "name": "Messingfarvet metalramme, smal 10 mm",
+      "supplier": "plakatkunst",
+      "material": "aluminium, børstet messingfarve",
+      "colour": "#B89650",
+      "finish": "metal",
+      "profileWidthMm": 10,
+      "profileDepthMm": 20,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 245,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 295,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 375,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 445,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 75,
+        "prisPrMeterDkk": 180
+      }
+    },
+    {
+      "id": "plakatkunst-sort-metal-10mm",
+      "name": "Sort metalramme, smal 10 mm",
+      "supplier": "plakatkunst",
+      "material": "aluminium, sort mat",
+      "colour": "#232323",
+      "finish": "metal-mat",
+      "profileWidthMm": 10,
+      "profileDepthMm": 20,
+      "passepartout": false,
+      "sizes": [
+        {
+          "innerWcm": 21,
+          "innerHcm": 29.7,
+          "priceDkk": 225,
+          "available": true
+        },
+        {
+          "innerWcm": 30,
+          "innerHcm": 40,
+          "priceDkk": 275,
+          "available": true
+        },
+        {
+          "innerWcm": 40,
+          "innerHcm": 50,
+          "priceDkk": 325,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 50,
+          "priceDkk": 345,
+          "available": true
+        },
+        {
+          "innerWcm": 50,
+          "innerHcm": 70,
+          "priceDkk": 425,
+          "available": true
+        }
+      ],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 65,
+        "prisPrMeterDkk": 170
+      }
+    },
+    {
+      "id": "kraess-svaever-sort-35mm",
+      "name": "Sort svæveramme, 35 mm dyb",
+      "supplier": "kraess",
+      "material": "træ, sortbejdset",
+      "colour": "#1B1A19",
+      "finish": "matt",
+      "style": "svaever",
+      "profileWidthMm": 10,
+      "profileDepthMm": 35,
+      "passepartout": false,
+      "sizes": [],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 295,
+        "prisPrMeterDkk": 300
+      }
+    },
+    {
+      "id": "kraess-svaever-hvid-35mm",
+      "name": "Hvid svæveramme, 35 mm dyb",
+      "supplier": "kraess",
+      "material": "træ, hvidmalet",
+      "colour": "#F2F0EA",
+      "finish": "matt",
+      "style": "svaever",
+      "profileWidthMm": 10,
+      "profileDepthMm": 35,
+      "passepartout": false,
+      "sizes": [],
+      "specialmaal": {
+        "minCm": 13,
+        "maxCm": 120,
+        "grundprisDkk": 295,
+        "prisPrMeterDkk": 300
+      }
+    },
     {
       "id": "plakatkunst-orange-blank-13mm",
       "name": "Orange blanklakeret træramme, smal 13 mm",
@@ -547,68 +1111,6 @@
           "innerWcm": 66,
           "innerHcm": 53,
           "priceDkk": 595,
-          "available": true
-        }
-      ]
-    },
-    {
-      "id": "kraess-massiv-eg-15mm",
-      "name": "Massiv egetræsramme, 15 mm",
-      "supplier": "kraess",
-      "material": "massivt egetræ",
-      "colour": "#C8A271",
-      "finish": "natur-eg",
-      "profileWidthMm": 15,
-      "profileDepthMm": 15,
-      "passepartout": false,
-      "sizes": [
-        {
-          "innerWcm": 21,
-          "innerHcm": 29.7,
-          "priceDkk": 295,
-          "available": true
-        },
-        {
-          "innerWcm": 30,
-          "innerHcm": 40,
-          "priceDkk": 345,
-          "available": true
-        },
-        {
-          "innerWcm": 40,
-          "innerHcm": 50,
-          "priceDkk": 395,
-          "available": true
-        },
-        {
-          "innerWcm": 50,
-          "innerHcm": 50,
-          "priceDkk": 445,
-          "available": true
-        },
-        {
-          "innerWcm": 50,
-          "innerHcm": 70,
-          "priceDkk": 545,
-          "available": true
-        }
-      ]
-    },
-    {
-      "id": "kraess-massiv-eg-15mm-passepartout",
-      "name": "Massiv egetræsramme, 15 mm, med hvidt passepartout",
-      "supplier": "kraess",
-      "material": "massivt egetræ",
-      "colour": "#C8A271",
-      "finish": "natur-eg",
-      "profileWidthMm": 15,
-      "profileDepthMm": 15,
-      "passepartout": true,
-      "sizes": [
-        {
-          "innerWcm": 30,
-          "innerHcm": 40,
-          "priceDkk": 395,
           "available": true
         }
       ]

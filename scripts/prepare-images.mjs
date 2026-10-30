@@ -54,6 +54,7 @@ async function writeFormats(img, base, q) {
 //   trim:    the Canva cutouts have transparent surroundings; trim them, then inset a little
 //   turn:    rotate the result (degrees)
 const works = {
+  fuglene: { file: `${ORIG}/fuglene.jpg` }, // Selmas foto, taget lige forfra
   'orange-mand': { file: `${ORIG}/8cac5728-749c-484a-9fb0-06f8b1b3c64c.jpg` },
   'lille-stjerne': {
     file: `${ORIG}/b788a75c-feed-4c97-8d28-927b8ceffcbb.jpg`,

@@ -200,7 +200,7 @@ html[data-view='galleri'] body {
    with overflow hidden shows exactly the tiles that fit, spread evenly, and
    never a cut one. */
 .strip {
-  --tile-inset: 0.135; /* side padding as a share of the strip: the tiles are 73 % wide */
+  --tile-inset: 0.2; /* side padding as a share of the strip: the tiles are 60 % wide, the same in every section */
   position: absolute;
   top: 0;
   bottom: 0;
@@ -216,9 +216,6 @@ html[data-view='galleri'] body {
   padding: calc(var(--strip) * 0.33) calc(var(--strip) * var(--tile-inset));
   overflow: hidden;
   pointer-events: none;
-}
-.vaerker .strip {
-  --tile-inset: 0.2; /* the suns sit a little smaller: 60 % of the strip */
 }
 .tile {
   flex: none;
@@ -1001,16 +998,16 @@ picture {
   .bar__nav {
     display: contents;
   }
-  /* the whole top row, less GALLERI's place at its right end */
+  /* the whole top row, less WEBGALLERI's place at its right end */
   .bar__brand {
     grid-column: 1 / -1;
     grid-row: 1;
     justify-self: start;
     align-self: center;
-    width: calc(100% - 110px);
+    width: calc(100% - 140px);
   }
   .bar__pill {
-    grid-column: 3 / 5;
+    grid-column: 1 / -1;
     grid-row: 1;
     justify-self: end;
   }

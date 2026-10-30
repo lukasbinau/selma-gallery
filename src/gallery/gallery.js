@@ -20,6 +20,7 @@ import '@fontsource/space-mono/700.css';
 import './gallery.css';
 import { settings } from '../store.js';
 import { buildChrome, createPlaques, measurePlaques, pad, STRINGS } from './chrome.js';
+import { skiltFor } from './skilt.js';
 import { artFormat, artUrl } from '../art-format.js';
 import { SECRETS } from './secrets.js';
 
@@ -42,7 +43,7 @@ const PLAQUE_W = 1.05; // metres
 const PLAQUE_PX = 315; // CSS width of the plaque's face
 const PLAQUE_SCALE = PLAQUE_W / PLAQUE_PX;
 const PLAQUE_GAP = 0.13; // between frame bottom and plaque top
-const PLAQUE_DEPTH = 0.034; // a solid wooden block that stands off the wall
+const PLAQUE_DEPTH = 0.034; // a solid block that stands off the wall
 
 // The camera rides a rail through one viewpoint per painting. Springs act on
 // the rail parameter u (1 = one painting along). The look spring is stiffer
@@ -57,7 +58,7 @@ const LEAN_FILL = 0.92;
 const ZOOM_MAX = 4;
 const INTRO_SOFTNESS = 0.2; // springs this much softer during the walk-in
 
-// Room colours from Selma's Canva design: a deep violet room with pink plaques
+// Room colours from Selma's Canva design: a deep violet room with flat-coloured plaques
 const THEMES = {
   evening: {
     bg: '#230a66',
@@ -66,7 +67,6 @@ const THEMES = {
     floor: '#efe6d8',
     floorOpacity: 0.9,
     skirting: '#2a0f78',
-    plaqueGlow: 0.12,
     hemi: 0.22,
     spot: 40,
     exposure: 1.0,
@@ -76,14 +76,13 @@ const THEMES = {
     fog: [10, 30],
   },
   daylight: {
-    // pale violet-white walls, so the pink plaques stand out
+    // pale violet-white walls, so the coloured plaques stand out
     bg: '#e3dbf5',
     wall: '#efe9fb',
     ceiling: '#ffffff',
     floor: '#ffffff',
     floorOpacity: 0.86,
     skirting: '#cbbcf0',
-    plaqueGlow: 0,
     hemi: 1.3,
     spot: 16,
     exposure: 0.95,
@@ -444,31 +443,26 @@ export async function createGallery({ root, works, artMeta = {} }) {
   placeholder.needsUpdate = true;
 
   // ---------------------------------------------------------------- materials
-  const wood = woodTexture([255, 214, 243], [224, 120, 196], 0.5); // pink-lacquered
+  // Light oak for the float frames, grain along each piece
+  const oakGrain = woodTexture([232, 204, 158], [188, 146, 94], 0.85);
+  const oakGrainV = oakGrain.clone();
+  oakGrainV.center.set(0.5, 0.5);
+  oakGrainV.rotation = Math.PI / 2;
   const mats = {
     wall: new THREE.MeshStandardMaterial({ roughness: 0.95, map: wallTexture() }),
     ceiling: new THREE.MeshStandardMaterial({ roughness: 1 }),
     floor: new THREE.MeshStandardMaterial({ roughness: 0.38, transparent: true, map: plankTexture() }),
     black: new THREE.MeshStandardMaterial({ color: '#0f0e0d', roughness: 0.45 }),
-    oak: new THREE.MeshStandardMaterial({ color: '#b48f62', roughness: 0.6 }),
+    oak: new THREE.MeshStandardMaterial({ map: oakGrain, roughness: 0.62 }),
+    oakV: new THREE.MeshStandardMaterial({ map: oakGrainV, roughness: 0.62 }),
     mat: new THREE.MeshStandardMaterial({ color: '#f2eee6', roughness: 0.95 }),
     canvasEdge: new THREE.MeshStandardMaterial({ color: '#d9d2c4', roughness: 0.9 }),
-    shadowGap: new THREE.MeshStandardMaterial({ color: '#0b0a09', roughness: 1 }),
     skirting: new THREE.MeshStandardMaterial({ roughness: 0.6 }),
     track: new THREE.MeshStandardMaterial({ color: '#15151c', roughness: 0.5, metalness: 0.3 }),
     lamp: new THREE.MeshStandardMaterial({ color: '#fff3e0', emissive: '#ffd9a8', emissiveIntensity: 1.6 }),
     leather: new THREE.MeshStandardMaterial({ color: '#2a2438', roughness: 0.62 }),
     steel: new THREE.MeshStandardMaterial({ color: '#9a9aa6', roughness: 0.35, metalness: 0.85 }),
     doorway: new THREE.MeshStandardMaterial({ color: '#120530', roughness: 1 }),
-    plaque: new THREE.MeshPhysicalMaterial({
-      map: wood,
-      roughness: 0.5,
-      clearcoat: 0.85, // a deep lacquer: the lamps leave a soft highlight on it
-      clearcoatRoughness: 0.16,
-      emissive: '#ffffff',
-      emissiveMap: wood, // a faint self-glow keeps the grain readable in the evening room
-      emissiveIntensity: 0.1,
-    }),
     beam: new THREE.MeshBasicMaterial({
       map: beamTexture(),
       color: '#ffe2bf',
@@ -502,7 +496,6 @@ export async function createGallery({ root, works, artMeta = {} }) {
     mats.floor.color.set(t.floor);
     mats.floor.opacity = t.floorOpacity;
     mats.skirting.color.set(t.skirting);
-    mats.plaque.emissiveIntensity = t.plaqueGlow;
     mats.beam.opacity = t.beam;
     if (fx.dust) fx.dust.material.opacity = t.dust;
     hemi.intensity = t.hemi;
@@ -574,13 +567,14 @@ export async function createGallery({ root, works, artMeta = {} }) {
     return m;
   }
 
-  // Four moulding pieces around an inner opening of w × h.
-  function moulding(group, w, h, width, depth, material, z) {
+  // Four moulding pieces around an inner opening of w × h. The sides may take
+  // their own material (wood grain running up them).
+  function moulding(group, w, h, width, depth, material, z, sideMaterial = material) {
     const ow = w + width * 2;
     group.add(box(ow, width, depth, material, 0, h / 2 + width / 2, z));
     group.add(box(ow, width, depth, material, 0, -h / 2 - width / 2, z));
-    group.add(box(width, h, depth, material, -w / 2 - width / 2, 0, z));
-    group.add(box(width, h, depth, material, w / 2 + width / 2, 0, z));
+    group.add(box(width, h, depth, sideMaterial, -w / 2 - width / 2, 0, z));
+    group.add(box(width, h, depth, sideMaterial, w / 2 + width / 2, 0, z));
   }
 
   function artPlane(w, h, z) {
@@ -611,17 +605,18 @@ export async function createGallery({ root, works, artMeta = {} }) {
     }
 
     if (style === 'float') {
-      const gap = 0.018;
-      const fw = 0.016;
-      g.add(box(w + gap * 2, h + gap * 2, 0.008, mats.shadowGap, 0, 0, 0.004));
+      // A broad, light oak frame close around the painting: no dark gap, and
+      // its face only a little proud of the paint, so it casts no dark band
+      const fw = 0.07; // frame width
+      const fd = 0.056; // frame depth, wall to face
       g.add(box(w, h, 0.035, mats.canvasEdge, 0, 0, 0.03));
       const art = artPlane(w, h, 0.0476);
       g.add(art);
-      moulding(g, w + gap * 2, h + gap * 2, fw, 0.058, mats.oak, 0.029);
+      moulding(g, w, h, fw, fd, mats.oak, fd / 2, mats.oakV);
       return {
         group: g,
-        width: w + (gap + fw) * 2,
-        height: h + (gap + fw) * 2,
+        width: w + fw * 2,
+        height: h + fw * 2,
         artW: w,
         artH: h,
         artZ: 0.0476,
@@ -921,6 +916,26 @@ export async function createGallery({ root, works, artMeta = {} }) {
   const cssScene = new THREE.Scene();
   const plaqueParts = []; // { slab, face }
 
+  // The slab is one flat colour, exactly the hex in vaerker.json: unlit and
+  // outside tone mapping, so the lettering's contrast is what was chosen. Its
+  // rounded edges are a shade darker, so it still reads as a block.
+  function plaqueGeometry(h) {
+    const geo = new RoundedBoxGeometry(PLAQUE_W, h, PLAQUE_DEPTH, 6, 0.012);
+    const n = geo.attributes.normal;
+    const shade = new Float32Array(n.count * 3);
+    for (let k = 0; k < n.count; k++) {
+      const v = n.getZ(k) > 0.95 ? 1 : 0.8 + 0.12 * Math.max(0, n.getY(k));
+      shade.fill(v, k * 3, k * 3 + 3);
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(shade, 3));
+    return geo;
+  }
+  const plaqueMats = new Map();
+  function plaqueMaterial(bund) {
+    if (!plaqueMats.has(bund)) plaqueMats.set(bund, new THREE.MeshBasicMaterial({ color: bund, vertexColors: true, toneMapped: false }));
+    return plaqueMats.get(bund);
+  }
+
   function buildPlaques(els, heights) {
     frames.forEach((f, i) => {
       const el = els[i];
@@ -928,7 +943,7 @@ export async function createGallery({ root, works, artMeta = {} }) {
       const y = EYE - f.height / 2 - PLAQUE_GAP - f.plaqueH / 2;
       const normal = f.slot.wall.normal;
 
-      const slab = new THREE.Mesh(new RoundedBoxGeometry(PLAQUE_W, f.plaqueH, PLAQUE_DEPTH, 6, 0.012), mats.plaque);
+      const slab = new THREE.Mesh(plaqueGeometry(f.plaqueH), plaqueMaterial(skiltFor(list[i]).bund));
       slab.position.copy(f.centre).addScaledVector(normal, PLAQUE_DEPTH / 2 + 0.002);
       slab.position.y = y;
       slab.rotation.y = f.slot.wall.rotY;

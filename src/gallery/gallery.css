@@ -550,8 +550,10 @@
 }
 
 /* ------------------------------------------------------------------ Plaques */
-/* Pink lacquered wood (drawn in WebGL) with dark violet lettering. Sizes are at
-   the plaque's design width of 315px; the scene scales it to 1.05 m on the wall.
+/* One flat colour from the front page's palette (--bund, drawn in WebGL as the
+   slab) with lettering in a colour from the painting (--letter); both come from
+   "skilt" in vaerker.json via skilt.js. Sizes are at the plaque's design width
+   of 315px; the scene scales it to 1.05 m on the wall.
    The measuring box lives on <body>, so these rules are not under #galleri. */
 .galleri-plaques {
   position: fixed;
@@ -562,12 +564,13 @@
   z-index: -1;
 }
 .galleri-plaque {
-  --letter: #2a0a7a;
-  --letter-soft: rgba(42, 10, 122, 0.72);
-  --letter-line: rgba(42, 10, 122, 0.25);
-  /* letters cut into the lacquer: a dark lip above, light catching the lower edge */
-  --engraved: 0 -0.5px 0 rgba(60, 0, 70, 0.28), 0 0.7px 0 rgba(255, 236, 250, 0.7);
-  --brass: radial-gradient(circle at 38% 32%, #fff6d2 0, #e7c46a 1.6px, #a67c2c 3.4px, #6b4a14 4.6px, rgba(107, 74, 20, 0) 5.2px);
+  --bund: #ffd6f0;
+  --letter: #5e17eb;
+  --letter-line: color-mix(in srgb, var(--letter) 40%, transparent);
+  --key1: #5e17eb;
+  --key1-ink: #fff;
+  --key2: #ff2234;
+  --key2-ink: #1a0650;
   box-sizing: border-box;
   width: 315px;
   margin: 0;
@@ -578,12 +581,6 @@
   line-height: 1.4;
   text-align: left;
   -webkit-font-smoothing: antialiased;
-  /* four brass screws hold the plaque to the wall */
-  background:
-    var(--brass) 7px 7px / 11px 11px no-repeat,
-    var(--brass) calc(100% - 7px) 7px / 11px 11px no-repeat,
-    var(--brass) 7px calc(100% - 7px) / 11px 11px no-repeat,
-    var(--brass) calc(100% - 7px) calc(100% - 7px) / 11px 11px no-repeat;
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
@@ -597,9 +594,9 @@
   line-height: 1.15;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  text-shadow: var(--engraved);
   overflow-wrap: anywhere;
 }
+/* small print stays in the full letter colour: thinner type, not paler ink */
 .galleri-plaque__meta {
   margin-top: 6px;
   font-size: 8.5px;
@@ -607,8 +604,6 @@
   line-height: 1.6;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--letter-soft);
-  text-shadow: var(--engraved);
 }
 .galleri-plaque__om {
   margin-top: 9px;
@@ -619,7 +614,6 @@
   -webkit-line-clamp: 4;
   line-clamp: 4;
   overflow: hidden;
-  text-shadow: var(--engraved);
 }
 /* The price: the second thing you read, set large between two fine rules */
 .galleri-plaque__price {
@@ -628,12 +622,11 @@
   justify-content: space-between;
   margin-top: 12px;
   padding: 8px 0 6px;
-  border-top: 0.5px solid var(--letter-line);
+  border-top: 1px solid var(--letter-line);
   font-size: 23px;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.01em;
-  text-shadow: var(--engraved);
 }
 .galleri-plaque__price::before {
   content: 'Pris';
@@ -641,12 +634,11 @@
   font-weight: 400;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--letter-soft);
 }
 .galleri-plaque__foot {
   margin-top: 10px;
   padding-top: 12px;
-  border-top: 0.5px solid var(--letter-line);
+  border-top: 1px solid var(--letter-line);
   display: flex;
   align-items: center;
   justify-content: space-between; /* the two actions mirror each other, one at each edge */
@@ -655,10 +647,13 @@
 .galleri-plaque__price + .galleri-plaque__foot {
   margin-top: 0;
 }
-/* Raised keys: a face on a darker edge. Hovering pushes the key half way in,
-   pressing all the way, so the edge disappears under it. */
+/* Raised keys in two different palette colours: a flat face on a darker edge.
+   Hovering pushes the key half way in, pressing all the way, so the edge
+   disappears under it. */
 .galleri-plaque__btn {
-  --edge: #3a0c99;
+  --key: var(--key1);
+  --ink: var(--key1-ink);
+  --edge: color-mix(in srgb, var(--key) 62%, #000);
   --lift: 4px;
   pointer-events: auto;
   position: relative;
@@ -676,13 +671,11 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #fff;
-  background: linear-gradient(180deg, #7a3cf5 0%, #5e17eb 55%, #5212d6 100%);
+  color: var(--ink);
+  background: var(--key);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
     0 var(--lift) 0 var(--edge),
-    0 calc(var(--lift) + 2px) 5px rgba(60, 0, 70, 0.4);
+    0 calc(var(--lift) + 2px) 4px rgba(20, 0, 40, 0.28);
   transform: translateY(calc(-1 * var(--lift)));
   cursor: pointer;
   transition:
@@ -705,9 +698,8 @@
   outline-offset: 2px;
 }
 .galleri-plaque__btn--stue {
-  --edge: #c43f9f;
-  color: var(--letter);
-  background: linear-gradient(180deg, #fff4fb 0%, #ffe3f5 60%, #fbd3ee 100%);
+  --key: var(--key2);
+  --ink: var(--key2-ink);
 }
 .galleri-plaque__sold {
   flex: 1 1 0;
@@ -718,8 +710,6 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--letter-soft);
-  text-shadow: var(--engraved);
 }
 .galleri-plaque__sold::before {
   content: '';
@@ -727,7 +717,7 @@
   height: 8px;
   border-radius: 50%;
   background: #ff2234;
-  box-shadow: 0 0.6px 0.8px rgba(120, 30, 110, 0.35);
+  box-shadow: 0 0 0 1px var(--letter);
 }
 /* Touch screens: the plaque is seen small on a phone, so its keys are taller
    (pointer, not width: turning the phone must not change the measured plaque) */

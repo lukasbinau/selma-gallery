@@ -1,8 +1,21 @@
 {
-  "_hjaelp": "Ét objekt pr. værk, i den rækkefølge de vises på forsiden og hænger i galleriet. Tomme felter vises ikke på sitet. pris: hele kroner som et tal (fx 2399, vises som \"2.399 kr.\"); null = ingen pris vises endnu. solgt: true viser \"Solgt\" i stedet for købeknappen. ramme: 'mat' = papir med hvid passepartout og sort ramme, 'float' = lærred i egetræs svæveramme, 'bare' = fotoet viser allerede rammen. Står der \"egen ramme\" i teknik, tilbydes ingen rammer i I din stue; rammetekst (valgfri) står så i stedet for \"Uden ramme\". tyk: true = et tykt maleri, der indrammes hos en indrammer uden glas: får ingen plakatrammer i I din stue. Billederne ligger i public/art/<id>-2048.jpg (lavet af scripts/prepare-images.mjs).",
+  "_hjaelp": "Ét objekt pr. værk, i den rækkefølge de vises på forsiden og hænger i galleriet. Tomme felter vises ikke på sitet. pris: hele kroner som et tal (fx 2399, vises som \"2.399 kr.\"); null = ingen pris vises endnu. solgt: true viser \"Solgt\" i stedet for købeknappen. ramme: 'mat' = papir med hvid passepartout og sort ramme, 'float' = lærred i egetræs svæveramme, 'bare' = fotoet viser allerede rammen. Står der \"egen ramme\" i teknik, tilbydes ingen rammer i I din stue; rammetekst (valgfri) står så i stedet for \"Uden ramme\". tyk: true = et tykt maleri, der indrammes hos en indrammer uden glas: får ingen plakatrammer i I din stue. skilt (valgfri): skiltets farver i galleriet, fx { \"bund\": \"#ffd6f0\", \"tekst\": \"#4d45b5\" }, hvor bund er skiltets ensfarvede baggrund og tekst er skriftens farve (tag den fra maleriet); mangler feltet, får skiltet lyserød bund med lilla skrift. Billederne ligger i public/art/<id>-2048.jpg (lavet af scripts/prepare-images.mjs).",
   "vaerker": [
     {
+      "id": "fuglene",
+      "skilt": { "bund": "#ffd6f0", "tekst": "#123590" },
+      "titel": "Fuglene",
+      "aar": 2026,
+      "om": "",
+      "teknik": "Akryl, oliekridt og kridt på træplade",
+      "maal": "80 × 60 cm",
+      "pris": 2000,
+      "ramme": "float",
+      "solgt": false
+    },
+    {
       "id": "moenster-lyseroed",
+      "skilt": { "bund": "#f767d3", "tekst": "#141f80" },
       "titel": "Lyserødt mønster",
       "aar": 2026,
       "om": "Dette værk er malet på en sommerdag.",
@@ -14,6 +27,7 @@
     },
     {
       "id": "lilla-skyer",
+      "skilt": { "bund": "#ffd6f0", "tekst": "#4d45b5" },
       "titel": "Lilla skyer",
       "aar": 2026,
       "om": "Dette værk er malet på en genbrugs træflis-plade. Hullerne er lukket med malertape.",
@@ -25,6 +39,7 @@
     },
     {
       "id": "cirkler",
+      "skilt": { "bund": "#2448e8", "tekst": "#dce684" },
       "titel": "Cirkler",
       "aar": 2026,
       "om": "",
@@ -37,6 +52,7 @@
     },
     {
       "id": "ansigt",
+      "skilt": { "bund": "#fcd23b", "tekst": "#a01224" },
       "titel": "Blå øjne",
       "aar": 2026,
       "om": "",
@@ -49,9 +65,10 @@
     },
     {
       "id": "lille-stjerne",
+      "skilt": { "bund": "#2448e8", "tekst": "#ffd84a" },
       "titel": "Lille stjerne",
       "aar": 2025,
-      "om": "Væggen åbner sig to gange: én gang for en stjerne, og én gang for trappen, der går ned for at møde den.",
+      "om": "",
       "teknik": "Oliemaling, oliekridt og akryl",
       "maal": "40 × 50 cm",
       "pris": 2000,
@@ -61,6 +78,7 @@
     },
     {
       "id": "figur",
+      "skilt": { "bund": "#ffd6f0", "tekst": "#920b31" },
       "titel": "Vådt hår",
       "aar": 2026,
       "om": "",
@@ -73,9 +91,10 @@
     },
     {
       "id": "orange-mand",
+      "skilt": { "bund": "#f767d3", "tekst": "#22302b" },
       "titel": "Orange mand",
       "aar": 2025,
-      "om": "Et ansigt lavet af vejr: violet i panden, ild i kinden og én mørk streg, der holder det hele sammen.",
+      "om": "",
       "teknik": "Akryl, kridt og oliekridt på gammelt savsmuldstapet, plakatformat",
       "maal": "43 × 51 cm",
       "pris": 1200,
@@ -84,6 +103,7 @@
     },
     {
       "id": "blaa-fliser",
+      "skilt": { "bund": "#ffd6f0", "tekst": "#3f55c0" },
       "titel": "Blåt mønster",
       "aar": 2026,
       "om": "",
@@ -95,9 +115,10 @@
     },
     {
       "id": "rapsmarker",
+      "skilt": { "bund": "#fcd23b", "tekst": "#46523d" },
       "titel": "Rapsmarker",
       "aar": 2026,
-      "om": "Sommer, i rækker. Markerne nynner gult, syet sammen med blåt, under en himmel der ikke beder om noget.",
+      "om": "Rapsmarker fra de danske landskaber. Dejlig sommerdag.",
       "teknik": "Akryl, oliekridt og kridt på gammelt savsmuldstapet",
       "maal": "66 × 53 cm",
       "pris": 1500,
@@ -106,9 +127,10 @@
     },
     {
       "id": "blaa-time",
+      "skilt": { "bund": "#2448e8", "tekst": "#c4ddff" },
       "titel": "Blå time",
       "aar": 2025,
-      "om": "Huset glemmer sine kanter. Tilbage er kridtet af det, træerne og det lange blå bagefter.",
+      "om": "Blå med blå på.",
       "teknik": "Olie og oliekridt på lærred, kunstnerens egen ramme",
       "maal": "50 × 60 cm",
       "rammetekst": "Har allerede sin egen ramme, malet lyseblå",
@@ -118,9 +140,10 @@
     },
     {
       "id": "groent-glas",
+      "skilt": { "bund": "#fcd23b", "tekst": "#355e1c" },
       "titel": "Grønt glas",
       "aar": 2026,
-      "om": "Lyset går ind i det grønne glas og kommer ud som skygge, stille, på en stribet eftermiddag.",
+      "om": "Grønne glas i stuen.",
       "teknik": "Akvarel på papir",
       "maal": "21 × 30 cm",
       "pris": null,
@@ -129,12 +152,13 @@
     },
     {
       "id": "portraet",
-      "titel": "Portræt",
+      "skilt": { "bund": "#ff2234", "tekst": "#0a0f40" },
+      "titel": "Blåt hår",
       "aar": 2026,
       "om": "",
       "teknik": "",
-      "maal": "",
-      "pris": null,
+      "maal": "73 × 103 cm",
+      "pris": 2000,
       "ramme": "mat",
       "solgt": false
     }

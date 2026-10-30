@@ -125,9 +125,35 @@ function bestSize(frame, size, medium, style) {
     }
     if (fit && (!best || fit.score < best.score)) best = { ...fit, inner, price: Number(s.priceDkk) || 0, size: s };
   }
-  if (!best) return null;
-  return { size: best.size, inner: best.inner, mat: best.mat, price: best.price };
+  if (!best) return madeToMeasure(frame, size, medium, style);
+  return { size: best.size, inner: best.inner, mat: best.mat, price: best.price, custom: false };
 }
+
+// A frame with `specialmaal` is made to the work's size when no stock size fits:
+// grundprisDkk + prisPrMeterDkk × the opening's perimeter, rounded up to a price
+// ending in 45 or 95. With a passepartout (paper only) the opening is the work
+// plus passepartoutKantCm on every side.
+function madeToMeasure(frame, size, medium, style) {
+  const m = frame.specialmaal;
+  if (!m || !(Number(m.prisPrMeterDkk) >= 0)) return null;
+  let inner;
+  let mat = null;
+  if (frame.passepartout) {
+    if (style !== 'plakat' || medium !== 'paper') return null;
+    const k = Number(m.passepartoutKantCm) || 5;
+    inner = { w: round1(size.w + k * 2), h: round1(size.h + k * 2) };
+    mat = { w: size.w - 0.6, h: size.h - 0.6 };
+  } else {
+    inner = { w: round1(size.w), h: round1(size.h) };
+  }
+  const short = Math.min(inner.w, inner.h);
+  const long = Math.max(inner.w, inner.h);
+  if ((m.minCm && short < m.minCm) || (m.maxCm && long > m.maxCm)) return null;
+  const raw = (Number(m.grundprisDkk) || 0) + (Number(m.prisPrMeterDkk) || 0) * ((inner.w + inner.h) * 2) / 100;
+  const price = Math.max(45, Math.ceil((raw - 45) / 50) * 50 + 45);
+  return { size: { innerWcm: inner.w, innerHcm: inner.h, priceDkk: price, specialmaal: true }, inner, mat, price, custom: true };
+}
+const round1 = (v) => Math.round(v * 10) / 10;
 
 // ------------------------------------------------------------------ money
 export const formatKr = formatPris;

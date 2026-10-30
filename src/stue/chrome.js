@@ -5,7 +5,7 @@
 export const STRINGS = {
   eyebrow: 'I din stue',
   backFront: '← Forside',
-  backGallery: '← Galleri',
+  backGallery: '← Webgalleri',
   close: 'Luk',
   tabs: { work: 'Værk', frame: 'Ramme', wall: 'Væg', time: 'Lys', view: 'Rum' },
   railLabel: {
@@ -26,10 +26,18 @@ export const STRINGS = {
   framer: 'Ramme laves hos en indrammer – spørg Selma',
   estimated: 'Mål ikke oplyst – vist i anslået størrelse',
   withMat: 'med passepartout',
+  madeToMeasure: 'laves på mål',
   loading: 'Indretter stuen',
   scene: 'Selmas maleri hængt op i en stue',
   failed: 'Billedet kunne ikke hentes',
   sheetLabel: 'Vis eller skjul valgene',
+  // wide screens: put the panel away to see the whole room
+  hidePanel: 'Skjul',
+  hidePanelLabel: 'Skjul valgene og se hele rummet',
+  showPanel: 'Vis valg',
+  showPanelLabel: 'Vis valgene igen',
+  panelHidden: 'Valgene er skjult',
+  panelShown: 'Valgene vises',
   // the two ways of looking at the work; the button names the other one
   angle: { vinkel: 'Skråt', forfra: 'Forfra' },
   angleLabel: { vinkel: 'Se værket skråt fra siden', forfra: 'Se værket lige forfra' },
@@ -44,7 +52,11 @@ const TAB_ICONS = {
   view: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3M3 18h18M5 18v2M19 18v2" /></svg>',
 };
 
-const ARROW = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg>';
+// hide the panel (a chevron down into a line) / show it again (chevron up)
+const HIDE_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 5 4 4 4-4M3 12.5h10" /></svg>';
+const SHOW_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 10 4-4 4 4M3 3.5h10" /></svg>';
+
+const ARROW ='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg>';
 
 const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -78,8 +90,9 @@ export function buildChrome(root) {
     <button type="button" class="stue__angle" data-to="forfra" aria-label="${STRINGS.angleLabel.forfra}">
       <span class="stue__angle-label">${STRINGS.angle.forfra}</span>${ARROW}
     </button>
-    <section class="stue__panel" aria-label="Indstillinger for stuen">
+    <section class="stue__panel" id="stue-panel" aria-label="Indstillinger for stuen">
       <button type="button" class="stue__handle" aria-expanded="true" aria-label="${STRINGS.sheetLabel}"><i aria-hidden="true"></i></button>
+      <button type="button" class="stue__hide" aria-controls="stue-panel" aria-expanded="true" aria-label="${STRINGS.hidePanelLabel}" title="${STRINGS.hidePanelLabel}">${HIDE_ICON}<span>${STRINGS.hidePanel}</span></button>
       <div class="stue__summary">
         <div class="stue__what">
           <h2 class="stue__title"></h2>
@@ -108,6 +121,7 @@ export function buildChrome(root) {
           .join('')}
       </div>
     </section>
+    <button type="button" class="stue__show" aria-controls="stue-panel" aria-expanded="false" aria-label="${STRINGS.showPanelLabel}" hidden>${SHOW_ICON}<span>${STRINGS.showPanel}</span></button>
     <div class="stue__live stue-sr-only" aria-live="polite"></div>`;
   const $ = (s) => root.querySelector(s);
   return {
@@ -117,6 +131,8 @@ export function buildChrome(root) {
     note: $('.stue__note'),
     panel: $('.stue__panel'),
     handle: $('.stue__handle'),
+    hide: $('.stue__hide'),
+    show: $('.stue__show'),
     angle: $('.stue__angle'),
     top: $('.stue__top'),
     title: $('.stue__title'),
